@@ -19,7 +19,10 @@ async function sendResultsToDashboard(results) {
     headers.Authorization = `Bearer ${process.env.API_TOKEN}`;
   }
 
-  const res = await fetch(`${process.env.DASHBOARD_API_URL}/api/test-results`, {
+  const url = `${process.env.DASHBOARD_API_URL}/.netlify/functions/test-results`;
+    console.log('[dashboard] POST →', url)
+
+    const res = await fetch(url, {
     method: 'POST',
     headers,
     body: JSON.stringify(payload),
