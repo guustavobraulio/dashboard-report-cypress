@@ -37,7 +37,7 @@ module.exports = defineConfig({
   // Caso use component testing também, mantenha esta seção apenas em e2e:
   e2e: {
     // Seu baseUrl pode ser sobrescrito pela pipeline via env se desejar
-    baseUrl: 'https://seu-app.staging.com',
+    baseUrl: 'https://dash-report-cy.netlify.app/',
 
     // Aqui entra exatamente o bloco que você enviou, porém adaptado
     setupNodeEvents(on, config) {
