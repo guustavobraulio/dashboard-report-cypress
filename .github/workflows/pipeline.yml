@@ -1,0 +1,48 @@
+name: Cypress E2E
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Ambiente (dev/staging/prod)
+        type: choice
+        default: staging
+        options: [dev, staging, prod]
+
+# Variáveis de ambiente de nível de job (lidas do repositório/Secrets)
+env:
+  # Preenche após criar os secrets no repositório (Settings → Secrets → Actions)
+  DASHBOARD_API_URL: ${{ secrets.DASHBOARD_API_URL }}
+  API_TOKEN: ${{ secrets.DASHBOARD_API_TOKEN }}
+  # Padrão do ambiente quando disparar manualmente sem input
+  ENVIRONMENT: ${{ github.event.inputs.environment || 'staging' }}
+
+jobs:
+  e2e:
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Executa "npx cypress run" de forma simplificada
+      - name: Cypress run
+        uses: cypress-io/github-action@v6
+        with:
+          browser: chrome
+        env:
+          # Metadados do GitHub para enriquecer o payload no after:run
+          GITHUB_REF_NAME: ${{ github.ref_name }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+
+          # Secrets/vars do dashboard (disponíveis no cypress.config.js via process.env)
+          DASHBOARD_API_URL: ${{ env.DASHBOARD_API_URL }}
+          API_TOKEN: ${{ env.API_TOKEN }}
+          ENVIRONMENT: ${{ env.ENVIRONMENT }}
