@@ -16,8 +16,7 @@ on:
 # Variáveis de ambiente de nível de job (lidas do repositório/Secrets)
 env:
   # Preenche após criar os secrets no repositório (Settings → Secrets → Actions)
-  DASHBOARD_API_URL: ${{ secrets.DASHBOARD_API_URL }}
-  API_TOKEN: ${{ secrets.DASHBOARD_API_TOKEN }}
+  DASHBOARD_API_URL: ${{ secrets.DASHBOARD_URL }}
   # Padrão do ambiente quando disparar manualmente sem input
   ENVIRONMENT: ${{ github.event.inputs.environment || 'staging' }}
 
