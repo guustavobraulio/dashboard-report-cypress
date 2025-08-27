@@ -1,11 +1,10 @@
 // cypress.config.js
 const { defineConfig } = require('cypress');
 
-// Função que monta o payload e envia os resultados para a API do dashboard
 async function sendResultsToDashboard(results) {
-  // Validação mínima para evitar erros locais
-  if (!process.env.DASHBOARD_API_URL || !process.env.API_TOKEN) {
-    console.warn('[dashboard] DASHBOARD_API_URL/API_TOKEN ausentes — envio pulado');
+  // Exigir apenas a URL; token é opcional
+  if (!process.env.DASHBOARD_API_URL) {
+    console.warn('[dashboard] DASHBOARD_API_URL ausente — envio pulado');
     return;
   }
 
@@ -13,41 +12,16 @@ async function sendResultsToDashboard(results) {
     ? `gh-${process.env.GITHUB_RUN_ID}`
     : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 
-  const payload = {
-    runId,
-    timestamp: new Date().toISOString(),
-    branch: process.env.GITHUB_REF_NAME || 'local',
-    commit: process.env.GITHUB_SHA || 'local',
-    author: process.env.GITHUB_ACTOR || 'local',
-    environment: process.env.ENVIRONMENT || 'staging',
-    totalDuration: results.totalDuration,
-    totalTests: results.totalTests,
-    totalPassed: results.totalPassed,
-    totalFailed: results.totalFailed,
-    totalPending: results.totalPending,
-    totalSkipped: results.totalSkipped,
-    githubRunUrl:
-      process.env.GITHUB_RUN_ID && process.env.GITHUB_REPOSITORY
-        ? `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
-        : null,
-    tests: results.runs.flatMap((run) =>
-      run.tests.map((t) => ({
-        title: t.title.join(' > '),
-        state: t.state,
-        duration: t.duration,
-        spec: run.spec.name,
-        error: t.displayError || null,
-      })),
-    ),
-  };
+  const payload = { /* ... exatamente como já está ... */ };
 
-  // Envio simples com fetch nativo (Node 18+)
+  const headers = { 'Content-Type': 'application/json' };
+  if (process.env.API_TOKEN) {
+    headers.Authorization = `Bearer ${process.env.API_TOKEN}`;
+  }
+
   const res = await fetch(`${process.env.DASHBOARD_API_URL}/api/test-results`, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${process.env.API_TOKEN}`,
-    },
+    headers,
     body: JSON.stringify(payload),
   });
 
@@ -57,6 +31,7 @@ async function sendResultsToDashboard(results) {
   }
   console.log('[dashboard] Resultados enviados com sucesso');
 }
+
 
 module.exports = defineConfig({
   // Caso use component testing também, mantenha esta seção apenas em e2e:
