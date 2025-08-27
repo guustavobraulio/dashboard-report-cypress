@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "web-vitals": "^5.1.0",
-    "cypress": "npm i -D cypress"
+    "cypress": "^14.5.4",
+    "web-vitals": "^5.1.0"
   }
 }
