@@ -15,7 +15,7 @@ on:
 
 env:
   # Secrets do repositório (Settings → Secrets and variables → Actions)
-  DASHBOARD_API_URL: ${{ secrets.DASHBOARD_URL }}   # seu secret já criado
+  DASHBOARD_API_URL: ${{ secrets.DASHBOARD_URL }}   # URL base da API do seu dashboard (sem barra no final)
   ENVIRONMENT:       ${{ github.event.inputs.environment || 'staging' }}
 
 jobs:
@@ -34,13 +34,36 @@ jobs:
         with:
           browser: chrome
         env:
-          # Metadados do GitHub (para o payload do after:run)
+          # Metadados do GitHub para o payload do after:run (lidos via process.env no cypress.config.js)
           GITHUB_REF_NAME:   ${{ github.ref_name }}
           GITHUB_SHA:        ${{ github.sha }}
           GITHUB_ACTOR:      ${{ github.actor }}
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_RUN_ID:     ${{ github.run_id }}
+
           # Variáveis lidas no cypress.config.js (after:run)
           DASHBOARD_API_URL: ${{ env.DASHBOARD_API_URL }}
           ENVIRONMENT:       ${{ env.ENVIRONMENT }}
-          # API_TOKEN:       ${{ secrets.DASHBOARD_API_TOKEN }} # opcional, se API exigir
+          # API_TOKEN:       ${{ secrets.DASHBOARD_API_TOKEN }} # opcional, se sua API exigir
+
+          # Aponta os testes para um host acessível no CI (se desejar usar seu site atual do Netlify)
+          CYPRESS_baseUrl:   https://dash-report-cy.netlify.app/
+
+  deploy:
+    needs: e2e
+    if: ${{ needs.e2e.result == 'success' }}
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Netlify CLI
+        run: npm i -g netlify-cli
+
+      - name: Deploy to Netlify (prod)
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID:     ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          netlify deploy --dir=. --prod --site="$NETLIFY_SITE_ID" --auth="$NETLIFY_AUTH_TOKEN"
