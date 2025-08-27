@@ -1,0 +1,15 @@
+{
+  "name": "dashboard-report-cypress",
+  "version": "1.0.0",
+  "description": "Um dashboard que recebe dados das execuções que são feitas na pipeline.",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "web-vitals": "^5.1.0"
+  }
+}

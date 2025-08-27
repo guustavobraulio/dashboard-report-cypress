@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cypress Test Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo-section">
+                    <i class="fas fa-bug logo-icon"></i>
+                    <h1>Cypress Test Dashboard</h1>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn--primary" id="runPipelineBtn">
+                        <i class="fas fa-play"></i>
+                        Executar Pipeline
+                    </button>
+                    <div class="auto-refresh">
+                        <i class="fas fa-sync-alt" id="refreshIcon"></i>
+                        <span>Auto-refresh: 30s</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Sidebar Simplificada -->
+            <aside class="sidebar">
+                <nav class="nav">
+                    <a href="#" class="nav-item nav-item--active">
+                        <i class="fas fa-tachometer-alt"></i>
+                        Dashboard
+                    </a>
+                </nav>
+            </aside>
+
+            <!-- Dashboard Content -->
+            <section class="dashboard-content">
+                <!-- Statistics Cards -->
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon--success">
+                            <i class="fas fa-check-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalPassed">0</h3>
+                            <p>Testes Aprovados</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon--error">
+                            <i class="fas fa-times-circle"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="totalFailed">0</h3>
+                            <p>Testes Falhados</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon--info">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="avgDuration">0s</h3>
+                            <p>Duração Média</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon stat-icon--warning">
+                            <i class="fas fa-percentage"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="successRate">0%</h3>
+                            <p>Taxa de Sucesso</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Execution History Chart -->
+                <div class="history-chart-section">
+                    <div class="card">
+                        <div class="card__header">
+                            <h2>Histórico de Execuções</h2>
+                            <div class="period-filters">
+                                <button class="period-btn" data-period="24h">24h</button>
+                                <button class="period-btn period-btn--active" data-period="7d">7 dias</button>
+                                <button class="period-btn" data-period="30d">30 dias</button>
+                            </div>
+                        </div>
+                        <div class="card__body">
+                            <div class="chart-container" style="position: relative; height: 300px;">
+                                <canvas id="historyChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Charts and History -->
+                <div class="content-grid">
+                    <!-- Pie Chart Section -->
+                    <div class="chart-section">
+                        <div class="card">
+                            <div class="card__header">
+                                <h2>Status dos Testes</h2>
+                                <div class="chart-filters">
+                                    <select id="branchFilter" class="form-control">
+                                        <option value="">Todas as branches</option>
+                                    </select>
+                                    <select id="environmentFilter" class="form-control">
+                                        <option value="">Todos os ambientes</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card__body">
+                                <div class="chart-container" style="position: relative; height: 300px;">
+                                    <canvas id="statusChart"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Execution History -->
+                    <div class="history-section">
+                        <div class="card">
+                            <div class="card__header">
+                                <h2>Últimas Execuções</h2>
+                                <div class="history-actions">
+                                    <input type="date" id="dateFilter" class="form-control">
+                                    <select id="statusFilter" class="form-control">
+                                        <option value="">Todos os status</option>
+                                        <option value="passed">Aprovado</option>
+                                        <option value="failed">Falhado</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="card__body">
+                                <div class="execution-table">
+                                    <table class="table">
+                                        <thead>
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>Data/Hora</th>
+                                                <th>Branch</th>
+                                                <th>Ambiente</th>
+                                                <th>Status</th>
+                                                <th>Testes</th>
+                                                <th>Duração</th>
+                                                <th>Ações</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="executionTableBody">
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div class="pagination" id="pagination">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Modal for Execution Details -->
+    <div class="modal hidden" id="executionModal">
+        <div class="modal-backdrop"></div>
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Detalhes da Execução</h2>
+                <button class="modal-close" id="closeModal">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-tabs">
+                    <button class="tab-button tab-button--active" data-tab="overview">Visão Geral</button>
+                    <button class="tab-button" data-tab="tests">Testes</button>
+                    <button class="tab-button" data-tab="logs">Logs</button>
+                    <button class="tab-button" data-tab="artifacts">Artefatos</button>
+                </div>
+                
+                <div class="tab-content">
+                    <!-- Overview Tab -->
+                    <div class="tab-panel tab-panel--active" id="overview-tab">
+                        <div class="execution-details">
+                            <div class="detail-grid">
+                                <div class="detail-item">
+                                    <label>ID da Execução:</label>
+                                    <span id="modalExecutionId"></span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>Data/Hora:</label>
+                                    <span id="modalExecutionDate"></span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>Branch:</label>
+                                    <span id="modalExecutionBranch"></span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>Ambiente:</label>
+                                    <span id="modalExecutionEnvironment"></span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>Autor:</label>
+                                    <span id="modalExecutionAuthor"></span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>Commit:</label>
+                                    <span id="modalExecutionCommit"></span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>Duração:</label>
+                                    <span id="modalExecutionDuration"></span>
+                                </div>
+                                <div class="detail-item">
+                                    <label>Status:</label>
+                                    <span id="modalExecutionStatus"></span>
+                                </div>
+                            </div>
+                            <div class="github-link">
+                                <a href="#" id="modalGithubLink" target="_blank" class="btn btn--outline">
+                                    <i class="fab fa-github"></i>
+                                    Ver no GitHub Actions
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Tests Tab -->
+                    <div class="tab-panel" id="tests-tab">
+                        <div class="tests-list" id="modalTestsList">
+                        </div>
+                    </div>
+
+                    <!-- Logs Tab -->
+                    <div class="tab-panel" id="logs-tab">
+                        <div class="logs-container">
+                            <pre id="modalLogs"></pre>
+                        </div>
+                    </div>
+
+                    <!-- Artifacts Tab -->
+                    <div class="tab-panel" id="artifacts-tab">
+                        <div class="artifacts-list" id="modalArtifacts">
+                            <div class="artifact-item">
+                                <i class="fas fa-image"></i>
+                                <span>screenshot-login.png</span>
+                                <button class="btn btn--sm btn--outline">Download</button>
+                            </div>
+                            <div class="artifact-item">
+                                <i class="fas fa-video"></i>
+                                <span>test-recording.mp4</span>
+                                <button class="btn btn--sm btn--outline">Download</button>
+                            </div>
+                            <div class="artifact-item">
+                                <i class="fas fa-file-alt"></i>
+                                <span>test-report.html</span>
+                                <button class="btn btn--sm btn--outline">Download</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay hidden" id="loadingOverlay">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p>Executando pipeline...</p>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
