@@ -6,8 +6,13 @@ async function sendResultsToDashboard(results) {
     return;
   }
 
+  // Gera runId compacto (exemplo: T1724967605c78912)
+  const shortHash = (process.env.GITHUB_SHA || '').slice(0, 6);
+  const timestampShort = Math.floor(Date.now() / 1000).toString();
+  const runId = `T${timestampShort}${shortHash}`;
+
   const payload = {
-    runId: process.env.GITHUB_RUN_ID ? `Test-${process.env.GITHUB_RUN_ID}` : `Test-${Date.now()}`,
+    runId,
     timestamp: new Date().toISOString(),
     totalDuration: results.totalDuration,
     totalTests: results.totalTests,
@@ -33,7 +38,7 @@ async function sendResultsToDashboard(results) {
           .filter(t => t.displayError)
           .map(t => `[ERROR] ${(Array.isArray(t.title) ? t.title.join(' > ') : t.title) || 'spec'}\n${t.displayError}`))
       : [],
-    artifacts: []
+    artifacts: []  // Pode ser implementado para incluir prints/falhas posteriormente
   };
 
   const headers = { 'Content-Type': 'application/json' };
@@ -52,7 +57,6 @@ async function sendResultsToDashboard(results) {
   console.log('[dashboard] Resposta:', res.status, await res.text());
   console.log('[dashboard] Resultados enviados com sucesso');
 }
-
 
 module.exports = defineConfig({
   e2e: {
