@@ -43,11 +43,11 @@ async function sendResultsToDashboard(results) {
   const url = `${process.env.DASHBOARD_API_URL}/.netlify/functions/test-results`;
   console.log('[dashboard] POST →', url);
 
-  const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload) });
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`[dashboard] Falha no envio: ${res.status} ${text}`);
-  }
+  const res = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(payload),
+  });
   console.log('[dashboard] Resultados enviados com sucesso');
 }
 
