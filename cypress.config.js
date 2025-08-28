@@ -1,4 +1,30 @@
 const { defineConfig } = require('cypress');
+const fs = require('fs');
+const path = require('path');
+
+function getFailedScreenshots() {
+  const screenshotsDir = path.join(process.cwd(), 'cypress', 'screenshots');
+  if (!fs.existsSync(screenshotsDir)) return [];
+
+  const files = [];
+
+  function searchDir(dir) {
+    const entries = fs.readdirSync(dir, { withFileTypes: true });
+    for (const entry of entries) {
+      const fullPath = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        searchDir(fullPath);
+      } else if (entry.isFile() && entry.name.endsWith('.png')) {
+        files.push(fullPath);
+      }
+    }
+  }
+
+  searchDir(screenshotsDir);
+
+  // Retorna caminhos relativos (você pode adaptar para URLs públicos se necessário)
+  return files.map(f => path.relative(process.cwd(), f));
+}
 
 async function sendResultsToDashboard(results) {
   if (!process.env.DASHBOARD_API_URL) {
@@ -38,7 +64,7 @@ async function sendResultsToDashboard(results) {
           .filter(t => t.displayError)
           .map(t => `[ERROR] ${(Array.isArray(t.title) ? t.title.join(' > ') : t.title) || 'spec'}\n${t.displayError}`))
       : [],
-    artifacts: []  // Pode ser implementado para incluir prints/falhas posteriormente
+    artifacts: getFailedScreenshots(),
   };
 
   const headers = { 'Content-Type': 'application/json' };
