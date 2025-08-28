@@ -36,7 +36,7 @@ export async function handler(event) {
     };
 
     const { error } = await supabase
-      .from('runs')
+      .from('tabela_runs')
       .upsert(row, { onConflict: 'id' });
 
     if (error) {
