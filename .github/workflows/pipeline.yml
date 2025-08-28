@@ -71,19 +71,17 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
+  
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
       - name: Build site
-        run: netlify build
-        env:
-          # As secrets são necessárias para o build linkar com o site correto
-          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        run: echo "No build needed - serving static files"
+        # Remover o netlify build se não há processo de build
 
       - name: Deploy to Netlify
-        run: netlify deploy --dir=.netlify/publish --prod
+        run: netlify deploy --dir=. --prod
+        # Mudança: --dir=. em vez de --dir=.netlify/publish
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
