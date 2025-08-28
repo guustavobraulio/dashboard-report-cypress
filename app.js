@@ -12,6 +12,7 @@ function formatDateTime(s) {
   return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 } [14]
 
+console.log('app.js build 1')
 async function fetchRuns() {
   const res = await fetch('/.netlify/functions/get-results');
   if (!res.ok) throw new Error(`Falha ao carregar resultados: ${res.status}`);
