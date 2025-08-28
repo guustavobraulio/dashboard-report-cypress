@@ -2,9 +2,10 @@
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-// pode usar ANON para leitura; se preferir, use SERVICE_KEY também aqui
-const READ_KEY = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_KEY;
 
+const READ_KEY = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+// Cria cliente do Supabase com url e chave apropriada
 const supabase = createClient(SUPABASE_URL, READ_KEY);
 
 export async function handler(event) {
