@@ -1,20 +1,33 @@
-// app.js — versão integrada às Netlify Functions
+// app.js — Dashboard integrado às Netlify Functions
 
-let executionsData = [];            // fonte da verdade vinda do backend
-let filteredExecutions = [];        // visão filtrada para UI
+// Estado global
+let executionsData = [];           // dados vindos do backend
+let filteredExecutions = [];       // visão filtrada para UI
 let statusChart = null;
 let historyChart = null;
 let currentPage = 1;
-let currentPeriod = '7d';
 const itemsPerPage = 10;
 
-// 1) Buscar dados do backend (Function GET)
+// ============ Util ============
+
+function formatDateTime(s) {
+  const d = new Date(s);
+  return d.toLocaleString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+} [2]
+
+// ============ Backend (Functions) ============
+
 async function fetchRuns() {
   const res = await fetch('/.netlify/functions/get-results');
   if (!res.ok) throw new Error(`Falha ao carregar resultados: ${res.status}`);
   const raw = await res.json();
   if (!Array.isArray(raw)) return [];
-  // normalização mínima para o formato usado na UI
+
+  // Normaliza o shape do backend para o que a UI espera
+  // Esperado no GET (exemplo): { runId, timestamp, totalPassed, totalFailed, totalTests, totalDuration, branch, environment, commit, author, githubRunUrl, tests }
   return raw.map((r, idx) => ({
     id: r.runId || `exec-${String(idx + 1).padStart(3, '0')}`,
     date: r.timestamp || new Date().toISOString(),
@@ -37,22 +50,10 @@ async function fetchRuns() {
         }))
       : []
   }));
-} [9]
+} [1][4]
 
-// 2) Carregar e popular tudo
-async function loadRuns() {
-  const runs = await fetchRuns();
-  // ordenar por data desc
-  runs.sort((a, b) => new Date(b.date) - new Date(a.date));
-  executionsData = runs;
-  filteredExecutions = [...runs];
-  updateStatistics();
-  initializeStatusChart();
-  populateExecutionTable();
-  initializeHistoryChartFromRuns(runs);
-} [9][11]
+// ============ Cards/Estatísticas ============
 
-// 3) Estatísticas (cards)
 function updateStatistics() {
   const totalPassed = filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
   const totalFailed = filteredExecutions.reduce((s, e) => s + (e.failedTests || 0), 0);
@@ -66,9 +67,10 @@ function updateStatistics() {
   document.getElementById('totalFailed').textContent = totalFailed;
   document.getElementById('avgDuration').textContent = `${avgDuration}s`;
   document.getElementById('successRate').textContent = `${successRate}%`;
-} [11]
+} [3]
 
-// 4) Tabela
+// ============ Tabela (lista de execuções) ============
+
 function populateExecutionTable() {
   const tbody = document.getElementById('executionTableBody');
   const start = (currentPage - 1) * itemsPerPage;
@@ -90,17 +92,16 @@ function populateExecutionTable() {
         ${execution.githubUrl && execution.githubUrl !== '#' ? `<a class="btn btn--sm btn--outline" href="${execution.githubUrl}" target="_blank">Ação</a>` : ''}
       </td>
     </tr>
-  `).join('');
+  `).join(''); [2]
 
-  // listeners do modal
+  // Ações do modal
   document.querySelectorAll('.action-btn--view').forEach(btn => {
     btn.addEventListener('click', () => openExecutionModal(btn.getAttribute('data-execution-id')));
   });
 
   updatePagination();
-} [10]
+} [2]
 
-// 5) Paginação
 function updatePagination() {
   const totalPages = Math.ceil(filteredExecutions.length / itemsPerPage);
   const el = document.getElementById('pagination');
@@ -133,12 +134,22 @@ function updatePagination() {
   next.disabled = currentPage === totalPages;
   next.onclick = () => changePage(currentPage + 1);
   el.appendChild(next);
-} [10]
+} [2]
 
-// 6) Charts (Chart.js)
+function changePage(p) {
+  const totalPages = Math.ceil(filteredExecutions.length / itemsPerPage);
+  if (p >= 1 && p <= totalPages) {
+    currentPage = p;
+    populateExecutionTable();
+  }
+} [2]
+
+// ============ Gráficos (Chart.js) ============
+
 function initializeStatusChart() {
   const ctx = document.getElementById('statusChart')?.getContext('2d');
   if (!ctx) return;
+
   const totalPassed = filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
   const totalFailed = filteredExecutions.reduce((s, e) => s + (e.failedTests || 0), 0);
 
@@ -151,27 +162,35 @@ function initializeStatusChart() {
     },
     options: { responsive: true, maintainAspectRatio: false }
   });
-} [11][13]
+} [3][5]
 
-// Histórico simples: pontos por execução
 function initializeHistoryChartFromRuns(runs) {
   const ctx = document.getElementById('historyChart')?.getContext('2d');
   if (!ctx) return;
 
+  // Simples: cada run conta 1 execução; personalize se quiser agrupar por período
   const labels = runs.map(r => new Date(r.date).toLocaleString('pt-BR'));
-  const execs = runs.map(() => 1); // cada run = 1 execução
+  const execs = runs.map(() => 1);
+
   if (historyChart) historyChart.destroy();
   historyChart = new Chart(ctx, {
     type: 'line',
     data: {
       labels,
-      datasets: [{ label: 'Execuções', data: execs, borderColor: '#28a745', backgroundColor: 'rgba(40,167,69,.2)', tension: .3 }]
+      datasets: [{
+        label: 'Execuções',
+        data: execs,
+        borderColor: '#28a745',
+        backgroundColor: 'rgba(40,167,69,.2)',
+        tension: 0.3
+      }]
     },
     options: { responsive: true, maintainAspectRatio: false }
   });
-} [11][13]
+} [3][5]
 
-// 7) Filtros
+// ============ Filtros ============
+
 function applyFilters() {
   const branch = document.getElementById('branchFilter').value;
   const env = document.getElementById('environmentFilter').value;
@@ -190,9 +209,10 @@ function applyFilters() {
   updateStatistics();
   initializeStatusChart();
   populateExecutionTable();
-} [10]
+} [2]
 
-// 8) Modal
+// ============ Modal ============
+
 function openExecutionModal(id) {
   const e = executionsData.find(x => x.id === id);
   if (!e) return;
@@ -204,7 +224,8 @@ function openExecutionModal(id) {
   document.getElementById('modalExecutionAuthor').textContent = e.author || '-';
   document.getElementById('modalExecutionCommit').textContent = e.commit || '-';
   document.getElementById('modalExecutionDuration').textContent = `${e.duration}s`;
-  document.getElementById('modalExecutionStatus').innerHTML = `<span class="status status--${e.status}">${e.status === 'passed' ? 'Aprovado' : 'Falhado'}</span>`;
+  document.getElementById('modalExecutionStatus').innerHTML =
+    `<span class="status status--${e.status}">${e.status === 'passed' ? 'Aprovado' : 'Falhado'}</span>`;
   document.getElementById('modalGithubLink').href = e.githubUrl || '#';
 
   const testsList = document.getElementById('modalTestsList');
@@ -221,39 +242,54 @@ function openExecutionModal(id) {
   const modal = document.getElementById('executionModal');
   modal.classList.remove('hidden');
   modal.style.display = 'flex';
-} [10]
+} [2]
 
 function closeModal() {
   const modal = document.getElementById('executionModal');
   modal.classList.add('hidden');
   modal.style.display = 'none';
-} [10]
+} [2]
 
-// 9) Utilidades e wiring
-function formatDateTime(s) {
-  const d = new Date(s);
-  return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-} [10]
-
-function changePage(p) {
-  const totalPages = Math.ceil(filteredExecutions.length / itemsPerPage);
-  if (p >= 1 && p <= totalPages) { currentPage = p; populateExecutionTable(); }
-} [10]
+// ============ Inicialização ============
 
 function setupEventListeners() {
+  // Filtros
   document.getElementById('branchFilter').addEventListener('change', applyFilters);
   document.getElementById('environmentFilter').addEventListener('change', applyFilters);
   document.getElementById('statusFilter').addEventListener('change', applyFilters);
   document.getElementById('dateFilter').addEventListener('change', applyFilters);
 
+  // Modal
   document.getElementById('closeModal').addEventListener('click', closeModal);
   const backdrop = document.querySelector('#executionModal .modal-backdrop');
   backdrop?.addEventListener('click', closeModal);
-} [10]
+} [2]
 
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   loadRuns().catch(console.error);
-  // auto-refresh 30s
+  // Auto-refresh 30s
   setInterval(() => loadRuns().catch(console.error), 30000);
-}); [14]
+}); [6]
+
+// Disponibiliza utilitários, se necessário em atributos HTML
+window.changePage = (p) => {
+  const totalPages = Math.ceil(filteredExecutions.length / itemsPerPage);
+  if (p >= 1 && p <= totalPages) { currentPage = p; populateExecutionTable(); }
+}; [2]
+window.closeModal = closeModal; [2]
+window.openExecutionModal = openExecutionModal; [2]
+
+// ============ Loader principal ============
+
+async function loadRuns() {
+  const runs = await fetchRuns();
+  // Ordena do mais recente para o mais antigo
+  runs.sort((a, b) => new Date(b.date) - new Date(a.date));
+  executionsData = runs;
+  filteredExecutions = [...runs];
+  updateStatistics();
+  initializeStatusChart();
+  populateExecutionTable();
+  initializeHistoryChartFromRuns(runs);
+} [1][3]
