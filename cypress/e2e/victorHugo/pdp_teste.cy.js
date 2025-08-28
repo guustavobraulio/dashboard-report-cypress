@@ -11,7 +11,7 @@ describe('Validação da Home page - Victor Hugo', () => {
     it('Validando categorias "Presentes" do header ', () => {
         
         cy.url()
-            .should('include','https://www.victorhugo.com.br')
+            .should('include','https://www.victorhugo.com.brrr')
 
         cy.get('#headlessui-popover-button-7')
             .should('be.visible')
