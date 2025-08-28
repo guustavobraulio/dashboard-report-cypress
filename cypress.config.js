@@ -50,3 +50,20 @@ async function sendResultsToDashboard(results) {
   console.log('[dashboard] Resposta:', res.status, await res.text());
   console.log('[dashboard] Resultados enviados com sucesso');
 }
+
+
+module.exports = defineConfig({
+  e2e: {
+    baseUrl: process.env.CYPRESS_baseUrl || 'https://dash-report-cy.netlify.app',
+    setupNodeEvents(on, config) {
+      on('after:run', async (results) => {
+        try {
+          await sendResultsToDashboard(results);
+        } catch (err) {
+          console.error('[dashboard] Erro no envio:', err?.message || err);
+        }
+      });
+      return config;
+    },
+  },
+});
