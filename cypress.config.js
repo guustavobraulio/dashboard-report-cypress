@@ -6,10 +6,11 @@ async function sendResultsToDashboard(results) {
     console.warn('[dashboard] DASHBOARD_API_URL ausente — envio pulado');
     return;
   }
+
   const payload = {
-    runId: process.env.GITHUB_RUN_ID || `run-${Date.now()}`,
+    runId: process.env.GITHUB_RUN_ID ? `Test-${process.env.GITHUB_RUN_ID}` : `Test-${Date.now()}`,
     timestamp: new Date().toISOString(),
-    totalDuration: results.totalDuration,
+    totalDuration: results.totalDuration,       // ms (Cypress after:run)
     totalTests: results.totalTests,
     totalPassed: results.totalPassed,
     totalFailed: results.totalFailed,
@@ -20,6 +21,20 @@ async function sendResultsToDashboard(results) {
     githubRunUrl: process.env.GITHUB_RUN_ID
       ? `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
       : '',
+    tests: Array.isArray(results.runs)
+      ? results.runs.flatMap(run => (run.tests || []).map(t => ({
+          title: Array.isArray(t.title) ? t.title.join(' > ') : (t.title || 'spec'),
+          state: t.state || (t.pass ? 'passed' : (t.fail ? 'failed' : 'unknown')),
+          duration: typeof t.duration === 'number' ? t.duration : 0, // ms
+          error: t.displayError || ''
+        })))
+      : [],
+    logs: Array.isArray(results.runs)
+      ? results.runs.flatMap(run => (run.tests || [])
+          .filter(t => t.displayError)
+          .map(t => `[ERROR] ${(Array.isArray(t.title) ? t.title.join(' > ') : t.title) || 'spec'}\n${t.displayError}`))
+      : [],
+    artifacts: [] // opcional: preencha com URLs se publicar screenshots/videos
   };
 
   const headers = { 'Content-Type': 'application/json' };
@@ -28,7 +43,6 @@ async function sendResultsToDashboard(results) {
   const url = `${process.env.DASHBOARD_API_URL}/.netlify/functions/test-results`;
   console.log('[dashboard] POST →', url);
 
-  // fetch em Node CJS
   const fetch = (await import('node-fetch')).default;
   const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload) });
   if (!res.ok) {

@@ -7,11 +7,16 @@ let historyChart = null;
 let currentPage = 1;
 const itemsPerPage = 10;
 
+// Util
 function formatDateTime(s) {
   const d = new Date(s);
-  return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
-} [14]
+  return d.toLocaleString('pt-BR', {
+    day: '2-digit', month: '2-digit', year: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+}
 
+// Backend (Functions)
 async function fetchRuns() {
   const res = await fetch('/.netlify/functions/get-results');
   if (!res.ok) throw new Error(`Falha ao carregar resultados: ${res.status}`);
@@ -21,7 +26,7 @@ async function fetchRuns() {
     id: r.runId || `exec-${String(idx + 1).padStart(3, '0')}`,
     date: r.timestamp || new Date().toISOString(),
     status: (r.totalFailed ?? 0) > 0 ? 'failed' : 'passed',
-    duration: Math.round((r.totalDuration ?? 0) / 1000),
+    duration: Math.round((r.totalDuration ?? 0) / 1000), // ms -> s
     totalTests: r.totalTests ?? ((r.totalPassed ?? 0) + (r.totalFailed ?? 0)),
     passedTests: r.totalPassed ?? 0,
     failedTests: r.totalFailed ?? 0,
@@ -34,13 +39,16 @@ async function fetchRuns() {
       ? r.tests.map(t => ({
           name: t.title || (Array.isArray(t.title) ? t.title.join(' > ') : 'spec'),
           status: t.state || 'passed',
-          duration: Math.round((t.duration ?? 0) / 1000),
+          duration: Math.round((t.duration ?? 0) / 1000), // ms -> s
           error: t.error || t.displayError || ''
         }))
-      : []
+      : [],
+    logs: Array.isArray(r.logs) ? [...r.logs] : [],
+    artifacts: Array.isArray(r.artifacts) ? [...r.artifacts] : []
   }));
-} [13][17]
+}
 
+// Cards/Estatísticas
 function updateStatistics() {
   const totalPassed = filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
   const totalFailed = filteredExecutions.reduce((s, e) => s + (e.failedTests || 0), 0);
@@ -54,8 +62,9 @@ function updateStatistics() {
   document.getElementById('totalFailed').textContent = totalFailed;
   document.getElementById('avgDuration').textContent = `${avgDuration}s`;
   document.getElementById('successRate').textContent = `${successRate}%`;
-} [15]
+}
 
+// Tabela
 function populateExecutionTable() {
   const tbody = document.getElementById('executionTableBody');
   const start = (currentPage - 1) * itemsPerPage;
@@ -77,15 +86,16 @@ function populateExecutionTable() {
         ${e.githubUrl && e.githubUrl !== '#' ? `<a class="btn btn--sm btn--outline" href="${e.githubUrl}" target="_blank">Ação</a>` : ''}
       </td>
     </tr>
-  `).join(''); [14]
+  `).join('');
 
   document.querySelectorAll('.action-btn--view').forEach(btn => {
     btn.addEventListener('click', () => openExecutionModal(btn.getAttribute('data-execution-id')));
   });
 
   updatePagination();
-} [14]
+}
 
+// Paginação
 function updatePagination() {
   const totalPages = Math.ceil(filteredExecutions.length / itemsPerPage);
   const el = document.getElementById('pagination');
@@ -118,13 +128,14 @@ function updatePagination() {
   next.disabled = currentPage === totalPages;
   next.onclick = () => changePage(currentPage + 1);
   el.appendChild(next);
-} [14]
+}
 
 function changePage(p) {
   const totalPages = Math.ceil(filteredExecutions.length / itemsPerPage);
   if (p >= 1 && p <= totalPages) { currentPage = p; populateExecutionTable(); }
-} [14]
+}
 
+// Gráficos
 function initializeStatusChart() {
   const ctx = document.getElementById('statusChart')?.getContext('2d');
   if (!ctx) return;
@@ -133,10 +144,13 @@ function initializeStatusChart() {
   if (statusChart) statusChart.destroy();
   statusChart = new Chart(ctx, {
     type: 'pie',
-    data: { labels: ['Aprovados', 'Falhados'], datasets: [{ data: [totalPassed, totalFailed], backgroundColor: ['#1FB8CD', '#B4413C'] }] },
+    data: {
+      labels: ['Aprovados', 'Falhados'],
+      datasets: [{ data: [totalPassed, totalFailed], backgroundColor: ['#1FB8CD', '#B4413C'] }]
+    },
     options: { responsive: true, maintainAspectRatio: false }
   });
-} [15][18]
+}
 
 function initializeHistoryChartFromRuns(runs) {
   const ctx = document.getElementById('historyChart')?.getContext('2d');
@@ -146,14 +160,26 @@ function initializeHistoryChartFromRuns(runs) {
   if (historyChart) historyChart.destroy();
   historyChart = new Chart(ctx, {
     type: 'line',
-    data: { labels, datasets: [{ label: 'Execuções', data: execs, borderColor: '#28a745', backgroundColor: 'rgba(40,167,69,.2)', tension: .3 }] },
+    data: {
+      labels,
+      datasets: [{
+        label: 'Execuções',
+        data: execs,
+        borderColor: '#28a745',
+        backgroundColor: 'rgba(40,167,69,.2)',
+        tension: .3
+      }]
+    },
     options: { responsive: true, maintainAspectRatio: false }
   });
-} [15][18]
+}
 
+// Modal
 function openExecutionModal(id) {
   const e = executionsData.find(x => x.id === id);
   if (!e) return;
+
+  // Overview
   document.getElementById('modalExecutionId').textContent = e.id;
   document.getElementById('modalExecutionDate').textContent = formatDateTime(e.date);
   document.getElementById('modalExecutionBranch').textContent = e.branch;
@@ -164,9 +190,20 @@ function openExecutionModal(id) {
   document.getElementById('modalExecutionStatus').innerHTML =
     `<span class="status status--${e.status}">${e.status === 'passed' ? 'Aprovado' : 'Falhado'}</span>`;
   document.getElementById('modalGithubLink').href = e.githubUrl || '#';
+
+  // Tabs: habilitar/desabilitar
+  const testsTabBtn = document.querySelector('[data-tab="tests"]');
+  const logsTabBtn = document.querySelector('[data-tab="logs"]');
+  const artifactsTabBtn = document.querySelector('[data-tab="artifacts"]');
+
+  if (testsTabBtn) testsTabBtn.disabled = !(e.tests && e.tests.length);
+  if (logsTabBtn) logsTabBtn.disabled = !(e.logs && e.logs.length);
+  if (artifactsTabBtn) artifactsTabBtn.disabled = !(e.artifacts && e.artifacts.length);
+
+  // Testes
   const testsList = document.getElementById('modalTestsList');
   testsList.innerHTML = (e.tests || []).map(t => `
-    <div class="test-item test-item--${t.status}">
+    <div class="test-item test-item--${(t.status || 'passed')}">
       <div class="test-info">
         <div class="test-name">${t.name}</div>
         ${t.error ? `<div class="test-error">${t.error}</div>` : ''}
@@ -174,17 +211,41 @@ function openExecutionModal(id) {
       <div class="test-duration">${t.duration || 0}s</div>
     </div>
   `).join('');
+
+  // Logs
+  const logsPre = document.getElementById('modalLogs');
+  logsPre.textContent = (e.logs || []).join('\n\n');
+
+  // Artefatos
+  const artifactsWrap = document.getElementById('modalArtifacts');
+  artifactsWrap.innerHTML = (e.artifacts || []).map(a => `
+    <div class="artifact-item">
+      <i class="fas fa-file-alt"></i>
+      <span>${a.name || 'artifact'}</span>
+      ${a.url ? `<a class="btn btn--sm btn--outline" href="${a.url}" target="_blank" rel="noopener">Abrir</a>` : ''}
+    </div>
+  `).join('');
+
   const modal = document.getElementById('executionModal');
   modal.classList.remove('hidden');
   modal.style.display = 'flex';
-} [14]
+}
 
 function closeModal() {
   const modal = document.getElementById('executionModal');
   modal.classList.add('hidden');
   modal.style.display = 'none';
-} [14]
 
+  // Reset visual das tabs para "Visão Geral"
+  document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('tab-button--active'));
+  document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('tab-panel--active'));
+  const overviewTab = document.querySelector('.tab-button[data-tab="overview"]');
+  const overviewPanel = document.getElementById('overview-tab');
+  if (overviewTab) overviewTab.classList.add('tab-button--active');
+  if (overviewPanel) overviewPanel.classList.add('tab-panel--active');
+}
+
+// Filtros e eventos
 function setupEventListeners() {
   document.getElementById('branchFilter').addEventListener('change', applyFilters);
   document.getElementById('environmentFilter').addEventListener('change', applyFilters);
@@ -193,13 +254,27 @@ function setupEventListeners() {
   document.getElementById('closeModal').addEventListener('click', closeModal);
   const backdrop = document.querySelector('#executionModal .modal-backdrop');
   backdrop?.addEventListener('click', closeModal);
-} [14]
+
+  // Troca de abas
+  document.querySelectorAll('.tab-button').forEach(button => {
+    button.addEventListener('click', () => {
+      if (button.disabled) return;
+      const tabName = button.dataset.tab;
+      document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('tab-button--active'));
+      document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('tab-panel--active'));
+      button.classList.add('tab-button--active');
+      const targetPanel = document.getElementById(`${tabName}-tab`);
+      if (targetPanel) targetPanel.classList.add('tab-panel--active');
+    });
+  });
+}
 
 function applyFilters() {
   const branch = document.getElementById('branchFilter').value;
   const env = document.getElementById('environmentFilter').value;
   const status = document.getElementById('statusFilter').value;
   const date = document.getElementById('dateFilter').value;
+
   filteredExecutions = executionsData.filter(e => {
     if (branch && e.branch !== branch) return false;
     if (env && e.environment !== env) return false;
@@ -207,17 +282,19 @@ function applyFilters() {
     if (date && !String(e.date).startsWith(date)) return false;
     return true;
   });
+
   currentPage = 1;
   updateStatistics();
   initializeStatusChart();
   populateExecutionTable();
-} [14]
+}
 
+// Bootstrap
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   loadRuns().catch(console.error);
   setInterval(() => loadRuns().catch(console.error), 30000);
-}); [19]
+});
 
 async function loadRuns() {
   const runs = await fetchRuns();
@@ -228,4 +305,4 @@ async function loadRuns() {
   initializeStatusChart();
   populateExecutionTable();
   initializeHistoryChartFromRuns(runs);
-} [13][15]
+}
