@@ -1,3 +1,5 @@
+const { defineConfig } = require('cypress');
+
 async function sendResultsToDashboard(results) {
   if (!process.env.DASHBOARD_API_URL) {
     console.warn('[dashboard] DASHBOARD_API_URL ausente — envio pulado');
