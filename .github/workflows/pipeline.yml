@@ -46,3 +46,23 @@ jobs:
 
           # Base de testes no CI
           CYPRESS_baseUrl:   https://dash-report-cy.netlify.app/
+          CYPRESS_DASHBOARD_API_URL: ${{ env.DASHBOARD_API_URL }}
+
+  deploy:
+    needs: e2e
+    if: ${{ needs.e2e.result == 'success' }}
+    runs-on: ubuntu-24.04
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Netlify CLI
+        run: npm i -g netlify-cli
+
+      - name: Deploy to Netlify (prod)
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID:     ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          netlify deploy --dir=. --prod --site="$NETLIFY_SITE_ID" --auth="$NETLIFY_AUTH_TOKEN"
