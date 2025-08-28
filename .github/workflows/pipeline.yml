@@ -63,12 +63,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Install Netlify CLI
-        run: npm i -g netlify-cli
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build site & functions
+        run: npm install -g netlify-cli && netlify build
+        env:
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
 
       - name: Deploy to Netlify (prod)
+        run: netlify deploy --dir=.netlify/publish --prod
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-          NETLIFY_SITE_ID:     ${{ secrets.NETLIFY_SITE_ID }}
-        run: |
-          netlify deploy --dir=. --prod --site="$NETLIFY_SITE_ID" --auth="$NETLIFY_AUTH_TOKEN"
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
