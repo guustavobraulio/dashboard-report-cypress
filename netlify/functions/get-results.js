@@ -14,14 +14,15 @@ export async function handler(event) {
     const limit = Math.min(parseInt(url.searchParams.get('limit') || '50', 10), 200);
 
     const { data, error } = await supabase
-      .from('runs')
+      .from('tabela_runs')
       .select('*')
       .order('timestamp', { ascending: false })
       .limit(limit);
 
     if (error) {
       console.error('[fn:get-results] supabase select error:', error);
-      return { statusCode: 500, body: 'DB error' };
+      // return { statusCode: 500, body: 'DB error' };
+      return { statusCode: 500, body: JSON.stringify(error) };
     }
 
     const out = (data || []).map(r => ({
