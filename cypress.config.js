@@ -43,7 +43,6 @@ async function sendResultsToDashboard(results) {
   const url = `${process.env.DASHBOARD_API_URL}/.netlify/functions/test-results`;
   console.log('[dashboard] POST →', url);
 
-  const fetch = (await import('node-fetch')).default;
   const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload) });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
