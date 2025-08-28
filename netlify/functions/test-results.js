@@ -1,11 +1,10 @@
-// netlify/functions/test-results.js
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-// client com permissão de escrita (service role)
-const supabase = createClient(SUPABASE_URL, SERVICE_KEY);
+// Cria cliente do Supabase usando a service_role_key para bypass RLS e permissão de escrita
+const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
 export async function handler(event) {
   if (event.httpMethod !== 'POST') {
@@ -36,7 +35,7 @@ export async function handler(event) {
     };
 
     const { error } = await supabase
-      .from('tabela_runs')
+      .from('tabela_runs')  // Confirme o nome correto da tabela
       .upsert(row, { onConflict: 'id' });
 
     if (error) {
