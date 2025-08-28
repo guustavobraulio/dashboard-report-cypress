@@ -1,38 +1,27 @@
 // app.js — Dashboard integrado às Netlify Functions
 
-// Estado global
-let executionsData = [];           // dados vindos do backend
-let filteredExecutions = [];       // visão filtrada para UI
+let executionsData = [];
+let filteredExecutions = [];
 let statusChart = null;
 let historyChart = null;
 let currentPage = 1;
 const itemsPerPage = 10;
 
-// ============ Util ============
-
 function formatDateTime(s) {
   const d = new Date(s);
-  return d.toLocaleString('pt-BR', {
-    day: '2-digit', month: '2-digit', year: 'numeric',
-    hour: '2-digit', minute: '2-digit'
-  });
-} [2]
-
-// ============ Backend (Functions) ============
+  return d.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+} [14]
 
 async function fetchRuns() {
   const res = await fetch('/.netlify/functions/get-results');
   if (!res.ok) throw new Error(`Falha ao carregar resultados: ${res.status}`);
   const raw = await res.json();
   if (!Array.isArray(raw)) return [];
-
-  // Normaliza o shape do backend para o que a UI espera
-  // Esperado no GET (exemplo): { runId, timestamp, totalPassed, totalFailed, totalTests, totalDuration, branch, environment, commit, author, githubRunUrl, tests }
   return raw.map((r, idx) => ({
     id: r.runId || `exec-${String(idx + 1).padStart(3, '0')}`,
     date: r.timestamp || new Date().toISOString(),
     status: (r.totalFailed ?? 0) > 0 ? 'failed' : 'passed',
-    duration: Math.round((r.totalDuration ?? 0) / 1000), // segundos
+    duration: Math.round((r.totalDuration ?? 0) / 1000),
     totalTests: r.totalTests ?? ((r.totalPassed ?? 0) + (r.totalFailed ?? 0)),
     passedTests: r.totalPassed ?? 0,
     failedTests: r.totalFailed ?? 0,
@@ -50,9 +39,7 @@ async function fetchRuns() {
         }))
       : []
   }));
-} [1][4]
-
-// ============ Cards/Estatísticas ============
+} [13][17]
 
 function updateStatistics() {
   const totalPassed = filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
@@ -67,40 +54,37 @@ function updateStatistics() {
   document.getElementById('totalFailed').textContent = totalFailed;
   document.getElementById('avgDuration').textContent = `${avgDuration}s`;
   document.getElementById('successRate').textContent = `${successRate}%`;
-} [3]
-
-// ============ Tabela (lista de execuções) ============
+} [15]
 
 function populateExecutionTable() {
   const tbody = document.getElementById('executionTableBody');
   const start = (currentPage - 1) * itemsPerPage;
   const page = filteredExecutions.slice(start, start + itemsPerPage);
 
-  tbody.innerHTML = page.map(execution => `
+  tbody.innerHTML = page.map(e => `
     <tr>
-      <td><code>${execution.id}</code></td>
-      <td>${formatDateTime(execution.date)}</td>
-      <td><code>${execution.branch}</code></td>
-      <td><span class="status status--info">${execution.environment}</span></td>
-      <td><span class="status status--${execution.status}">${execution.status === 'passed' ? 'Aprovado' : 'Falhado'}</span></td>
-      <td>${execution.passedTests}/${execution.totalTests}</td>
-      <td>${execution.duration}s</td>
+      <td><code>${e.id}</code></td>
+      <td>${formatDateTime(e.date)}</td>
+      <td><code>${e.branch}</code></td>
+      <td><span class="status status--info">${e.environment}</span></td>
+      <td><span class="status status--${e.status}">${e.status === 'passed' ? 'Aprovado' : 'Falhado'}</span></td>
+      <td>${e.passedTests}/${e.totalTests}</td>
+      <td>${e.duration}s</td>
       <td>
-        <button class="action-btn action-btn--view" data-execution-id="${execution.id}">
+        <button class="action-btn action-btn--view" data-execution-id="${e.id}">
           <i class="fas fa-eye"></i> Ver
         </button>
-        ${execution.githubUrl && execution.githubUrl !== '#' ? `<a class="btn btn--sm btn--outline" href="${execution.githubUrl}" target="_blank">Ação</a>` : ''}
+        ${e.githubUrl && e.githubUrl !== '#' ? `<a class="btn btn--sm btn--outline" href="${e.githubUrl}" target="_blank">Ação</a>` : ''}
       </td>
     </tr>
-  `).join(''); [2]
+  `).join(''); [14]
 
-  // Ações do modal
   document.querySelectorAll('.action-btn--view').forEach(btn => {
     btn.addEventListener('click', () => openExecutionModal(btn.getAttribute('data-execution-id')));
   });
 
   updatePagination();
-} [2]
+} [14]
 
 function updatePagination() {
   const totalPages = Math.ceil(filteredExecutions.length / itemsPerPage);
@@ -134,89 +118,42 @@ function updatePagination() {
   next.disabled = currentPage === totalPages;
   next.onclick = () => changePage(currentPage + 1);
   el.appendChild(next);
-} [2]
+} [14]
 
 function changePage(p) {
   const totalPages = Math.ceil(filteredExecutions.length / itemsPerPage);
-  if (p >= 1 && p <= totalPages) {
-    currentPage = p;
-    populateExecutionTable();
-  }
-} [2]
-
-// ============ Gráficos (Chart.js) ============
+  if (p >= 1 && p <= totalPages) { currentPage = p; populateExecutionTable(); }
+} [14]
 
 function initializeStatusChart() {
   const ctx = document.getElementById('statusChart')?.getContext('2d');
   if (!ctx) return;
-
   const totalPassed = filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
   const totalFailed = filteredExecutions.reduce((s, e) => s + (e.failedTests || 0), 0);
-
   if (statusChart) statusChart.destroy();
   statusChart = new Chart(ctx, {
     type: 'pie',
-    data: {
-      labels: ['Aprovados', 'Falhados'],
-      datasets: [{ data: [totalPassed, totalFailed], backgroundColor: ['#1FB8CD', '#B4413C'] }]
-    },
+    data: { labels: ['Aprovados', 'Falhados'], datasets: [{ data: [totalPassed, totalFailed], backgroundColor: ['#1FB8CD', '#B4413C'] }] },
     options: { responsive: true, maintainAspectRatio: false }
   });
-} [3][5]
+} [15][18]
 
 function initializeHistoryChartFromRuns(runs) {
   const ctx = document.getElementById('historyChart')?.getContext('2d');
   if (!ctx) return;
-
-  // Simples: cada run conta 1 execução; personalize se quiser agrupar por período
   const labels = runs.map(r => new Date(r.date).toLocaleString('pt-BR'));
   const execs = runs.map(() => 1);
-
   if (historyChart) historyChart.destroy();
   historyChart = new Chart(ctx, {
     type: 'line',
-    data: {
-      labels,
-      datasets: [{
-        label: 'Execuções',
-        data: execs,
-        borderColor: '#28a745',
-        backgroundColor: 'rgba(40,167,69,.2)',
-        tension: 0.3
-      }]
-    },
+    data: { labels, datasets: [{ label: 'Execuções', data: execs, borderColor: '#28a745', backgroundColor: 'rgba(40,167,69,.2)', tension: .3 }] },
     options: { responsive: true, maintainAspectRatio: false }
   });
-} [3][5]
-
-// ============ Filtros ============
-
-function applyFilters() {
-  const branch = document.getElementById('branchFilter').value;
-  const env = document.getElementById('environmentFilter').value;
-  const status = document.getElementById('statusFilter').value;
-  const date = document.getElementById('dateFilter').value;
-
-  filteredExecutions = executionsData.filter(e => {
-    if (branch && e.branch !== branch) return false;
-    if (env && e.environment !== env) return false;
-    if (status && e.status !== status) return false;
-    if (date && !String(e.date).startsWith(date)) return false;
-    return true;
-  });
-
-  currentPage = 1;
-  updateStatistics();
-  initializeStatusChart();
-  populateExecutionTable();
-} [2]
-
-// ============ Modal ============
+} [15][18]
 
 function openExecutionModal(id) {
   const e = executionsData.find(x => x.id === id);
   if (!e) return;
-
   document.getElementById('modalExecutionId').textContent = e.id;
   document.getElementById('modalExecutionDate').textContent = formatDateTime(e.date);
   document.getElementById('modalExecutionBranch').textContent = e.branch;
@@ -227,7 +164,6 @@ function openExecutionModal(id) {
   document.getElementById('modalExecutionStatus').innerHTML =
     `<span class="status status--${e.status}">${e.status === 'passed' ? 'Aprovado' : 'Falhado'}</span>`;
   document.getElementById('modalGithubLink').href = e.githubUrl || '#';
-
   const testsList = document.getElementById('modalTestsList');
   testsList.innerHTML = (e.tests || []).map(t => `
     <div class="test-item test-item--${t.status}">
@@ -238,53 +174,53 @@ function openExecutionModal(id) {
       <div class="test-duration">${t.duration || 0}s</div>
     </div>
   `).join('');
-
   const modal = document.getElementById('executionModal');
   modal.classList.remove('hidden');
   modal.style.display = 'flex';
-} [2]
+} [14]
 
 function closeModal() {
   const modal = document.getElementById('executionModal');
   modal.classList.add('hidden');
   modal.style.display = 'none';
-} [2]
-
-// ============ Inicialização ============
+} [14]
 
 function setupEventListeners() {
-  // Filtros
   document.getElementById('branchFilter').addEventListener('change', applyFilters);
   document.getElementById('environmentFilter').addEventListener('change', applyFilters);
   document.getElementById('statusFilter').addEventListener('change', applyFilters);
   document.getElementById('dateFilter').addEventListener('change', applyFilters);
-
-  // Modal
   document.getElementById('closeModal').addEventListener('click', closeModal);
   const backdrop = document.querySelector('#executionModal .modal-backdrop');
   backdrop?.addEventListener('click', closeModal);
-} [2]
+} [14]
+
+function applyFilters() {
+  const branch = document.getElementById('branchFilter').value;
+  const env = document.getElementById('environmentFilter').value;
+  const status = document.getElementById('statusFilter').value;
+  const date = document.getElementById('dateFilter').value;
+  filteredExecutions = executionsData.filter(e => {
+    if (branch && e.branch !== branch) return false;
+    if (env && e.environment !== env) return false;
+    if (status && e.status !== status) return false;
+    if (date && !String(e.date).startsWith(date)) return false;
+    return true;
+  });
+  currentPage = 1;
+  updateStatistics();
+  initializeStatusChart();
+  populateExecutionTable();
+} [14]
 
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   loadRuns().catch(console.error);
-  // Auto-refresh 30s
   setInterval(() => loadRuns().catch(console.error), 30000);
-}); [6]
-
-// Disponibiliza utilitários, se necessário em atributos HTML
-window.changePage = (p) => {
-  const totalPages = Math.ceil(filteredExecutions.length / itemsPerPage);
-  if (p >= 1 && p <= totalPages) { currentPage = p; populateExecutionTable(); }
-}; [2]
-window.closeModal = closeModal; [2]
-window.openExecutionModal = openExecutionModal; [2]
-
-// ============ Loader principal ============
+}); [19]
 
 async function loadRuns() {
   const runs = await fetchRuns();
-  // Ordena do mais recente para o mais antigo
   runs.sort((a, b) => new Date(b.date) - new Date(a.date));
   executionsData = runs;
   filteredExecutions = [...runs];
@@ -292,4 +228,4 @@ async function loadRuns() {
   initializeStatusChart();
   populateExecutionTable();
   initializeHistoryChartFromRuns(runs);
-} [1][3]
+} [13][15]

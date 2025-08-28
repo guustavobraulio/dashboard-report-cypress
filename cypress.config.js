@@ -1,39 +1,40 @@
-// cypress.config.js
-const { defineConfig } = require('cypress');
-
 async function sendResultsToDashboard(results) {
-  // Exigir apenas a URL; token é opcional
   if (!process.env.DASHBOARD_API_URL) {
     console.warn('[dashboard] DASHBOARD_API_URL ausente — envio pulado');
     return;
   }
 
-  const runId = process.env.GITHUB_RUN_ID
-    ? `gh-${process.env.GITHUB_RUN_ID}`
-    : `${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-
-  const payload = { /* ... exatamente como já está ... */ };
+  const payload = {
+    runId: process.env.GITHUB_RUN_ID || `run-${Date.now()}`,
+    timestamp: new Date().toISOString(),
+    totalDuration: results.totalDuration,
+    totalTests: results.totalTests,
+    totalPassed: results.totalPassed,
+    totalFailed: results.totalFailed,
+    environment: process.env.ENVIRONMENT || 'staging',
+    branch: process.env.GITHUB_REF_NAME || '',
+    author: process.env.GITHUB_ACTOR || '',
+    commit: process.env.GITHUB_SHA || '',
+    githubRunUrl: process.env.GITHUB_RUN_ID
+      ? `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
+      : '',
+    // opcional: results.runs mapeado para tests detalhados
+  };
 
   const headers = { 'Content-Type': 'application/json' };
-  if (process.env.API_TOKEN) {
-    headers.Authorization = `Bearer ${process.env.API_TOKEN}`;
-  }
+  if (process.env.API_TOKEN) headers.Authorization = `Bearer ${process.env.API_TOKEN}`;
 
   const url = `${process.env.DASHBOARD_API_URL}/.netlify/functions/test-results`;
-    console.log('[dashboard] POST →', url)
+  console.log('[dashboard] POST →', url);
 
-    const res = await fetch(url, {
-    method: 'POST',
-    headers,
-    body: JSON.stringify(payload),
-  });
-
+  const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(payload) });
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     throw new Error(`[dashboard] Falha no envio: ${res.status} ${text}`);
   }
   console.log('[dashboard] Resultados enviados com sucesso');
 }
+
 
 
 module.exports = defineConfig({
