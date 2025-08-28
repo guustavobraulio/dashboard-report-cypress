@@ -13,5 +13,8 @@
   "devDependencies": {
     "cypress": "^14.5.4",
     "web-vitals": "^5.1.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.56.0"
   }
 }

@@ -1,26 +1,52 @@
-export async function handler() {
-  const demo = [{
-    runId: 'Test-12345',
-    timestamp: new Date().toISOString(),
-    totalTests: 2,
-    totalPassed: 2,
-    totalFailed: 0,
-    totalDuration: 11890, // ms
-    branch: 'main',
-    environment: 'staging',
-    author: 'cypress-bot',
-    commit: 'abc1234',
-    githubRunUrl: 'https://github.com/org/repo/actions/runs/12345',
-    tests: [
-      { title: 'Spec A > cenario 1', state: 'passed', duration: 5400, error: '' },
-      { title: 'Spec A > cenario 2', state: 'passed', duration: 6490, error: '' }
-    ],
-    logs: [],
-    artifacts: []
-  }];
-  return {
-    statusCode: 200,
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(demo),
-  };
+// netlify/functions/get-results.js
+import { createClient } from '@supabase/supabase-js';
+
+const SUPABASE_URL = process.env.SUPABASE_URL;
+// pode usar ANON para leitura; se preferir, use SERVICE_KEY também aqui
+const READ_KEY = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_KEY;
+
+const supabase = createClient(SUPABASE_URL, READ_KEY);
+
+export async function handler(event) {
+  try {
+    const url = new URL(event.rawUrl);
+    const limit = Math.min(parseInt(url.searchParams.get('limit') || '50', 10), 200);
+
+    const { data, error } = await supabase
+      .from('runs')
+      .select('*')
+      .order('timestamp', { ascending: false })
+      .limit(limit);
+
+    if (error) {
+      console.error('[fn:get-results] supabase select error:', error);
+      return { statusCode: 500, body: 'DB error' };
+    }
+
+    const out = (data || []).map(r => ({
+      runId: r.id,
+      timestamp: r.timestamp,
+      totalDuration: r.total_duration_ms,
+      totalTests: r.total_tests,
+      totalPassed: r.total_passed,
+      totalFailed: r.total_failed,
+      branch: r.branch,
+      environment: r.environment,
+      author: r.author,
+      commit: r.commit,
+      githubRunUrl: r.github_run_url,
+      tests: r.tests || [],
+      logs: r.logs || [],
+      artifacts: r.artifacts || []
+    }));
+
+    return {
+      statusCode: 200,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(out)
+    };
+  } catch (e) {
+    console.error('[fn:get-results] error:', e);
+    return { statusCode: 500, body: e.message || 'Server error' };
+  }
 }
