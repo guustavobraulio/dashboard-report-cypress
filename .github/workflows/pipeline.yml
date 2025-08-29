@@ -11,10 +11,9 @@ on:
         type: choice
         default: staging
         options: [dev, staging, prod]
-
 env:
   DASHBOARD_API_URL: ${{ secrets.DASHBOARD_URL }}
-  ENVIRONMENT: ${{ github.event.inputs.environment || 'staging' }}
+  ENVIRONMENT:       ${{ github.event.inputs.environment || 'staging' }}
 
 jobs:
   e2e:
@@ -38,65 +37,48 @@ jobs:
         with:
           browser: chrome
         env:
-          GITHUB_REF_NAME: ${{ github.ref_name }}
-          GITHUB_SHA: ${{ github.sha }}
-          GITHUB_ACTOR: ${{ github.actor }}
+          GITHUB_REF_NAME:   ${{ github.ref_name }}
+          GITHUB_SHA:        ${{ github.sha }}
+          GITHUB_ACTOR:      ${{ github.actor }}
           GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_RUN_ID: ${{ github.run_id }}
+          GITHUB_RUN_ID:     ${{ github.run_id }}
           DASHBOARD_API_URL: ${{ env.DASHBOARD_API_URL }}
-          ENVIRONMENT: ${{ env.ENVIRONMENT }}
-          CYPRESS_baseUrl: https://dash-report-cy.netlify.app/
+          ENVIRONMENT:       ${{ env.ENVIRONMENT }}
+          CYPRESS_baseUrl:   https://dash-report-cy.netlify.app/
           CYPRESS_DASHBOARD_API_URL: ${{ env.DASHBOARD_API_URL }}
 
-      - name: Prepare artifacts for deployment
+      # PASSO NOVO: Copiar artefatos para pasta pública
+      - name: Copy Cypress artifacts to public folder
         run: |
           mkdir -p public/artifacts/screenshots
           mkdir -p public/artifacts/videos
-          
-          if [ -d "cypress/screenshots" ]; then
-            cp -a cypress/screenshots/. public/artifacts/screenshots/
-            echo "✅ Screenshots copiados"
-          fi
-          
-          if [ -d "cypress/videos" ]; then
-            cp -a cypress/videos/. public/artifacts/videos/
-            echo "✅ Vídeos copiados"
-          fi
-          
-          # Normalizar nomes
-          find public/artifacts -type f -name "* *" | while read file; do
-            newname=$(echo "$file" | sed 's/ /_/g')
-            mv "$file" "$newname" 2>/dev/null || true
-          done
-          
-          find public/artifacts -type f | while read file; do
-            dir=$(dirname "$file")
-            base=$(basename "$file")
-            newbase=$(echo "$base" | sed 's/[áàâãäÁÀÂÃÄ]/a/g; s/[éèêëÉÈÊË]/e/g; s/[íìîïÍÌÎÏ]/i/g; s/[óòôõöÓÒÔÕÖ]/o/g; s/[úùûüÚÙÛÜ]/u/g; s/[çÇ]/c/g; s/[^a-zA-Z0-9._-]/_/g')
-            if [ "$base" != "$newbase" ]; then
-              mv "$file" "$dir/$newbase" 2>/dev/null || true
-            fi
-          done
+          cp -a cypress/screenshots/. public/artifacts/screenshots/
+          cp -a cypress/videos/. public/artifacts/videos/
 
-      - name: Create minimal index for Netlify
-        run: |
-          if [ "$(find public/artifacts -type f 2>/dev/null | wc -l)" -gt 0 ]; then
-            echo '<!DOCTYPE html><html><head><title>Artifacts</title></head><body><h1>Artifacts:</h1><p><a href="/artifacts/">Ver Artefatos</a></p></body></html>' > public/index.html
-          else
-            echo '<!DOCTYPE html><html><head><title>Dashboard</title></head><body><h1>Aguardando artefatos...</h1></body></html>' > public/index.html
-          fi
-          
-          echo "📋 Estrutura final:"
-          find public -type f
+  deploy:
+    needs: e2e
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
 
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
+      - name: Build site
+        run: echo "No build needed - serving static files"
+
       - name: Deploy to Netlify
-        run: |
-          echo "🚀 Iniciando deploy..."
-          netlify deploy --dir=public --prod
-          echo "✅ Deploy concluído!"
+        run: netlify deploy --dir=. --prod
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
