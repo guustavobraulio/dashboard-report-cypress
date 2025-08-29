@@ -1,4 +1,3 @@
-backup .yml funcionando
 name: Cypress E2E
 on:
   push:
