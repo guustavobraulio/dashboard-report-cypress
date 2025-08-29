@@ -50,13 +50,14 @@ jobs:
       - name: Prepare public directory
         run: |
           mkdir -p public/artifacts
-          # Move o build do seu frontend para a raiz da pasta public
-          # ATENÇÃO: A pasta de saída do build pode ser 'dist', 'build' ou outra. Ajuste o comando abaixo se necessário.
-          echo "Copiando build do frontend da pasta 'dist'..."
-          cp -r dist/* public/
-          
-          # Move os artefatos do Cypress para a subpasta
-          echo "Copiando artefatos do Cypress..."
+
+          # 1. Copia o build do seu frontend para a raiz da pasta public
+          # ATENÇÃO: Verifique se a pasta de saída do seu build é 'dist'. Pode ser 'build', 'out', etc.
+          echo "Copiando build do frontend da pasta 'dist' para 'public'..."
+          cp -r cypress-results/screenshots/* public/
+
+          # 2. Copia os artefatos (evidências) do Cypress para a subpasta 'artifacts'
+          echo "Copiando artefatos do Cypress para 'public/artifacts'..."
           if [ -d "cypress-results/screenshots" ]; then
             cp -r cypress-results/screenshots public/artifacts/
           fi
