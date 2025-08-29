@@ -89,6 +89,7 @@ async function sendResultsToDashboard(results) {
 module.exports = defineConfig({
   e2e: {
     screenshotOnRunFailure: true,
+    video: true,
     baseUrl: process.env.CYPRESS_baseUrl || 'https://dash-report-cy.netlify.app',
     setupNodeEvents(on, config) {
       on('after:run', async (results) => {
