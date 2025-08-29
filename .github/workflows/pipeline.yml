@@ -1,3 +1,4 @@
+backup .yml funcionando
 name: Cypress E2E
 on:
   push:
@@ -11,10 +12,9 @@ on:
         type: choice
         default: staging
         options: [dev, staging, prod]
-
 env:
   DASHBOARD_API_URL: ${{ secrets.DASHBOARD_URL }}
-  ENVIRONMENT: ${{ github.event.inputs.environment || 'staging' }}
+  ENVIRONMENT:       ${{ github.event.inputs.environment || 'staging' }}
 
 jobs:
   e2e:
@@ -32,12 +32,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Build do Dashboard
-      - name: Build Dashboard
-        run: npm run build
-        # Ajuste para o comando apropriado, se necessário, conforme seu projeto
-        # Por padrão, espera-se que gere a pasta build/ com index.html
-
       - name: Cypress run
         uses: cypress-io/github-action@v6
         continue-on-error: true
@@ -54,28 +48,13 @@ jobs:
           CYPRESS_baseUrl:   https://dash-report-cy.netlify.app/
           CYPRESS_DASHBOARD_API_URL: ${{ env.DASHBOARD_API_URL }}
 
-      # Copia artefatos para build/artifacts/
-      - name: Copy Cypress artifacts to build folder
+      # PASSO NOVO: Copiar artefatos para pasta pública
+      - name: Copy Cypress artifacts to public folder
         run: |
-          mkdir -p build/artifacts/screenshots
-          mkdir -p build/artifacts/videos
-          if [ -d "cypress/screenshots" ]; then cp -a cypress/screenshots/. build/artifacts/screenshots/; fi
-          if [ -d "cypress/videos" ]; then cp -a cypress/videos/. build/artifacts/videos/; fi
-
-      # Adiciona redirects de SPA para evitar 404 em rotas internas do dashboard
-      - name: Add SPA redirects
-        run: echo "/* /index.html 200" > build/_redirects
-
-      # (Debug) Lista arquivos do build antes do upload
-      - name: List build files
-        run: ls -laR build | head -n 100
-
-      # Faz upload do build para ser usado no job de deploy
-      - name: Upload build folder for deploy
-        uses: actions/upload-artifact@v4
-        with:
-          name: build-artifacts
-          path: build
+          mkdir -p public/artifacts/screenshots
+          mkdir -p public/artifacts/videos
+          cp -a cypress/screenshots/. public/artifacts/screenshots/
+          cp -a cypress/videos/. public/artifacts/videos/
 
   deploy:
     needs: e2e
@@ -83,12 +62,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-
-      - name: Download build folder from e2e
-        uses: actions/download-artifact@v4
-        with:
-          name: build-artifacts
-          path: build
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -102,12 +75,11 @@ jobs:
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
-      # Lista arquivos para debug
-      - name: List build files before deploy
-        run: ls -laR build | head -n 100
+      - name: Build site
+        run: echo "No build needed - serving static files"
 
       - name: Deploy to Netlify
-        run: netlify deploy --dir=build --prod
+        run: netlify deploy --dir=. --prod
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
