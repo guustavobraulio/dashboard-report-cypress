@@ -56,7 +56,7 @@ jobs:
           cp -a cypress/screenshots/. public/artifacts/screenshots/ || true
           cp -a cypress/videos/. public/artifacts/videos/ || true
 
-      # Instale e normalize nomes dos screenshots
+      # Passo novo: Instala e renomeia arquivos para nomes simples
       - name: Normalize screenshot filenames
         run: |
           sudo apt-get install -y rename
@@ -66,7 +66,9 @@ jobs:
       # (Opcional) Normaliza nomes de vídeos
       - name: Normalize video filenames
         run: |
-          find public/artifacts/videos -type f -name '*.mp4' -exec rename 's/ /_/g; s/[áàâãä]/a/g; s/[éèêë]/e/g; s/[íìîï]/i/g; s/[óòôõö]/o/g; s/[úùûü]/u/g; s/[ç]/c/g; s/[^\w.-]//g' {} +
+          find public/artifacts/videos -type f -name '*.mp4' -exec rename 's/ /_/g; s/[áàâãä]/a/g; s/[éèêë]/e/g; s/[íìîï]/i/g; s/[óòôõö]/o/g; s/[úùûü]/u/g; s/[ç]/c/g' {} +
+          ls -lR public/artifacts/videos
+
           ls -lR public/artifacts/videos
 
   deploy:
