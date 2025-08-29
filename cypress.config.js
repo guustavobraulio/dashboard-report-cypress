@@ -2,16 +2,31 @@ const { defineConfig } = require('cypress');
 const fs = require('fs');
 const path = require('path');
 
-// Insira a URL do seu site Netlify, pode usar variável de ambiente no CI
+// URL do seu site no Netlify (pode definir como variável de ambiente no CI)
 const NETLIFY_SITE_URL = process.env.NETLIFY_SITE_URL || 'https://seusite.netlify.app';
 
-// Função para capturar os screenshots na pasta pública do Netlify e gerar URLs públicas
+// Função recursiva para buscar todos screenshots (png) em subpastas
 function getFailedScreenshotsPublicUrls() {
   const dir = path.join(process.cwd(), 'public', 'artifacts', 'screenshots');
   if (!fs.existsSync(dir)) return [];
-  return fs.readdirSync(dir)
-    .filter(f => f.endsWith('.png'))
-    .map(f => `${NETLIFY_SITE_URL}/artifacts/screenshots/${encodeURIComponent(f)}`);
+  const files = [];
+
+  function searchDir(d, prefix = '') {
+    fs.readdirSync(d, { withFileTypes: true }).forEach(entry => {
+      const fullPath = path.join(d, entry.name);
+      if (entry.isFile() && entry.name.endsWith('.png')) {
+        files.push(prefix + entry.name);
+      } else if (entry.isDirectory()) {
+        searchDir(fullPath, prefix + entry.name + '/');
+      }
+    });
+  }
+  searchDir(dir);
+
+  // Retorna lista de URLs públicas Netlify para cada screenshot
+  return files.map(f =>
+    `${NETLIFY_SITE_URL}/artifacts/screenshots/${encodeURIComponent(f)}`
+  );
 }
 
 async function sendResultsToDashboard(results) {
@@ -20,10 +35,9 @@ async function sendResultsToDashboard(results) {
     return;
   }
 
-  // Gera ID menor para a execução
-  const shortHash = (process.env.GITHUB_SHA || '').slice(0, 6);
-  const timestampShort = Math.floor(Date.now() / 1000).toString();
-  const runId = `T${timestampShort}${shortHash}`;
+  // Gerar ID curto para execução
+  const execNumber = Math.floor(Date.now() / 1000) % 1000;
+  const runId = `Test-${execNumber.toString().padStart(3, '0')}`;
 
   const payload = {
     runId,
@@ -32,7 +46,7 @@ async function sendResultsToDashboard(results) {
     totalTests: results.totalTests,
     totalPassed: results.totalPassed,
     totalFailed: results.totalFailed,
-    environment: process.env.ENVIRONMENT || 'staging',
+    environment: process.env.ENVIRONMENT || '',
     branch: process.env.GITHUB_REF_NAME || '',
     author: process.env.GITHUB_ACTOR || '',
     commit: process.env.GITHUB_SHA || '',
@@ -52,7 +66,6 @@ async function sendResultsToDashboard(results) {
           .filter(t => t.displayError)
           .map(t => `[ERROR] ${(Array.isArray(t.title) ? t.title.join(' > ') : t.title) || 'spec'}\n${t.displayError}`))
       : [],
-    // Inclui URLs públicas dos artifacts para o dashboard mostrar
     artifacts: getFailedScreenshotsPublicUrls(),
   };
 
@@ -75,6 +88,7 @@ async function sendResultsToDashboard(results) {
 
 module.exports = defineConfig({
   e2e: {
+    screenshotOnRunFailure: true,
     baseUrl: process.env.CYPRESS_baseUrl || 'https://dash-report-cy.netlify.app',
     setupNodeEvents(on, config) {
       on('after:run', async (results) => {

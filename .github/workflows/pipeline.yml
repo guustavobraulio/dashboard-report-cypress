@@ -52,8 +52,8 @@ jobs:
         run: |
           mkdir -p public/artifacts/screenshots
           mkdir -p public/artifacts/videos
-          cp -R cypress/screenshots/* public/artifacts/screenshots/ || true
-          cp -R cypress/videos/* public/artifacts/videos/ || true
+          cp -a cypress/screenshots/. public/artifacts/screenshots/
+          cp -a cypress/videos/. public/artifacts/videos/
 
   deploy:
     needs: e2e
