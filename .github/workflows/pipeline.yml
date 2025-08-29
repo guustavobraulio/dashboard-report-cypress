@@ -60,6 +60,7 @@ jobs:
         run: |
           sudo apt-get install -y rename
           find public/artifacts/screenshots -type f -name '*.png' -exec rename 's/ /_/g; s/[áàâãä]/a/g; s/[éèêë]/e/g; s/[íìîï]/i/g; s/[óòôõö]/o/g; s/[úùûü]/u/g; s/[ç]/c/g; s/[^\w.-]//g' {} +
+          ls -lR public/artifacts/screenshots
 
       # (Opcional) Renomear vídeos
       - name: Normalize video filenames
