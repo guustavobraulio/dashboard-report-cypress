@@ -48,15 +48,6 @@ jobs:
           CYPRESS_baseUrl: https://dash-report-cy.netlify.app/
           CYPRESS_DASHBOARD_API_URL: ${{ env.DASHBOARD_API_URL }}
 
-      # Garante a pasta public antes dos artefatos
-      - name: Ensure public directory exists
-        run: mkdir -p public
-
-      # Garante index.html para permitir deploy Netlify
-      - name: Create index.html if missing
-        run: |
-          test -f public/index.html || echo "<h1>Cypress Artifacts</h1>" > public/index.html
-
       # Copia artefatos Cypress para pasta pública
       - name: Copy Cypress artifacts to public folder
         run: |
@@ -99,12 +90,6 @@ jobs:
 
       - name: Build site
         run: echo "No build needed - serving static files"
-
-      # Garante a pasta public e index.html antes do deploy
-      - name: Ensure public and index exist
-        run: |
-          mkdir -p public
-          test -f public/index.html || echo "<h1>Cypress Artifacts</h1>" > public/index.html
 
       # Deployando o conteúdo da pasta 'public'
       - name: Deploy to Netlify
