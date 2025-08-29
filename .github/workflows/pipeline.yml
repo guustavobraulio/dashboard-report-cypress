@@ -58,8 +58,9 @@ jobs:
       # Passo novo: Renomeia arquivos para nomes simples
       - name: Normalize screenshot filenames
         run: |
+          ls -lR public/artifacts/screenshots
           sudo apt-get install -y rename
-          find public/artifacts/screenshots -type f -name '*.png' -exec rename 's/ /_/g; s/[áàâãä]/a/g; s/[éèêë]/e/g; s/[íìîï]/i/g; s/[óòôõö]/o/g; s/[úùûü]/u/g; s/[ç]/c/g; s/[^\w.-]//g' {} +
+          find public/artifacts/screenshots -type f -name '*.png' -exec rename 's/ /_/g; s/[áàâãä]/a/g; s/[éèêë]/e/g; s/[íìîï]/i/g; s/[óòôõö]/o/g; s/[úùûü]/u/g; s/[ç]/c/g' {} +          
           ls -lR public/artifacts/screenshots
 
       # (Opcional) Renomear vídeos
