@@ -48,50 +48,46 @@ jobs:
           CYPRESS_baseUrl: https://dash-report-cy.netlify.app/
           CYPRESS_DASHBOARD_API_URL: ${{ env.DASHBOARD_API_URL }}
 
-      # Copia artefatos Cypress para pasta pública
-      - name: Copy Cypress artifacts to public folder
+      # Copia e normaliza artefatos em um só job
+      - name: Prepare artifacts for deployment
         run: |
+          # Criar estrutura
           mkdir -p public/artifacts/screenshots
           mkdir -p public/artifacts/videos
-          cp -a cypress/screenshots/. public/artifacts/screenshots/ || true
-          cp -a cypress/videos/. public/artifacts/videos/ || true
-
-      # Instale e normalize nomes dos screenshots
-      - name: Normalize screenshot filenames
-        run: |
-          sudo apt-get install -y rename
-          find public/artifacts/screenshots -type f -name '*.png' -exec rename 's/ /_/g; s/[áàâãä]/a/g; s/[éèêë]/e/g; s/[íìîï]/i/g; s/[óòôõö]/o/g; s/[úùûü]/u/g; s/[ç]/c/g' {} +
-          ls -lR public/artifacts/screenshots
-
-      # (Opcional) Normaliza nomes de vídeos
-      - name: Normalize video filenames
-        run: |
-          find public/artifacts/videos -type f -name '*.mp4' -exec rename 's/ /_/g; s/[áàâãä]/a/g; s/[éèêë]/e/g; s/[íìîï]/i/g; s/[óòôõö]/o/g; s/[úùûü]/u/g; s/[ç]/c/g; s/[^\w.-]//g' {} +
-          ls -lR public/artifacts/videos
-
-  deploy:
-    needs: e2e
-    runs-on: ubuntu-24.04
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
+          
+          # Copiar artefatos se existirem
+          if [ -d "cypress/screenshots" ]; then
+            cp -a cypress/screenshots/. public/artifacts/screenshots/
+          fi
+          
+          if [ -d "cypress/videos" ]; then
+            cp -a cypress/videos/. public/artifacts/videos/
+          fi
+          
+          # Normalizar nomes com método mais simples
+          find public/artifacts -type f -name "* *" | while read file; do
+            newname=$(echo "$file" | sed 's/ /_/g')
+            mv "$file" "$newname" 2>/dev/null || true
+          done
+          
+          # Remover caracteres especiais
+          find public/artifacts -type f | while read file; do
+            dir=$(dirname "$file")
+            base=$(basename "$file")
+            newbase=$(echo "$base" | sed 's/[áàâãäÁÀÂÃÄ]/a/g; s/[éèêëÉÈÊË]/e/g; s/[íìîïÍÌÎÏ]/i/g; s/[óòôõöÓÒÔÕÖ]/o/g; s/[úùûüÚÙÛÜ]/u/g; s/[çÇ]/c/g; s/[^a-zA-Z0-9._-]/_/g')
+            if [ "$base" != "$newbase" ]; then
+              mv "$file" "$dir/$newbase" 2>/dev/null || true
+            fi
+          done
+          
+          # Listar arquivos finais
+          echo "📁 Arquivos preparados:"
+          find public/artifacts -type f | head -20
 
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
-      - name: Build site
-        run: echo "No build needed - serving static files"
-
-      # Deployando o conteúdo da pasta 'public'
+      # Deploy direto no mesmo job
       - name: Deploy to Netlify
         run: netlify deploy --dir=public --prod
         env:
