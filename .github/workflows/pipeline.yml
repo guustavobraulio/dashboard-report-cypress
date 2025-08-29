@@ -33,7 +33,7 @@ jobs:
 
       - name: Cypress run
         uses: cypress-io/github-action@v6
-        continue-on-error: true  # <-- Permite seguir o workflow mesmo se Cypress falhar!
+        continue-on-error: true
         with:
           browser: chrome
         env:
@@ -47,10 +47,16 @@ jobs:
           CYPRESS_baseUrl:   https://dash-report-cy.netlify.app/
           CYPRESS_DASHBOARD_API_URL: ${{ env.DASHBOARD_API_URL }}
 
+      # PASSO NOVO: Copiar artefatos para pasta pública
+      - name: Copy Cypress artifacts to public folder
+        run: |
+          mkdir -p public/artifacts/screenshots
+          mkdir -p public/artifacts/videos
+          cp -R cypress/screenshots/* public/artifacts/screenshots/ || true
+          cp -R cypress/videos/* public/artifacts/videos/ || true
+
   deploy:
     needs: e2e
-    # Remova a condição de sucesso! Assim o deploy roda mesmo com falha nos testes:
-    # if: ${{ needs.e2e.result == 'success' }}
     runs-on: ubuntu-24.04
     steps:
       - name: Checkout

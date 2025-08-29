@@ -2,28 +2,16 @@ const { defineConfig } = require('cypress');
 const fs = require('fs');
 const path = require('path');
 
-function getFailedScreenshots() {
-  const screenshotsDir = path.join(process.cwd(), 'cypress', 'screenshots');
-  if (!fs.existsSync(screenshotsDir)) return [];
+// Insira a URL do seu site Netlify, pode usar variável de ambiente no CI
+const NETLIFY_SITE_URL = process.env.NETLIFY_SITE_URL || 'https://seusite.netlify.app';
 
-  const files = [];
-
-  function searchDir(dir) {
-    const entries = fs.readdirSync(dir, { withFileTypes: true });
-    for (const entry of entries) {
-      const fullPath = path.join(dir, entry.name);
-      if (entry.isDirectory()) {
-        searchDir(fullPath);
-      } else if (entry.isFile() && entry.name.endsWith('.png')) {
-        files.push(fullPath);
-      }
-    }
-  }
-
-  searchDir(screenshotsDir);
-
-  // Retorna caminhos relativos (você pode adaptar para URLs públicos se necessário)
-  return files.map(f => path.relative(process.cwd(), f));
+// Função para capturar os screenshots na pasta pública do Netlify e gerar URLs públicas
+function getFailedScreenshotsPublicUrls() {
+  const dir = path.join(process.cwd(), 'public', 'artifacts', 'screenshots');
+  if (!fs.existsSync(dir)) return [];
+  return fs.readdirSync(dir)
+    .filter(f => f.endsWith('.png'))
+    .map(f => `${NETLIFY_SITE_URL}/artifacts/screenshots/${encodeURIComponent(f)}`);
 }
 
 async function sendResultsToDashboard(results) {
@@ -32,7 +20,7 @@ async function sendResultsToDashboard(results) {
     return;
   }
 
-  // Gera runId compacto (exemplo: T1724967605c78912)
+  // Gera ID menor para a execução
   const shortHash = (process.env.GITHUB_SHA || '').slice(0, 6);
   const timestampShort = Math.floor(Date.now() / 1000).toString();
   const runId = `T${timestampShort}${shortHash}`;
@@ -64,7 +52,8 @@ async function sendResultsToDashboard(results) {
           .filter(t => t.displayError)
           .map(t => `[ERROR] ${(Array.isArray(t.title) ? t.title.join(' > ') : t.title) || 'spec'}\n${t.displayError}`))
       : [],
-    artifacts: getFailedScreenshots(),
+    // Inclui URLs públicas dos artifacts para o dashboard mostrar
+    artifacts: getFailedScreenshotsPublicUrls(),
   };
 
   const headers = { 'Content-Type': 'application/json' };
