@@ -85,7 +85,7 @@ jobs:
       # --- Etapa de Montagem da Pasta 'public' ---
       
       - name: Build frontend dashboard
-        run: npm run build # ATENÇÃO: Verifique se este é o comando correto para buildar seu dashboard
+        run: echo "No build needed - serving static files"
 
       - name: Prepare public directory
         run: |
