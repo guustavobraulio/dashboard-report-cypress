@@ -1,3 +1,4 @@
+backup .yml funcionando
 name: Cypress E2E
 on:
   push:
@@ -47,23 +48,13 @@ jobs:
           CYPRESS_baseUrl:   https://dash-report-cy.netlify.app/
           CYPRESS_DASHBOARD_API_URL: ${{ env.DASHBOARD_API_URL }}
 
-      - name: Prepare public directory
+      # PASSO NOVO: Copiar artefatos para pasta pública
+      - name: Copy Cypress artifacts to public folder
         run: |
-          mkdir -p public/artifacts
-
-          # 1. Copia o build do seu frontend para a raiz da pasta public
-          # ATENÇÃO: Verifique se a pasta de saída do seu build é 'dist'. Pode ser 'build', 'out', etc.
-          echo "Copiando build do frontend da pasta 'dist' para 'public'..."
-          cp -r cypress-results/screenshots/* public/
-
-          # 2. Copia os artefatos (evidências) do Cypress para a subpasta 'artifacts'
-          echo "Copiando artefatos do Cypress para 'public/artifacts'..."
-          if [ -d "cypress-results/screenshots" ]; then
-            cp -r cypress-results/screenshots public/artifacts/
-          fi
-          if [ -d "cypress-results/videos" ]; then
-            cp -r cypress-results/videos public/artifacts/
-          fi
+          mkdir -p public/artifacts/screenshots
+          mkdir -p public/artifacts/videos
+          cp -a cypress/screenshots/. public/artifacts/screenshots/
+          cp -a cypress/videos/. public/artifacts/videos/
 
   deploy:
     needs: e2e
