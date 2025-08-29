@@ -55,12 +55,16 @@ jobs:
           cp -a cypress/screenshots/. public/artifacts/screenshots/
           cp -a cypress/videos/. public/artifacts/videos/
 
-      - name: List artifacts for debug
+      # Passo novo: Renomeia arquivos para nomes simples
+      - name: Normalize screenshot filenames
         run: |
-          echo "Conteúdo de screenshots:"
-          ls -lR public/artifacts/screenshots || true
-          echo "Conteúdo de videos:"
-          ls -lR public/artifacts/videos || true
+          sudo apt-get install -y rename
+          find public/artifacts/screenshots -type f -name '*.png' -exec rename 's/ /_/g; s/[áàâãä]/a/g; s/[éèêë]/e/g; s/[íìîï]/i/g; s/[óòôõö]/o/g; s/[úùûü]/u/g; s/[ç]/c/g; s/[^\w.-]//g' {} +
+
+      # (Opcional) Renomear vídeos
+      - name: Normalize video filenames
+        run: |
+          find public/artifacts/videos -type f -name '*.mp4' -exec rename 's/ /_/g; s/[áàâãä]/a/g; s/[éèêë]/e/g; s/[íìîï]/i/g; s/[óòôõö]/o/g; s/[úùûü]/u/g; s/[ç]/c/g; s/[^\w.-]//g' {} +
 
   deploy:
     needs: e2e
