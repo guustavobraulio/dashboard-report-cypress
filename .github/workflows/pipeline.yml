@@ -1,5 +1,4 @@
 name: Cypress E2E
-
 on:
   push:
     branches: [ main, develop ]
@@ -12,15 +11,13 @@ on:
         type: choice
         default: staging
         options: [dev, staging, prod]
-
 env:
   DASHBOARD_API_URL: ${{ secrets.DASHBOARD_URL }}
-  ENVIRONMENT: ${{ github.event.inputs.environment || 'staging' }}
+  ENVIRONMENT:       ${{ github.event.inputs.environment || 'staging' }}
 
 jobs:
-  # --- JOB 1: Roda os testes e prepara os artefatos ---
   e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -36,56 +33,19 @@ jobs:
 
       - name: Cypress run
         uses: cypress-io/github-action@v6
-        continue-on-error: true # Continua mesmo se testes falharem para podermos salvar os vídeos/screenshots do erro
+        continue-on-error: true
         with:
           browser: chrome
-          env: |
-            GITHUB_REF_NAME=${{ github.ref_name }}
-            GITHUB_SHA=${{ github.sha }}
-            GITHUB_ACTOR=${{ github.actor }}
-            GITHUB_REPOSITORY=${{ github.repository }}
-            GITHUB_RUN_ID=${{ github.run_id }}
-            DASHBOARD_API_URL=${{ env.DASHBOARD_API_URL }}
-            ENVIRONMENT=${{ env.ENVIRONMENT }}
-            CYPRESS_baseUrl=https://dash-report-cy.netlify.app/
-            CYPRESS_DASHBOARD_API_URL=${{ env.DASHBOARD_API_URL }}
-
-      - name: Upload Cypress artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: cypress-artifacts
-          path: |
-            cypress/screenshots
-            cypress/videos
-          if-no-files-found: ignore # Não falha se não houver screenshots/vídeos
-
-  # --- JOB 2: Faz o deploy do dashboard com os artefatos ---
-  deploy:
-    needs: e2e # Este job só roda depois que o job 'e2e' terminar
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Download Cypress artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: cypress-artifacts
-          path: cypress-results # Baixa para uma pasta temporária
-
-      - name: Install dependencies
-        run: npm ci
-
-      # --- Etapa de Montagem da Pasta 'public' ---
-      
-      - name: Build frontend dashboard
-        run: echo "No build needed - serving static files"
+        env:
+          GITHUB_REF_NAME:   ${{ github.ref_name }}
+          GITHUB_SHA:        ${{ github.sha }}
+          GITHUB_ACTOR:      ${{ github.actor }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID:     ${{ github.run_id }}
+          DASHBOARD_API_URL: ${{ env.DASHBOARD_API_URL }}
+          ENVIRONMENT:       ${{ env.ENVIRONMENT }}
+          CYPRESS_baseUrl:   https://dash-report-cy.netlify.app/
+          CYPRESS_DASHBOARD_API_URL: ${{ env.DASHBOARD_API_URL }}
 
       - name: Prepare public directory
         run: |
@@ -104,25 +64,30 @@ jobs:
             cp -r cypress-results/videos public/artifacts/
           fi
 
-      - name: Normalize artifact filenames
-        run: |
-          sudo apt-get update && sudo apt-get install -y rename
-          # Comando robusto para renomear arquivos e pastas, removendo caracteres especiais
-          find public/artifacts -depth -exec rename 's/[^A-Za-z0-9._-]/_/g' {} +
-          echo "✅ Nomes de arquivos normalizados."
+  deploy:
+    needs: e2e
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - name: Display final structure for debugging
-        run: |
-          echo "📋 Estrutura final da pasta 'public' a ser enviada:"
-          ls -laR public/
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
 
-      # --- Etapa de Deploy ---
+      - name: Install dependencies
+        run: npm ci
 
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
+      - name: Build site
+        run: echo "No build needed - serving static files"
+
       - name: Deploy to Netlify
-        run: netlify deploy --dir=public --prod
+        run: netlify deploy --dir=. --prod
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
