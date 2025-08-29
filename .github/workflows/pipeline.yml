@@ -34,10 +34,6 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # Build do dashboard - ajuste o comando conforme seu projeto
-      - name: Build Dashboard
-        run: npm run build
-
       - name: Cypress run
         uses: cypress-io/github-action@v6
         continue-on-error: true
