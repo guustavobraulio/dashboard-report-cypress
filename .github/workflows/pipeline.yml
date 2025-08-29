@@ -52,21 +52,22 @@ jobs:
         run: |
           mkdir -p public/artifacts/screenshots
           mkdir -p public/artifacts/videos
-          cp -a cypress/screenshots/. public/artifacts/screenshots/
-          cp -a cypress/videos/. public/artifacts/videos/
+          cp -a cypress/screenshots/. public/artifacts/screenshots/ || true
+          cp -a cypress/videos/. public/artifacts/videos/ || true
 
-      # Passo novo: Renomeia arquivos para nomes simples
+      # Passo novo: Instala e renomeia arquivos para nomes simples
       - name: Normalize screenshot filenames
         run: |
-          ls -lR public/artifacts/screenshots
           sudo apt-get install -y rename
-          find public/artifacts/screenshots -type f -name '*.png' -exec rename 's/ /_/g; s/[áàâãä]/a/g; s/[éèêë]/e/g; s/[íìîï]/i/g; s/[óòôõö]/o/g; s/[úùûü]/u/g; s/[ç]/c/g' {} +          
+          find public/artifacts/screenshots -type f -name '*.png' -exec rename 's/ /_/g; s/[áàâãä]/a/g; s/[éèêë]/e/g; s/[íìîï]/i/g; s/[óòôõö]/o/g; s/[úùûü]/u/g; s/[ç]/c/g' {} +
           ls -lR public/artifacts/screenshots
 
       # (Opcional) Renomear vídeos
       - name: Normalize video filenames
         run: |
-          find public/artifacts/videos -type f -name '*.mp4' -exec rename 's/ /_/g; s/[áàâãä]/a/g; s/[éèêë]/e/g; s/[íìîï]/i/g; s/[óòôõö]/o/g; s/[úùûü]/u/g; s/[ç]/c/g; s/[^\w.-]//g' {} +
+          find public/artifacts/videos -type f -name '*.mp4' -exec rename 's/ /_/g; s/[áàâãä]/a/g; s/[éèêë]/e/g; s/[íìîï]/i/g; s/[óòôõö]/o/g; s/[úùûü]/u/g; s/[ç]/c/g' {} +
+          ls -lR public/artifacts/videos
+
 
   deploy:
     needs: e2e
