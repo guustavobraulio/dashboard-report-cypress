@@ -48,29 +48,27 @@ jobs:
           CYPRESS_baseUrl: https://dash-report-cy.netlify.app/
           CYPRESS_DASHBOARD_API_URL: ${{ env.DASHBOARD_API_URL }}
 
-      # Copia e normaliza artefatos em um só job
       - name: Prepare artifacts for deployment
         run: |
-          # Criar estrutura
           mkdir -p public/artifacts/screenshots
           mkdir -p public/artifacts/videos
           
-          # Copiar artefatos se existirem
           if [ -d "cypress/screenshots" ]; then
             cp -a cypress/screenshots/. public/artifacts/screenshots/
+            echo "✅ Screenshots copiados"
           fi
           
           if [ -d "cypress/videos" ]; then
             cp -a cypress/videos/. public/artifacts/videos/
+            echo "✅ Vídeos copiados"
           fi
           
-          # Normalizar nomes com método mais simples
+          # Normalizar nomes
           find public/artifacts -type f -name "* *" | while read file; do
             newname=$(echo "$file" | sed 's/ /_/g')
             mv "$file" "$newname" 2>/dev/null || true
           done
           
-          # Remover caracteres especiais
           find public/artifacts -type f | while read file; do
             dir=$(dirname "$file")
             base=$(basename "$file")
@@ -79,17 +77,26 @@ jobs:
               mv "$file" "$dir/$newbase" 2>/dev/null || true
             fi
           done
+
+      - name: Create minimal index for Netlify
+        run: |
+          if [ "$(find public/artifacts -type f 2>/dev/null | wc -l)" -gt 0 ]; then
+            echo '<!DOCTYPE html><html><head><title>Artifacts</title></head><body><h1>Artifacts:</h1><p><a href="/artifacts/">Ver Artefatos</a></p></body></html>' > public/index.html
+          else
+            echo '<!DOCTYPE html><html><head><title>Dashboard</title></head><body><h1>Aguardando artefatos...</h1></body></html>' > public/index.html
+          fi
           
-          # Listar arquivos finais
-          echo "📁 Arquivos preparados:"
-          find public/artifacts -type f | head -20
+          echo "📋 Estrutura final:"
+          find public -type f
 
       - name: Install Netlify CLI
         run: npm install -g netlify-cli
 
-      # Deploy direto no mesmo job
       - name: Deploy to Netlify
-        run: netlify deploy --dir=public --prod
+        run: |
+          echo "🚀 Iniciando deploy..."
+          netlify deploy --dir=public --prod
+          echo "✅ Deploy concluído!"
         env:
           NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
           NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
