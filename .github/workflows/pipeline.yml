@@ -55,6 +55,13 @@ jobs:
           cp -a cypress/screenshots/. public/artifacts/screenshots/
           cp -a cypress/videos/. public/artifacts/videos/
 
+      - name: List artifacts for debug
+        run: |
+          echo "Conteúdo de screenshots:"
+          ls -lR public/artifacts/screenshots || true
+          echo "Conteúdo de videos:"
+          ls -lR public/artifacts/videos || true
+
   deploy:
     needs: e2e
     runs-on: ubuntu-24.04
