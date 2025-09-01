@@ -18,26 +18,42 @@ function formatDateTime(s) {
   });
 }
 
-// Atualiza o rótulo do botão (ícone + texto)
+function ensureButtonStructure() {
+  const btn = document.getElementById('runPipelineBtn');
+  if (!btn) return;
+  if (!btn.querySelector('.btn-pipeline__content')) {
+    const current = btn.innerHTML;
+    btn.innerHTML = `<span class="btn-pipeline__content">${current}<span class="btn-spinner-slot" aria-hidden="true"></span></span>`;
+    btn.setAttribute('aria-live', 'polite');
+    return;
+  }
+  // Garante o slot do spinner mesmo se já existir content
+  const content = btn.querySelector('.btn-pipeline__content');
+  if (content && !content.querySelector('.btn-spinner-slot')) {
+    content.insertAdjacentHTML('beforeend', '<span class="btn-spinner-slot" aria-hidden="true"></span>');
+  }
+}
+
+// Troca somente o texto; mantém o ícone
 function setButtonLabel(text) {
   const btn = document.getElementById('runPipelineBtn');
   if (!btn) return;
   const content = btn.querySelector('.btn-pipeline__content');
   if (!content) return;
-  content.innerHTML = `<i class="fas fa-play" style="padding-right:10px;"></i>${text}`;
+  const icon = content.querySelector('i')?.outerHTML || '';
+  const spinner = content.querySelector('.btn-spinner-slot')?.outerHTML || '';
+  content.innerHTML = `${icon}${text}${spinner}`;
 }
 
-// Mensagem de status dentro do botão e classes visuais por estado
+// Aplica classes de estado
 function mostrarStatusNoBotao(statusText, variant = null) {
   const btn = document.getElementById('runPipelineBtn');
   if (!btn) return;
-
   btn.classList.remove('is-in-progress', 'is-success', 'is-failure');
   setButtonLabel(statusText);
-
   if (variant === 'in_progress') btn.classList.add('is-in-progress');
-  if (variant === 'success') btn.classList.add('is-success');
-  if (variant === 'failure') btn.classList.add('is-failure');
+  if (variant === 'success')     btn.classList.add('is-success');
+  if (variant === 'failure')     btn.classList.add('is-failure');
 }
 
 /* ===========================
@@ -79,41 +95,30 @@ async function fetchRuns() {
 =========================== */
 async function executarPipeline() {
   const btn = document.getElementById('runPipelineBtn');
-  if (!btn) {
-    console.error('runPipelineBtn não encontrado ao executar pipeline');
-    return;
-  }
+  if (!btn) return;
 
-  // Acessibilidade: anuncia mudanças no próprio botão (aria-live no HTML)
+  ensureButtonStructure();
+
   btn.disabled = true;
   btn.classList.add('btn--loading');
   mostrarStatusNoBotao('Iniciando...', 'in_progress');
 
   try {
-    // Dispara a pipeline
     const start = await fetch('/.netlify/functions/trigger-pipeline', { method: 'POST' });
-    if (!start.ok) {
-      const txt = await start.text().catch(() => '');
-      throw new Error(`Falha ao disparar pipeline: ${start.status} ${txt}`);
-    }
+    if (!start.ok) throw new Error(`Falha ao disparar: ${start.status}`);
 
-    // Polling do status
     let result = null;
     do {
       await new Promise(r => setTimeout(r, 5000));
       const res = await fetch('/.netlify/functions/pipeline-status');
-      if (!res.ok) {
-        const txt = await res.text().catch(() => '');
-        throw new Error(`Falha ao obter status: ${res.status} ${txt}`);
-      }
+      if (!res.ok) throw new Error(`Falha no status: ${res.status}`);
       result = await res.json();
 
-      // Rótulos curtos e estáveis
       const label =
-        result.status === 'queued' ? 'Na fila...' :
-        result.status === 'in_progress' ? 'Executando...' :
-        result.status === 'completed' ? 'Finalizando...' :
-        `Status: ${result.status}`;
+        result.status === 'queued'       ? 'Na fila...' :
+        result.status === 'in_progress'  ? 'Executando...' :
+        result.status === 'completed'    ? 'Finalizando...' :
+                                           'Processando...';
 
       mostrarStatusNoBotao(label, 'in_progress');
     } while (result.status !== 'completed');
@@ -127,12 +132,12 @@ async function executarPipeline() {
     console.error(e);
     mostrarStatusNoBotao('Erro ao executar', 'failure');
   } finally {
-    // Restaura o botão após breve intervalo
     setTimeout(() => {
       btn.disabled = false;
       btn.classList.remove('btn--loading', 'is-in-progress', 'is-success', 'is-failure');
       setButtonLabel('Executar Pipeline');
-    }, 2000);
+      ensureButtonStructure(); // reassegura o slot após reset
+    }, 1800);
   }
 }
 

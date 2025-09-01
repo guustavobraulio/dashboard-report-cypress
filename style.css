@@ -1558,15 +1558,25 @@ select.form-control {
 }
 
 /* Status Pipeline */
-/* Botão com status embutido */
 .btn-pipeline {
-  min-width: 190px;        /* mantém largura estável */
-  position: relative;      /* para o spinner interno */
+  min-width: 190px;        
+  position: relative;      
   white-space: nowrap;
   display: inline-flex;
   align-items: center;
   justify-content: center;
 }
+.btn-pipeline .btn-pipeline__content {
+  display: inline-grid;
+  grid-auto-flow: column;
+  align-items: center;
+  column-gap: 10px;            
+}
+
+.btn-pipeline.btn--loading .btn-spinner-slot {
+  visibility: visible;
+}
+
 
 /* Conteúdo textual do botão (ícone + label) */
 .btn-pipeline__content {
@@ -1577,20 +1587,20 @@ select.form-control {
 
 /* Estado de loading: mantém clique desabilitado e opacidade */
 .btn-pipeline.btn--loading {
-  opacity: 0.85;
+  opacity: 0.9;
   pointer-events: none;
 }
 
 /* Spinner interno sem “pular” layout */
 .btn-pipeline.btn--loading::after {
   content: '';
+  display: block;
   width: 16px;
   height: 16px;
-  border: 2px solid rgba(255,255,255,0.7);
+  border: 2px solid rgba(255,255,255,0.6);
   border-top-color: #fff;
   border-radius: 50%;
-  animation: spin 0.7s linear infinite;
-  margin-left: 10px;
+  animation: spin .7s linear infinite;
 }
 
 /* Variantes visuais por status (opcionais) */
@@ -1603,6 +1613,11 @@ select.form-control {
 .btn-pipeline.is-failure {
   background: var(--color-error);
 }
+
+.btn-pipeline.is-in-progress { background: var(--color-primary-hover); }
+.btn-pipeline.is-success     { background: var(--color-success); }
+.btn-pipeline.is-failure     { background: var(--color-error); }
+
 
 /* Animação já existente */
 @keyframes spin { to { transform: rotate(360deg); } }
