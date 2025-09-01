@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -10,23 +9,19 @@
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-  <!-- Bibliotecas e app (defer = executa após o parse do HTML) -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="app.js" defer></script>
-
+  <!-- Favicon -->
   <link rel="icon" type="image/png" sizes="16x16"
-    href="https://yt3.ggpht.com/xdwy80PUa6YIR6TkM2FfRAGi6ojTZ3H8H0Yw-KiYGYdP5wgLp7dYqdJipcWcFnHKWkeXBhKvUw4=s88-c-k-c0x00ffffff-no-rj">
+        href="https://yt3.ggpht.com/xdwy80PUa6YIR6TkM2FfRAGi6ojTZ3H8H0Yw-KiYGYdP5wgLp7dYqdJipcWcFnHKWkeXBhKvUw4=s88-c-k-c0x00ffffff-no-rj">
   <link rel="apple-touch-icon" sizes="180x180"
-    href="https://yt3.ggpht.com/xdwy80PUa6YIR6TkM2FfRAGi6ojTZ3H8H0Yw-KiYGYdP5wgLp7dYqdJipcWcFnHKWkeXBhKvUw4=s88-c-k-c0x00ffffff-no-rj">
+        href="https://yt3.ggpht.com/xdwy80PUa6YIR6TkM2FfRAGi6ojTZ3H8H0Yw-KiYGYdP5wgLp7dYqdJipcWcFnHKWkeXBhKvUw4=s88-c-k-c0x00ffffff-no-rj">
   <meta name="theme-color" content="#672162">
-  <!-- Chart.js -->
+
+  <!-- Chart.js (uma vez) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-  <!-- Adapter de datas (date-fns) -->
+  <!-- Adapter de datas (necessário para time/timeseries) -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0"></script>
-  <!-- Seu script -->
-  <script src="app.js"></script>
-
-
+  <!-- Seu script (uma vez, depois do adapter) -->
+  <script src="app.js" defer></script>
 </head>
 
 <body>

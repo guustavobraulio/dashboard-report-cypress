@@ -565,9 +565,9 @@ function buildPassedFailedSeries(runs) {
     agg.failed += failed;
   }
 
-  const entries = Array.from(map.entries()).sort(
-    (a, b) => new Date(a) - new Date(b)
-  );
+    const entries = Array.from(map.entries()).sort(
+      (a, b) => new Date(a) - new Date(b)
+    );
   return {
     labels: entries.map(([label]) => label),
     passedCounts: entries.map(([, v]) => v.passed),
