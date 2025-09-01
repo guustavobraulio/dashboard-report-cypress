@@ -13,7 +13,7 @@ on:
         options: [dev, staging, prod]
 env:
   DASHBOARD_API_URL: ${{ secrets.DASHBOARD_URL }}
-  ENVIRONMENT:       ${{ github.event.inputs.environment || 'staging' }}
+  ENVIRONMENT:       ${{ github.event.inputs.environment || 'Produção' }}
 
 jobs:
   e2e:
@@ -46,14 +46,6 @@ jobs:
           ENVIRONMENT:       ${{ env.ENVIRONMENT }}
           CYPRESS_baseUrl:   https://dash-report-cy.netlify.app/
           CYPRESS_DASHBOARD_API_URL: ${{ env.DASHBOARD_API_URL }}
-
-      # PASSO NOVO: Copiar artefatos para pasta pública
-      - name: Copy Cypress artifacts to public folder
-        run: |
-          mkdir -p public/artifacts/screenshots
-          mkdir -p public/artifacts/videos
-          cp -a cypress/screenshots/. public/artifacts/screenshots/
-          cp -a cypress/videos/. public/artifacts/videos/
 
   deploy:
     needs: e2e

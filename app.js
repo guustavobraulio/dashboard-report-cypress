@@ -48,6 +48,40 @@ async function fetchRuns() {
   }));
 }
 
+// Trigger Pipeline (Functions)
+async function executarPipeline() {
+  const btn = document.getElementById('runPipelineBtn');
+  // Ativa loading
+  btn.disabled = true;
+  btn.classList.add('btn--loading');
+
+  try {
+    mostrarStatus("Disparando pipeline...");
+    await fetch('/.netlify/functions/trigger-pipeline', { method: 'POST' });
+
+    let result = null;
+    do {
+      await new Promise(r => setTimeout(r, 5000));
+      const res = await fetch('/.netlify/functions/pipeline-status');
+      result = await res.json();
+      mostrarStatus(`Status: ${result.status}${result.conclusion ? " ("+result.conclusion+")" : ""}`);
+    } while (result.status !== "completed");
+
+    if(result.conclusion === "success")
+      mostrarStatus("Pipeline finalizada com sucesso!");
+    else
+      mostrarStatus("Pipeline finalizada com erro, veja detalhes no GitHub.");
+  } catch (e) {
+    mostrarStatus("Erro: " + e.message);
+  } finally {
+    // Sempre reativa o botão e remove loading
+    btn.disabled = false;
+    btn.classList.remove('btn--loading');
+  }
+}
+
+
+
 // Cards/Estatísticas
 function updateStatistics() {
   const totalPassed = filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
