@@ -1065,6 +1065,15 @@ select.form-control {
   border: 1px solid rgba(var(--color-error-rgb), 0.3);
 }
 
+.status-pipeline {
+  margin-left: 12px;
+  font-size: 0.95rem;
+  color: var(--color-text, #334);
+  vertical-align: middle;
+  white-space: nowrap; /* mantém na mesma linha do botão */
+}
+
+
 /* Action Buttons */
 .action-btn {
   padding: var(--space-4) var(--space-8);

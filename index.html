@@ -14,27 +14,29 @@
   <script src="app.js" defer></script>
 </head>
 <body>
-  <!-- Header -->
-  <header class="header">
-    <div class="container">
-      <div class="header-content">
-        <div class="logo-section">
-          <i class="fas fa-bug logo-icon"></i>
-          <h1>Social Watch</h1>
-        </div>
-        <div class="header-actions">
-          <button class="btn btn--primary" id="runPipelineBtn">
-            <i class="fas fa-play" style="padding-right: 10px;"></i>
-            Executar Pipeline
-          </button>
-          <div class="auto-refresh">
-            <i class="fas fa-sync-alt" id="refreshIcon"></i>
-            <span>Auto-refresh: 30s</span>
-          </div>
+<!-- Header -->
+<header class="header">
+  <div class="container">
+    <div class="header-content">
+      <div class="logo-section">
+        <i class="fas fa-bug logo-icon"></i>
+        <h1>Social Watch</h1>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn--primary" id="runPipelineBtn">
+          <i class="fas fa-play" style="padding-right: 10px;"></i>
+          Executar Pipeline
+        </button>
+        <span id="statusPipeline" class="status-pipeline" role="status" aria-live="polite"></span>
+        <div class="auto-refresh">
+          <i class="fas fa-sync-alt" id="refreshIcon"></i>
+          <span>Auto-refresh: 30s</span>
         </div>
       </div>
     </div>
-  </header>
+  </div>
+</header>
+
 
   <!-- Main Content -->
   <main class="main-content">
