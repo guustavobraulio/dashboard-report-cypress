@@ -832,6 +832,14 @@ select.form-control {
   color: var(--color-primary);
 }
 
+.brand-logo {
+  width: 28px;     
+  height: 28px;    
+  object-fit: contain;
+  image-rendering: auto;
+}
+
+
 .header h1 {
   font-size: var(--font-size-2xl);
   font-weight: var(--font-weight-semibold);
