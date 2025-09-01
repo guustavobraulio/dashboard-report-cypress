@@ -932,8 +932,8 @@ select.form-control {
 }
 
 .nav-item:hover {
-  background: var(--color-secondary);
-  color: var(--color-text);
+  background: #bd424f;
+  color: #fff
 }
 
 .nav-item--active {
@@ -1043,8 +1043,7 @@ select.form-control {
 }
 
 .period-btn:hover {
-  background: var(--color-secondary);
-  color: #ffffff
+  color: #0000
 }
 
 .period-btn--active {
@@ -1194,10 +1193,6 @@ select.form-control {
   border-radius: var(--radius-sm);
   cursor: pointer;
   transition: all var(--duration-fast) var(--ease-standard);
-}
-
-.pagination button:hover:not(:disabled) {
-  background: var(--color-secondary);
 }
 
 .pagination button.active {
