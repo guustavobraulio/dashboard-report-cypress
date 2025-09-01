@@ -331,19 +331,22 @@ function initializeHistoryChartFromRuns(runs) {
   if (historyChart) historyChart.destroy();
   historyChart = new Chart(ctx, {
     type: "bar",
-    data: {
-      datasets: [
-        {
-          label: "Aprovados",
-          data: runs.map((r) => ({ x: r.date, y: r.passedTests })),
+      data: {
+        datasets: [
+          { label: 'Aprovados', data: runs.map(r => ({ x: r.date, y: r.passedTests })) },
+          { label: 'Falhados',  data: runs.map(r => ({ x: r.date, y: r.failedTests })) }
+        ]
+      },
+    options: {
+      scales: {
+        x: {
+          type: 'timeseries',   // ou 'time'
+          time: { unit: 'minute' }, // opcional
+          ticks: { autoSkip: true, maxRotation: 0 }
         },
-        {
-          label: "Falhados",
-          data: runs.map((r) => ({ x: r.date, y: r.failedTests })),
-        },
-      ],
-    },
-    options: { scales: { x: { type: "timeseries" } } },
+        y: { beginAtZero: true }
+      }
+    }
   });
 }
 
