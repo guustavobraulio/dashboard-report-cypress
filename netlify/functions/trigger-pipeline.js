@@ -1,5 +1,3 @@
-const fetch = require('node-fetch');
-
 const GITHUB_OWNER = 'guustavobraulio';
 const GITHUB_REPO = 'dashboard-report-cypress';
 const WORKFLOW_FILE_NAME = 'pipeline.yml'; // Coloque o nome do seu arquivo de workflow

@@ -281,7 +281,6 @@ function closeModal() {
 
 // Filtros e eventos
 function setupEventListeners() {
-  document.getElementById('runPipelineBtn').addEventListener('click', executarPipeline);
   document.getElementById('branchFilter').addEventListener('change', applyFilters);
   document.getElementById('environmentFilter').addEventListener('change', applyFilters);
   document.getElementById('statusFilter').addEventListener('change', applyFilters);
@@ -326,11 +325,11 @@ function applyFilters() {
 
 // Bootstrap
 document.addEventListener('DOMContentLoaded', () => {
-  setupEventListeners();       // Aqui dentro também deve existir
+  setupEventListeners();
   loadRuns().catch(console.error);
   setInterval(() => loadRuns().catch(console.error), 30000);
 
-  // Coloque esta linha aqui para garantir que o botão será encontrado
+  // Adiciona o event listener ao botão de pipeline de forma segura
   const btn = document.getElementById('runPipelineBtn');
   if (btn) {
     btn.addEventListener('click', executarPipeline);
