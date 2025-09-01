@@ -577,8 +577,7 @@ select.form-control {
 }
 
 .form-control:focus {
-  border-color: var(--color-primary);
-  outline: var(--focus-outline);
+  border-color: grey;
 }
 
 .form-label {
@@ -1042,19 +1041,10 @@ select.form-control {
   font-weight: var(--font-weight-medium);
 }
 
-.period-btn:hover {
-  color: #0000
-}
-
 .period-btn--active {
   background: var(--color-primary);
   color: #ffffff;
   border-color: var(--color-primary);
-}
-
-.period-btn--active:hover {
-  background: var(--color-primary-hover);
-  border-color: var(--color-primary-hover);
 }
 
 /* Content Grid */
