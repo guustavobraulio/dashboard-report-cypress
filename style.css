@@ -833,11 +833,12 @@ select.form-control {
 }
 
 .brand-logo {
-  width: 48px;     
+  width: 170px;     
   height: auto;    
   object-fit: contain;
   image-rendering: auto;
   transform: translateY(1px);
+  margin-right: 20px;
 }
 
 
