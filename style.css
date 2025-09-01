@@ -1559,18 +1559,17 @@ select.form-control {
 
 /* Status Pipeline */
 .btn-pipeline {
-  min-width: 190px;        
-  position: relative;      
-  white-space: nowrap;
+  min-width: 190px;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  white-space: nowrap;
 }
 .btn-pipeline .btn-pipeline__content {
   display: inline-grid;
   grid-auto-flow: column;
   align-items: center;
-  column-gap: 10px;            
+  column-gap: 10px;           
 }
 
 .btn-pipeline.btn--loading .btn-spinner-slot {
@@ -1602,6 +1601,26 @@ select.form-control {
   border-radius: 50%;
   animation: spin .7s linear infinite;
 }
+
+.btn-pipeline .btn-spinner-slot {
+  width: 16px;
+  height: 16px;
+  display: inline-block;
+  visibility: hidden;         
+}
+
+.btn-pipeline .btn-spinner-slot::after {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.6);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  vertical-align: middle;
+}
+
 
 /* Variantes visuais por status (opcionais) */
 .btn-pipeline.is-in-progress {
