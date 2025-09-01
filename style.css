@@ -938,7 +938,7 @@ select.form-control {
 
 .nav-item--active {
   background: var(--color-primary);
-  color: var(--color-btn-primary-text);
+  color: #fff;
   font-weight: var(--font-weight-semibold);
 }
 
@@ -1044,12 +1044,12 @@ select.form-control {
 
 .period-btn:hover {
   background: var(--color-secondary);
-  color: var(--color-text);
+  color: #ffffff
 }
 
 .period-btn--active {
   background: var(--color-primary);
-  color: var(--color-btn-primary-text);
+  color: #ffffff;
   border-color: var(--color-primary);
 }
 
@@ -1202,7 +1202,7 @@ select.form-control {
 
 .pagination button.active {
   background: var(--color-primary);
-  color: var(--color-btn-primary-text);
+  color: #ffffff;
   border-color: var(--color-primary);
 }
 
