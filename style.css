@@ -1652,3 +1652,41 @@ select.form-control {
 
 /* Animação já existente */
 @keyframes spin { to { transform: rotate(360deg); } }
+
+
+/* overrides finais — garantir aplicação da paleta Social */
+:root {
+  --color-primary: rgba(18,142,147,1);
+  --color-primary-hover: rgba(16,125,129,1);
+  --color-primary-active: rgba(12,104,107,1);
+  --color-success: rgba(18,142,147,1);
+  --color-success-rgb: 18,142,147;
+  --color-focus-ring: rgba(18,142,147,0.40);
+}
+
+/* força os principais componentes a usarem as variáveis */
+.btn--primary { background: var(--color-primary) !important; color: var(--color-btn-primary-text) !important; }
+.btn--primary:hover { background: var(--color-primary-hover) !important; }
+.btn--primary:active { background: var(--color-primary-active) !important; }
+
+.nav-item--active { background: var(--color-primary) !important; color: var(--color-btn-primary-text) !important; }
+.nav-item--active:hover { background: var(--color-primary-hover) !important; }
+
+.period-btn--active { background: var(--color-primary) !important; border-color: var(--color-primary) !important; color: var(--color-btn-primary-text) !important; }
+.period-btn--active:hover { background: var(--color-primary-hover) !important; border-color: var(--color-primary-hover) !important; }
+
+.pagination button.active { background: var(--color-primary) !important; border-color: var(--color-primary) !important; color: var(--color-btn-primary-text) !important; }
+
+/* status/badges com nova paleta */
+.status--passed {
+  background: rgba(var(--color-success-rgb), 0.15) !important;
+  color: var(--color-success) !important;
+  border-color: rgba(var(--color-success-rgb), 0.30) !important;
+}
+
+/* header opcionalmente com acento da marca */
+.header h1 { color: var(--color-primary); }
+
+/* spinner antigo desativado (já presente, repetimos por segurança no final) */
+.btn--loading::after,
+.btn--loading::before { content: none !important; }
