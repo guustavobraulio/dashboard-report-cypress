@@ -48,23 +48,29 @@ async function fetchRuns() {
   }));
 }
 
+function mostrarStatus(msg) {
+  const el = document.getElementById('statusPipeline');
+  if (el) {
+    el.textContent = msg;
+  } else {
+    console.warn('Elemento #statusPipeline não encontrado para exibir status.');
+  }
+}
+
+
 // Trigger Pipeline (Functions)
 async function executarPipeline() {
-  // Apenas obtém o elemento; não registre listeners aqui
   const btn = document.getElementById('runPipelineBtn');
-
-  // Proteção extra caso o elemento não seja encontrado
   if (!btn) {
     console.error('runPipelineBtn não encontrado ao executar pipeline');
     return;
   }
 
-  // Ativa loading
   btn.disabled = true;
   btn.classList.add('btn--loading');
 
   try {
-    mostrarStatus("Disparando pipeline...");
+    mostrarStatus('Disparando pipeline...');
     await fetch('/.netlify/functions/trigger-pipeline', { method: 'POST' });
 
     let result = null;
@@ -72,22 +78,22 @@ async function executarPipeline() {
       await new Promise(r => setTimeout(r, 5000));
       const res = await fetch('/.netlify/functions/pipeline-status');
       result = await res.json();
-      mostrarStatus(`Status: ${result.status}${result.conclusion ? " ("+result.conclusion+")" : ""}`);
-    } while (result.status !== "completed");
+      mostrarStatus(`Status: ${result.status}${result.conclusion ? ' (' + result.conclusion + ')' : ''}`);
+    } while (result.status !== 'completed');
 
-    if (result.conclusion === "success") {
-      mostrarStatus("Pipeline finalizada com sucesso!");
+    if (result.conclusion === 'success') {
+      mostrarStatus('Pipeline finalizada com sucesso!');
     } else {
-      mostrarStatus("Pipeline finalizada com erro, veja detalhes no GitHub.");
+      mostrarStatus('Pipeline finalizada com erro, veja detalhes no GitHub.');
     }
   } catch (e) {
-    mostrarStatus("Erro: " + e.message);
+    mostrarStatus('Erro: ' + e.message);
   } finally {
-    // Sempre reativa o botão e remove loading
     btn.disabled = false;
     btn.classList.remove('btn--loading');
   }
 }
+
 
 
 
@@ -339,7 +345,6 @@ document.addEventListener('DOMContentLoaded', () => {
   loadRuns().catch(console.error);
   setInterval(() => loadRuns().catch(console.error), 30000);
 
-  // Adiciona o event listener ao botão de pipeline após o DOM estar pronto
   const btn = document.getElementById('runPipelineBtn');
   if (btn) {
     btn.addEventListener('click', executarPipeline);
