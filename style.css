@@ -1619,6 +1619,7 @@ select.form-control {
   border-radius: 50%;
   animation: spin .7s linear infinite;
   vertical-align: middle;
+  transform: translateY(-2px);
 }
 
 
