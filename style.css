@@ -506,7 +506,7 @@ pre code {
   font-weight: 500;
 }
 
-.btn--loading::after {
+/* .btn--loading::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -520,7 +520,7 @@ pre code {
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   z-index: 2;
-}
+} */
 
 /* Form elements */
 .form-control {
