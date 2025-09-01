@@ -7,7 +7,9 @@ let historyChart = null;
 let currentPage = 1;
 const itemsPerPage = 10;
 
-// Util
+/* ===========================
+   Utils
+=========================== */
 function formatDateTime(s) {
   const d = new Date(s);
   return d.toLocaleString('pt-BR', {
@@ -16,7 +18,31 @@ function formatDateTime(s) {
   });
 }
 
-// Backend (Functions)
+// Atualiza o rótulo do botão (ícone + texto)
+function setButtonLabel(text) {
+  const btn = document.getElementById('runPipelineBtn');
+  if (!btn) return;
+  const content = btn.querySelector('.btn-pipeline__content');
+  if (!content) return;
+  content.innerHTML = `<i class="fas fa-play" style="padding-right:10px;"></i>${text}`;
+}
+
+// Mensagem de status dentro do botão e classes visuais por estado
+function mostrarStatusNoBotao(statusText, variant = null) {
+  const btn = document.getElementById('runPipelineBtn');
+  if (!btn) return;
+
+  btn.classList.remove('is-in-progress', 'is-success', 'is-failure');
+  setButtonLabel(statusText);
+
+  if (variant === 'in_progress') btn.classList.add('is-in-progress');
+  if (variant === 'success') btn.classList.add('is-success');
+  if (variant === 'failure') btn.classList.add('is-failure');
+}
+
+/* ===========================
+   Backend (Functions)
+=========================== */
 async function fetchRuns() {
   const res = await fetch('/.netlify/functions/get-results');
   if (!res.ok) throw new Error(`Falha ao carregar resultados: ${res.status}`);
@@ -48,17 +74,9 @@ async function fetchRuns() {
   }));
 }
 
-function mostrarStatus(msg) {
-  const el = document.getElementById('statusPipeline');
-  if (el) {
-    el.textContent = msg;
-  } else {
-    console.warn('Elemento #statusPipeline não encontrado para exibir status.');
-  }
-}
-
-
-// Trigger Pipeline (Functions)
+/* ===========================
+   Trigger Pipeline (Functions)
+=========================== */
 async function executarPipeline() {
   const btn = document.getElementById('runPipelineBtn');
   if (!btn) {
@@ -66,39 +84,61 @@ async function executarPipeline() {
     return;
   }
 
+  // Acessibilidade: anuncia mudanças no próprio botão (aria-live no HTML)
   btn.disabled = true;
   btn.classList.add('btn--loading');
+  mostrarStatusNoBotao('Iniciando...', 'in_progress');
 
   try {
-    mostrarStatus('Disparando pipeline...');
-    await fetch('/.netlify/functions/trigger-pipeline', { method: 'POST' });
+    // Dispara a pipeline
+    const start = await fetch('/.netlify/functions/trigger-pipeline', { method: 'POST' });
+    if (!start.ok) {
+      const txt = await start.text().catch(() => '');
+      throw new Error(`Falha ao disparar pipeline: ${start.status} ${txt}`);
+    }
 
+    // Polling do status
     let result = null;
     do {
       await new Promise(r => setTimeout(r, 5000));
       const res = await fetch('/.netlify/functions/pipeline-status');
+      if (!res.ok) {
+        const txt = await res.text().catch(() => '');
+        throw new Error(`Falha ao obter status: ${res.status} ${txt}`);
+      }
       result = await res.json();
-      mostrarStatus(`Status: ${result.status}${result.conclusion ? ' (' + result.conclusion + ')' : ''}`);
+
+      // Rótulos curtos e estáveis
+      const label =
+        result.status === 'queued' ? 'Na fila...' :
+        result.status === 'in_progress' ? 'Executando...' :
+        result.status === 'completed' ? 'Finalizando...' :
+        `Status: ${result.status}`;
+
+      mostrarStatusNoBotao(label, 'in_progress');
     } while (result.status !== 'completed');
 
     if (result.conclusion === 'success') {
-      mostrarStatus('Pipeline finalizada com sucesso!');
+      mostrarStatusNoBotao('Concluída ✓', 'success');
     } else {
-      mostrarStatus('Pipeline finalizada com erro, veja detalhes no GitHub.');
+      mostrarStatusNoBotao('Falhou ✕', 'failure');
     }
   } catch (e) {
-    mostrarStatus('Erro: ' + e.message);
+    console.error(e);
+    mostrarStatusNoBotao('Erro ao executar', 'failure');
   } finally {
-    btn.disabled = false;
-    btn.classList.remove('btn--loading');
+    // Restaura o botão após breve intervalo
+    setTimeout(() => {
+      btn.disabled = false;
+      btn.classList.remove('btn--loading', 'is-in-progress', 'is-success', 'is-failure');
+      setButtonLabel('Executar Pipeline');
+    }, 2000);
   }
 }
 
-
-
-
-
-// Cards/Estatísticas
+/* ===========================
+   Cards/Estatísticas
+=========================== */
 function updateStatistics() {
   const totalPassed = filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
   const totalFailed = filteredExecutions.reduce((s, e) => s + (e.failedTests || 0), 0);
@@ -114,7 +154,9 @@ function updateStatistics() {
   document.getElementById('successRate').textContent = `${successRate}%`;
 }
 
-// Tabela
+/* ===========================
+   Tabela
+=========================== */
 function populateExecutionTable() {
   const tbody = document.getElementById('executionTableBody');
   const start = (currentPage - 1) * itemsPerPage;
@@ -133,7 +175,7 @@ function populateExecutionTable() {
         <button class="action-btn action-btn--view" data-execution-id="${e.id}">
           <i class="fas fa-eye"></i> Ver
         </button>
-        ${e.githubUrl && e.githubUrl !== '#' ? `<a class="btn btn--sm btn--outline" href="${e.githubUrl}" target="_blank">Ação</a>` : ''}
+        ${e.githubUrl && e.githubUrl !== '#' ? `<a class="btn btn--sm btn--outline" href="${e.githubUrl}" target="_blank" rel="noopener">Ação</a>` : ''}
       </td>
     </tr>
   `).join('');
@@ -145,7 +187,9 @@ function populateExecutionTable() {
   updatePagination();
 }
 
-// Paginação
+/* ===========================
+   Paginação
+=========================== */
 function updatePagination() {
   const totalPages = Math.ceil(filteredExecutions.length / itemsPerPage);
   const el = document.getElementById('pagination');
@@ -185,7 +229,9 @@ function changePage(p) {
   if (p >= 1 && p <= totalPages) { currentPage = p; populateExecutionTable(); }
 }
 
-// Gráficos
+/* ===========================
+   Gráficos
+=========================== */
 function initializeStatusChart() {
   const ctx = document.getElementById('statusChart')?.getContext('2d');
   if (!ctx) return;
@@ -224,7 +270,9 @@ function initializeHistoryChartFromRuns(runs) {
   });
 }
 
-// Modal
+/* ===========================
+   Modal
+=========================== */
 function openExecutionModal(id) {
   const e = executionsData.find(x => x.id === id);
   if (!e) return;
@@ -295,7 +343,9 @@ function closeModal() {
   if (overviewPanel) overviewPanel.classList.add('tab-panel--active');
 }
 
-// Filtros e eventos
+/* ===========================
+   Filtros e eventos
+=========================== */
 function setupEventListeners() {
   document.getElementById('branchFilter').addEventListener('change', applyFilters);
   document.getElementById('environmentFilter').addEventListener('change', applyFilters);
@@ -339,14 +389,23 @@ function applyFilters() {
   populateExecutionTable();
 }
 
-// Bootstrap
+/* ===========================
+   Bootstrap
+=========================== */
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   loadRuns().catch(console.error);
   setInterval(() => loadRuns().catch(console.error), 30000);
 
+  // Prepara botão com estrutura para status embutido (se ainda não tiver)
   const btn = document.getElementById('runPipelineBtn');
   if (btn) {
+    // Garante o wrapper do conteúdo (ícone + label) para trocas de texto
+    if (!btn.querySelector('.btn-pipeline__content')) {
+      const current = btn.innerHTML;
+      btn.innerHTML = `<span class="btn-pipeline__content">${current}</span>`;
+      btn.setAttribute('aria-live', 'polite'); // acessibilidade
+    }
     btn.addEventListener('click', executarPipeline);
   } else {
     console.error('Botão runPipelineBtn não encontrado no DOM');

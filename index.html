@@ -25,11 +25,13 @@
           <h1>Social Watch</h1>
         </div>
         <div class="header-actions">
-          <button class="btn btn--primary" id="runPipelineBtn">
-            <i class="fas fa-play" style="padding-right: 10px;"></i>
-            Executar Pipeline
+          <button class="btn btn--primary btn-pipeline" id="runPipelineBtn" aria-live="polite">
+            <span class="btn-pipeline__content">
+              <i class="fas fa-play" style="padding-right: 10px;"></i>
+              Executar Pipeline
+            </span>
           </button>
-          <span id="statusPipeline" class="status-pipeline" role="status" aria-live="polite"></span>
+
           <div class="auto-refresh">
             <i class="fas fa-sync-alt" id="refreshIcon"></i>
             <span>Auto-refresh: 30s</span>

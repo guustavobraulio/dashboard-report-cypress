@@ -1556,3 +1556,53 @@ select.form-control {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--color-text-secondary);
 }
+
+/* Status Pipeline */
+/* Botão com status embutido */
+.btn-pipeline {
+  min-width: 190px;        /* mantém largura estável */
+  position: relative;      /* para o spinner interno */
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Conteúdo textual do botão (ícone + label) */
+.btn-pipeline__content {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Estado de loading: mantém clique desabilitado e opacidade */
+.btn-pipeline.btn--loading {
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+/* Spinner interno sem “pular” layout */
+.btn-pipeline.btn--loading::after {
+  content: '';
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.7);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  margin-left: 10px;
+}
+
+/* Variantes visuais por status (opcionais) */
+.btn-pipeline.is-in-progress {
+  background: var(--color-primary-hover);
+}
+.btn-pipeline.is-success {
+  background: var(--color-success);
+}
+.btn-pipeline.is-failure {
+  background: var(--color-error);
+}
+
+/* Animação já existente */
+@keyframes spin { to { transform: rotate(360deg); } }
