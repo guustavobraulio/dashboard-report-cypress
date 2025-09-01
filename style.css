@@ -14,17 +14,16 @@
   --color-slate-900: rgba(19, 52, 59, 1);
 
   /* Teal da marca — ajustes inspirados na logo Social */
-  --color-teal-300: #ff5b6b;;  /* luz */
-  --color-teal-400: rgba(25, 150, 156, 1);  /* médio-claro */
+  --color-teal-300: #ed5968;;  /* luz */
+  --color-teal-400: #ffff(25, 150, 156, 1);  /* médio-claro */
   --color-teal-500: #ff5b6b(18, 142, 147, 1);  /* principal */
   --color-teal-600: #e65161;  /* hover */
   --color-teal-700: #cc4752(12, 104, 107, 1);  /* active */
-  --color-teal-800: rgba(9, 88, 91, 1);     /* ênfases escuras */
 
   /* Alertas/acentos (mantidos, mas podem ser ajustados) */
   --color-red-400: rgba(255, 84, 89, 1);
   --color-red-500: rgba(192, 21, 47, 1);
-  --color-orange-400: rgba(230, 129, 97, 1);
+  --color-orange-400: rgb(212, 204, 202);
   --color-orange-500: rgba(168, 75, 47, 1);
 
   /* RGB versions for opacity control */
@@ -54,8 +53,8 @@
   --color-text-secondary: var(--color-slate-500);
 
   /* Primárias alinhadas à marca Social */
-  --color-primary: var(--color-teal-500);
-  --color-primary-hover: var(--color-teal-600);
+  --color-primary: #ff5b6b;
+  --color-primary-hover: #e65161; 
   --color-primary-active: var(--color-teal-700);
 
   /* Secundárias e bordas mantidas neutras */
@@ -65,11 +64,11 @@
   --color-border: rgba(var(--color-brown-600-rgb), 0.2);
 
   /* Botões e feedback */
-  --color-btn-primary-text: var(--color-cream-50);
+  --color-btn-primary-text: #ffffff;
   --color-card-border: rgba(var(--color-brown-600-rgb), 0.12);
   --color-card-border-inner: rgba(var(--color-brown-600-rgb), 0.12);
   --color-error: var(--color-red-500);
-  --color-success: var(--color-teal-500);
+  --color-success: #ff5b6b;
   --color-success: 255, 91, 107;
   --color-focus-ring: rgba(255, 91, 107, 0.40);
   --color-warning: var(--color-orange-500);
@@ -808,8 +807,8 @@ select.form-control {
 
 /* Header Styles */
 .header {
-  background: #672162 !important;
-    border-bottom-color: rgba(255,255,255,0.15);
+  background: #8b2f85 !important;
+  border-bottom-color: rgba(255,255,255,0.15) !important;
   box-shadow: var(--shadow-sm);
   position: sticky;
   top: 0;
@@ -883,7 +882,7 @@ select.form-control {
   gap: 6px;
   white-space: nowrap;
   flex-shrink: 0;
-  color: rgba(255,255,255,0.85) !important;
+  color: rgba(255,255,255,0.92) !important;
 }
 
 .header .auto-refresh #refreshIcon { 
