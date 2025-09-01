@@ -1,41 +1,43 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Social Logs</title>
 
   <!-- Estilos -->
   <link rel="stylesheet" href="style.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
   <!-- Bibliotecas e app (defer = executa após o parse do HTML) -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="app.js" defer></script>
 </head>
+
 <body>
-<!-- Header -->
-<header class="header">
-  <div class="container">
-    <div class="header-content">
-      <div class="logo-section">
-        <i class="fas fa-bug logo-icon"></i>
-        <h1>Social Watch</h1>
-      </div>
-      <div class="header-actions">
-        <button class="btn btn--primary" id="runPipelineBtn">
-          <i class="fas fa-play" style="padding-right: 10px;"></i>
-          Executar Pipeline
-        </button>
-        <span id="statusPipeline" class="status-pipeline" role="status" aria-live="polite"></span>
-        <div class="auto-refresh">
-          <i class="fas fa-sync-alt" id="refreshIcon"></i>
-          <span>Auto-refresh: 30s</span>
+  <!-- Header -->
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <div class="logo-section">
+          <i class="fas fa-bug logo-icon"></i>
+          <h1>Social Watch</h1>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn--primary" id="runPipelineBtn">
+            <i class="fas fa-play" style="padding-right: 10px;"></i>
+            Executar Pipeline
+          </button>
+          <span id="statusPipeline" class="status-pipeline" role="status" aria-live="polite"></span>
+          <div class="auto-refresh">
+            <i class="fas fa-sync-alt" id="refreshIcon"></i>
+            <span>Auto-refresh: 30s</span>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-</header>
+  </header>
 
 
   <!-- Main Content -->
@@ -137,7 +139,7 @@
               <div class="card__header">
                 <h2>Últimas Execuções</h2>
                 <div class="history-actions">
-                  <input type="date" id="dateFilter" class="form-control"/>
+                  <input type="date" id="dateFilter" class="form-control" />
                   <select id="statusFilter" class="form-control">
                     <option value="">Todos os status</option>
                     <option value="passed">Aprovado</option>
@@ -217,7 +219,9 @@
 
           <!-- Logs Tab -->
           <div class="tab-panel" id="logs-tab">
-            <div class="logs-container"><pre id="modalLogs"></pre></div>
+            <div class="logs-container">
+              <pre id="modalLogs"></pre>
+            </div>
           </div>
 
           <!-- Artifacts Tab -->
@@ -250,4 +254,5 @@
     </div>
   </div>
 </body>
+
 </html>
