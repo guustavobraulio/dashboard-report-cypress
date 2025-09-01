@@ -326,9 +326,17 @@ function applyFilters() {
 
 // Bootstrap
 document.addEventListener('DOMContentLoaded', () => {
-  setupEventListeners();
+  setupEventListeners();       // Aqui dentro também deve existir
   loadRuns().catch(console.error);
   setInterval(() => loadRuns().catch(console.error), 30000);
+
+  // Coloque esta linha aqui para garantir que o botão será encontrado
+  const btn = document.getElementById('runPipelineBtn');
+  if (btn) {
+    btn.addEventListener('click', executarPipeline);
+  } else {
+    console.error('Botão runPipelineBtn não encontrado no DOM');
+  }
 });
 
 async function loadRuns() {
