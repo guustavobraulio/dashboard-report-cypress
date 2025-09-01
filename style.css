@@ -2,7 +2,7 @@
   /* Primitive Color Tokens (base neutra mantém legibilidade) */
   --color-white: rgba(255, 255, 255, 1);
   --color-black: rgba(0, 0, 0, 1);
-  --color-cream-50: rgba(252, 252, 249, 1);
+  --color-cream-50:  #ffffff(252, 252, 249, 1);
   --color-cream-100: rgba(255, 255, 253, 1);
   --color-gray-200: rgba(245, 245, 245, 1);
   --color-gray-300: rgba(167, 169, 169, 1);
@@ -14,11 +14,11 @@
   --color-slate-900: rgba(19, 52, 59, 1);
 
   /* Teal da marca — ajustes inspirados na logo Social */
-  --color-teal-300: rgba(38, 169, 174, 1);  /* luz */
+  --color-teal-300: #ff5b6b;;  /* luz */
   --color-teal-400: rgba(25, 150, 156, 1);  /* médio-claro */
-  --color-teal-500: rgba(18, 142, 147, 1);  /* principal */
-  --color-teal-600: rgba(16, 125, 129, 1);  /* hover */
-  --color-teal-700: rgba(12, 104, 107, 1);  /* active */
+  --color-teal-500: #ff5b6b(18, 142, 147, 1);  /* principal */
+  --color-teal-600: #e65161;  /* hover */
+  --color-teal-700: #cc4752(12, 104, 107, 1);  /* active */
   --color-teal-800: rgba(9, 88, 91, 1);     /* ênfases escuras */
 
   /* Alertas/acentos (mantidos, mas podem ser ajustados) */
@@ -70,6 +70,8 @@
   --color-card-border-inner: rgba(var(--color-brown-600-rgb), 0.12);
   --color-error: var(--color-red-500);
   --color-success: var(--color-teal-500);
+  --color-success: 255, 91, 107;
+  --color-focus-ring: rgba(255, 91, 107, 0.40);
   --color-warning: var(--color-orange-500);
   --color-info: var(--color-slate-500);
 
@@ -806,8 +808,8 @@ select.form-control {
 
 /* Header Styles */
 .header {
-  background: var(--color-surface);
-  border-bottom: 1px solid var(--color-border);
+  background: #672162 !important;
+    border-bottom-color: rgba(255,255,255,0.15);
   box-shadow: var(--shadow-sm);
   position: sticky;
   top: 0;
@@ -845,6 +847,14 @@ select.form-control {
   gap: var(--space-16);
 }
 
+.header .logo-section h1 {
+  color: #ffffff !important;
+}
+
+.header .logo-icon {
+  color: #ffffff !important;
+}
+
 .auto-refresh {
   display: flex;
   align-items: center;
@@ -873,6 +883,11 @@ select.form-control {
   gap: 6px;
   white-space: nowrap;
   flex-shrink: 0;
+  color: rgba(255,255,255,0.85) !important;
+}
+
+.header .auto-refresh #refreshIcon { 
+  color: #ffffff; 
 }
 
 /* Main Layout */
@@ -1652,41 +1667,3 @@ select.form-control {
 
 /* Animação já existente */
 @keyframes spin { to { transform: rotate(360deg); } }
-
-
-/* overrides finais — garantir aplicação da paleta Social */
-:root {
-  --color-primary: rgba(18,142,147,1);
-  --color-primary-hover: rgba(16,125,129,1);
-  --color-primary-active: rgba(12,104,107,1);
-  --color-success: rgba(18,142,147,1);
-  --color-success-rgb: 18,142,147;
-  --color-focus-ring: rgba(18,142,147,0.40);
-}
-
-/* força os principais componentes a usarem as variáveis */
-.btn--primary { background: var(--color-primary) !important; color: var(--color-btn-primary-text) !important; }
-.btn--primary:hover { background: var(--color-primary-hover) !important; }
-.btn--primary:active { background: var(--color-primary-active) !important; }
-
-.nav-item--active { background: var(--color-primary) !important; color: var(--color-btn-primary-text) !important; }
-.nav-item--active:hover { background: var(--color-primary-hover) !important; }
-
-.period-btn--active { background: var(--color-primary) !important; border-color: var(--color-primary) !important; color: var(--color-btn-primary-text) !important; }
-.period-btn--active:hover { background: var(--color-primary-hover) !important; border-color: var(--color-primary-hover) !important; }
-
-.pagination button.active { background: var(--color-primary) !important; border-color: var(--color-primary) !important; color: var(--color-btn-primary-text) !important; }
-
-/* status/badges com nova paleta */
-.status--passed {
-  background: rgba(var(--color-success-rgb), 0.15) !important;
-  color: var(--color-success) !important;
-  border-color: rgba(var(--color-success-rgb), 0.30) !important;
-}
-
-/* header opcionalmente com acento da marca */
-.header h1 { color: var(--color-primary); }
-
-/* spinner antigo desativado (já presente, repetimos por segurança no final) */
-.btn--loading::after,
-.btn--loading::before { content: none !important; }
