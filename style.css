@@ -506,7 +506,7 @@ pre code {
   font-weight: 500;
 }
 
-/* .btn--loading::after {
+.btn--loading::after {
   content: '';
   position: absolute;
   top: 50%;
@@ -520,7 +520,7 @@ pre code {
   border-radius: 50%;
   animation: spin 0.7s linear infinite;
   z-index: 2;
-} */
+}
 
 /* Form elements */
 .form-control {
@@ -1636,7 +1636,13 @@ select.form-control {
 .btn-pipeline.is-in-progress { background: var(--color-primary-hover); }
 .btn-pipeline.is-success     { background: var(--color-success); }
 .btn-pipeline.is-failure     { background: var(--color-error); }
-
+.btn--loading::after,
+.btn--loading::before {
+  content: none !important;
+}
+.btn--loading {
+  background-image: none !important;
+}
 
 /* Animação já existente */
 @keyframes spin { to { transform: rotate(360deg); } }
