@@ -50,7 +50,7 @@ async function fetchRuns() {
 
 // Trigger Pipeline (Functions)
 async function executarPipeline() {
-  const btn = document.getElementById('runPipelineBtn');
+  const btn = document.getElementById('runPipelineBtn').addEventListener('click', executarPipeline);
   // Ativa loading
   btn.disabled = true;
   btn.classList.add('btn--loading');
@@ -281,6 +281,7 @@ function closeModal() {
 
 // Filtros e eventos
 function setupEventListeners() {
+  document.getElementById('runPipelineBtn').addEventListener('click', executarPipeline);
   document.getElementById('branchFilter').addEventListener('change', applyFilters);
   document.getElementById('environmentFilter').addEventListener('change', applyFilters);
   document.getElementById('statusFilter').addEventListener('change', applyFilters);
