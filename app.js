@@ -50,7 +50,15 @@ async function fetchRuns() {
 
 // Trigger Pipeline (Functions)
 async function executarPipeline() {
-  const btn = document.getElementById('runPipelineBtn').addEventListener('click', executarPipeline);
+  // Apenas obtém o elemento; não registre listeners aqui
+  const btn = document.getElementById('runPipelineBtn');
+
+  // Proteção extra caso o elemento não seja encontrado
+  if (!btn) {
+    console.error('runPipelineBtn não encontrado ao executar pipeline');
+    return;
+  }
+
   // Ativa loading
   btn.disabled = true;
   btn.classList.add('btn--loading');
@@ -67,10 +75,11 @@ async function executarPipeline() {
       mostrarStatus(`Status: ${result.status}${result.conclusion ? " ("+result.conclusion+")" : ""}`);
     } while (result.status !== "completed");
 
-    if(result.conclusion === "success")
+    if (result.conclusion === "success") {
       mostrarStatus("Pipeline finalizada com sucesso!");
-    else
+    } else {
       mostrarStatus("Pipeline finalizada com erro, veja detalhes no GitHub.");
+    }
   } catch (e) {
     mostrarStatus("Erro: " + e.message);
   } finally {
@@ -79,6 +88,7 @@ async function executarPipeline() {
     btn.classList.remove('btn--loading');
   }
 }
+
 
 
 
@@ -329,7 +339,7 @@ document.addEventListener('DOMContentLoaded', () => {
   loadRuns().catch(console.error);
   setInterval(() => loadRuns().catch(console.error), 30000);
 
-  // Adiciona o event listener ao botão de pipeline de forma segura
+  // Adiciona o event listener ao botão de pipeline após o DOM estar pronto
   const btn = document.getElementById('runPipelineBtn');
   if (btn) {
     btn.addEventListener('click', executarPipeline);
