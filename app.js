@@ -18,15 +18,23 @@ function formatDateTime(s) {
   });
 }
 
+// Garante: ícone + label + slot do spinner dentro do botão (sem overlay)
 function ensureButtonStructure() {
   const btn = document.getElementById('runPipelineBtn');
   if (!btn) return;
+
+  // Envolvimento do conteúdo
   if (!btn.querySelector('.btn-pipeline__content')) {
     const current = btn.innerHTML;
-    btn.innerHTML = `<span class="btn-pipeline__content">${current}<span class="btn-spinner-slot" aria-hidden="true"></span></span>`;
-    btn.setAttribute('aria-live', 'polite');
+    btn.innerHTML = `
+      <span class="btn-pipeline__content">
+        ${current}
+        <span class="btn-spinner-slot" aria-hidden="true"></span>
+      </span>`;
+    btn.setAttribute('aria-live', 'polite'); // acessibilidade
     return;
   }
+
   // Garante o slot do spinner mesmo se já existir content
   const content = btn.querySelector('.btn-pipeline__content');
   if (content && !content.querySelector('.btn-spinner-slot')) {
@@ -34,18 +42,21 @@ function ensureButtonStructure() {
   }
 }
 
-// Troca somente o texto; mantém o ícone
+// Troca somente o texto; preserva ícone e o slot do spinner
 function setButtonLabel(text) {
   const btn = document.getElementById('runPipelineBtn');
   if (!btn) return;
   const content = btn.querySelector('.btn-pipeline__content');
   if (!content) return;
+
   const icon = content.querySelector('i')?.outerHTML || '';
-  const spinner = content.querySelector('.btn-spinner-slot')?.outerHTML || '';
-  content.innerHTML = `${icon}${text}${spinner}`;
+  const slot = content.querySelector('.btn-spinner-slot')?.outerHTML
+             || '<span class="btn-spinner-slot" aria-hidden="true"></span>';
+
+  content.innerHTML = `${icon}${text}${slot}`;
 }
 
-// Aplica classes de estado
+// Aplica classes de estado visuais (sem overlay)
 function mostrarStatusNoBotao(statusText, variant = null) {
   const btn = document.getElementById('runPipelineBtn');
   if (!btn) return;
@@ -97,7 +108,7 @@ async function executarPipeline() {
   const btn = document.getElementById('runPipelineBtn');
   if (!btn) return;
 
-  ensureButtonStructure();
+  ensureButtonStructure(); // garante slot do spinner e estrutura interna
 
   btn.disabled = true;
   btn.classList.add('btn--loading');
@@ -115,10 +126,10 @@ async function executarPipeline() {
       result = await res.json();
 
       const label =
-        result.status === 'queued'       ? 'Na fila...' :
-        result.status === 'in_progress'  ? 'Executando...' :
-        result.status === 'completed'    ? 'Finalizando...' :
-                                           'Processando...';
+        result.status === 'queued'      ? 'Na fila...' :
+        result.status === 'in_progress' ? 'Executando...' :
+        result.status === 'completed'   ? 'Finalizando...' :
+                                          'Processando...';
 
       mostrarStatusNoBotao(label, 'in_progress');
     } while (result.status !== 'completed');
@@ -136,7 +147,7 @@ async function executarPipeline() {
       btn.disabled = false;
       btn.classList.remove('btn--loading', 'is-in-progress', 'is-success', 'is-failure');
       setButtonLabel('Executar Pipeline');
-      ensureButtonStructure(); // reassegura o slot após reset
+      ensureButtonStructure(); // mantém slot para próximos loads
     }, 1800);
   }
 }
@@ -282,7 +293,6 @@ function openExecutionModal(id) {
   const e = executionsData.find(x => x.id === id);
   if (!e) return;
 
-  // Overview
   document.getElementById('modalExecutionId').textContent = e.id;
   document.getElementById('modalExecutionDate').textContent = formatDateTime(e.date);
   document.getElementById('modalExecutionBranch').textContent = e.branch;
@@ -294,7 +304,6 @@ function openExecutionModal(id) {
     `<span class="status status--${e.status}">${e.status === 'passed' ? 'Aprovado' : 'Falhado'}</span>`;
   document.getElementById('modalGithubLink').href = e.githubUrl || '#';
 
-  // Tabs: habilitar/desabilitar
   const testsTabBtn = document.querySelector('[data-tab="tests"]');
   const logsTabBtn = document.querySelector('[data-tab="logs"]');
   const artifactsTabBtn = document.querySelector('[data-tab="artifacts"]');
@@ -303,7 +312,6 @@ function openExecutionModal(id) {
   if (logsTabBtn) logsTabBtn.disabled = !(e.logs && e.logs.length);
   if (artifactsTabBtn) artifactsTabBtn.disabled = !(e.artifacts && e.artifacts.length);
 
-  // Testes
   const testsList = document.getElementById('modalTestsList');
   testsList.innerHTML = (e.tests || []).map(t => `
     <div class="test-item test-item--${(t.status || 'passed')}">
@@ -315,11 +323,9 @@ function openExecutionModal(id) {
     </div>
   `).join('');
 
-  // Logs
   const logsPre = document.getElementById('modalLogs');
   logsPre.textContent = (e.logs || []).join('\n\n');
 
-  // Artefatos
   const artifactsWrap = document.getElementById('modalArtifacts');
   artifactsWrap.innerHTML = (e.artifacts || []).map(a => `
     <div class="artifact-item">
@@ -339,7 +345,6 @@ function closeModal() {
   modal.classList.add('hidden');
   modal.style.display = 'none';
 
-  // Reset visual das tabs para "Visão Geral"
   document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('tab-button--active'));
   document.querySelectorAll('.tab-panel').forEach(panel => panel.classList.remove('tab-panel--active'));
   const overviewTab = document.querySelector('.tab-button[data-tab="overview"]');
@@ -360,7 +365,6 @@ function setupEventListeners() {
   const backdrop = document.querySelector('#executionModal .modal-backdrop');
   backdrop?.addEventListener('click', closeModal);
 
-  // Troca de abas
   document.querySelectorAll('.tab-button').forEach(button => {
     button.addEventListener('click', () => {
       if (button.disabled) return;
@@ -402,14 +406,16 @@ document.addEventListener('DOMContentLoaded', () => {
   loadRuns().catch(console.error);
   setInterval(() => loadRuns().catch(console.error), 30000);
 
-  // Prepara botão com estrutura para status embutido (se ainda não tiver)
+  // Estrutura do botão para status embutido (ícone + label + slot spinner)
   const btn = document.getElementById('runPipelineBtn');
   if (btn) {
-    // Garante o wrapper do conteúdo (ícone + label) para trocas de texto
     if (!btn.querySelector('.btn-pipeline__content')) {
       const current = btn.innerHTML;
-      btn.innerHTML = `<span class="btn-pipeline__content">${current}</span>`;
-      btn.setAttribute('aria-live', 'polite'); // acessibilidade
+      btn.innerHTML = `<span class="btn-pipeline__content">${current}<span class="btn-spinner-slot" aria-hidden="true"></span></span>`;
+      btn.setAttribute('aria-live', 'polite');
+    } else if (!btn.querySelector('.btn-spinner-slot')) {
+      btn.querySelector('.btn-pipeline__content')
+         .insertAdjacentHTML('beforeend', '<span class="btn-spinner-slot" aria-hidden="true"></span>');
     }
     btn.addEventListener('click', executarPipeline);
   } else {
