@@ -289,11 +289,14 @@ function initializeHistoryChartFromRuns(runs) {
       plugins: {
         legend: { position: 'top' },
         tooltip: {
+          mode: 'index',
+          intersect: false,
           callbacks: {
             title(items) {
-              if (!items?.length) return '';
-              const v = items.parsed.x;
-              const base = dfBR.format(new Date(v));
+              const p = items?.;
+              const x = p?.parsed?.x ?? p?.raw?.x;
+              if (!x) return '';
+              const base = dfBR.format(new Date(x));
               return base.replace(/\s(\d{2}):/, ' às $1:');
             }
           }
