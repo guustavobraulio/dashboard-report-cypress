@@ -102,12 +102,12 @@ async function fetchRuns() {
     githubUrl: r.githubRunUrl || "#",
     tests: Array.isArray(r.tests)
       ? r.tests.map((t) => ({
-          name:
-            t.title || (Array.isArray(t.title) ? t.title.join(" > ") : "spec"),
-          status: t.state || "passed",
-          duration: Math.round((t.duration ?? 0) / 1000), // ms -> s
-          error: t.error || t.displayError || "",
-        }))
+        name:
+          t.title || (Array.isArray(t.title) ? t.title.join(" > ") : "spec"),
+        status: t.state || "passed",
+        duration: Math.round((t.duration ?? 0) / 1000), // ms -> s
+        error: t.error || t.displayError || "",
+      }))
       : [],
     logs: Array.isArray(r.logs) ? [...r.logs] : [],
     artifacts: Array.isArray(r.artifacts) ? [...r.artifacts] : [],
@@ -144,10 +144,10 @@ async function executarPipeline() {
         result.status === "queued"
           ? "Na fila..."
           : result.status === "in_progress"
-          ? "Executando..."
-          : result.status === "completed"
-          ? "Finalizando..."
-          : "Processando...";
+            ? "Executando..."
+            : result.status === "completed"
+              ? "Finalizando..."
+              : "Processando...";
 
       mostrarStatusNoBotao(label, "in_progress");
     } while (result.status !== "completed");
@@ -190,9 +190,9 @@ function updateStatistics() {
   const totalTests = totalPassed + totalFailed;
   const avgDuration = filteredExecutions.length
     ? Math.round(
-        filteredExecutions.reduce((s, e) => s + (e.duration || 0), 0) /
-          filteredExecutions.length
-      )
+      filteredExecutions.reduce((s, e) => s + (e.duration || 0), 0) /
+      filteredExecutions.length
+    )
     : 0;
   const successRate = totalTests
     ? Math.round((totalPassed / totalTests) * 100)
@@ -220,19 +220,17 @@ function populateExecutionTable() {
       <td>${formatDateTime(e.date)}</td>
       <td><code>${e.branch}</code></td>
       <td><span class="status status--info">${e.environment}</span></td>
-      <td><span class="status status--${e.status}">${
-        e.status === "passed" ? "Aprovado" : "Falhado"
-      }</span></td>
+      <td><span class="status status--${e.status}">${e.status === "passed" ? "Aprovado" : "Falhado"
+        }</span></td>
       <td>${e.passedTests}/${e.totalTests}</td>
       <td>${e.duration}s</td>
       <td>
         <button class="action-btn action-btn--view" data-execution-id="${e.id}">
           <i class="fas fa-eye"></i> Ver
         </button>
-        ${
-          e.githubUrl && e.githubUrl !== "#"
-            ? `<a class="btn btn--sm btn--outline" href="${e.githubUrl}" target="_blank" rel="noopener">Ação</a>`
-            : ""
+        ${e.githubUrl && e.githubUrl !== "#"
+          ? `<a class="btn btn--sm btn--outline" href="${e.githubUrl}" target="_blank" rel="noopener">Ação</a>`
+          : ""
         }
       </td>
     </tr>
@@ -334,7 +332,7 @@ function initializeHistoryChartFromRuns(runs) {
 
   if (historyChart) historyChart.destroy();
 
-  const maxY = runs.reduce((m, r) => Math.max(m, (r.passedTests||0), (r.failedTests||0)), 0);
+  const maxY = runs.reduce((m, r) => Math.max(m, (r.passedTests || 0), (r.failedTests || 0)), 0);
   const suggestedMax = Math.max(5, maxY);
 
   historyChart = new Chart(ctx, {
@@ -370,7 +368,7 @@ function initializeHistoryChartFromRuns(runs) {
       scales: {
         x: {
           type: 'timeseries',
-          adapters: { date: { locale: window.dateFns.locale.ptBR } },
+          adapters: { date: { locale: window.dateFns?.locale?.ptBR } },
           ticks: { autoSkip: true, maxRotation: 0 }
         },
         y: {
@@ -382,9 +380,8 @@ function initializeHistoryChartFromRuns(runs) {
       plugins: {
         tooltip: {
           callbacks: {
-            // Título do tooltip com data/hora em pt-BR: “27 de setembro de 2025 às 14:30”
             title(items) {
-              const v = items.parsed.x; // epoch ms ou ISO parseável
+              const v = items.parsed.x;
               const base = dfBR.format(new Date(v));
               return base.replace(/\s(\d{2}):/, ' às $1:');
             }
@@ -419,9 +416,8 @@ function openExecutionModal(id) {
   ).textContent = `${e.duration}s`;
   document.getElementById(
     "modalExecutionStatus"
-  ).innerHTML = `<span class="status status--${e.status}">${
-    e.status === "passed" ? "Aprovado" : "Falhado"
-  }</span>`;
+  ).innerHTML = `<span class="status status--${e.status}">${e.status === "passed" ? "Aprovado" : "Falhado"
+    }</span>`;
   document.getElementById("modalGithubLink").href = e.githubUrl || "#";
 
   const testsTabBtn = document.querySelector('[data-tab="tests"]');
@@ -458,11 +454,10 @@ function openExecutionModal(id) {
     <div class="artifact-item">
       <i class="fas fa-file-alt"></i>
       <span>${a.name || "artifact"}</span>
-      ${
-        a.url
+      ${a.url
           ? `<a class="btn btn--sm btn--outline" href="${a.url}" target="_blank" rel="noopener">Abrir</a>`
           : ""
-      }
+        }
     </div>
   `
     )
@@ -641,9 +636,9 @@ function buildPassedFailedSeries(runs) {
     agg.failed += failed;
   }
 
-    const entries = Array.from(map.entries()).sort(
-      (a, b) => new Date(a) - new Date(b)
-    );
+  const entries = Array.from(map.entries()).sort(
+    (a, b) => new Date(a) - new Date(b)
+  );
   return {
     labels: entries.map(([label]) => label),
     passedCounts: entries.map(([, v]) => v.passed),
