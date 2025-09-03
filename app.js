@@ -567,22 +567,40 @@ document.addEventListener("DOMContentLoaded", () => {
 async function loadRuns() {
   try {
     const res = await fetch('/.netlify/functions/get-results');
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    console.log('get-results status', res.status);
     const runs = await res.json();
-
-    // Guarda runs completos para reuso pelo filtro
-    window.__allRuns = runs;
-
-    // Toda a UI já existente (tabela, modal etc.)
-    // ... código existente que usa runs ...
-
-    // Aplica filtro de período na criação do histórico
-    const filtered = filterRunsByPeriod(runs, historyPeriod);
+    console.log('runs recebidos', runs?.length, runs?.);
+    window.__allRuns = runs || [];
+    // atualizar cards/tabela com executionsData/filteredExecutions
+    executionsData = (runs || []).map(r => ({
+      id: r.runId || crypto.randomUUID(),
+      date: r.timestamp,
+      status: (r.totalFailed ?? 0) > 0 ? 'failed' : 'passed',
+      duration: Math.round((r.totalDuration ?? 0) / 1000),
+      totalTests: r.totalTests ?? (r.totalPassed ?? 0) + (r.totalFailed ?? 0),
+      passedTests: r.totalPassed ?? 0,
+      failedTests: r.totalFailed ?? 0,
+      branch: r.branch || '-',
+      environment: r.environment || '-',
+      commit: r.commit || '',
+      author: r.author || '',
+      githubUrl: r.githubRunUrl || '#',
+      tests: Array.isArray(r.tests) ? r.tests : [],
+      logs: Array.isArray(r.logs) ? r.logs : [],
+      artifacts: Array.isArray(r.artifacts) ? r.artifacts : [],
+    }));
+    filteredExecutions = executionsData.slice();
+    updateStatistics();
+    initializeStatusChart();
+    populateExecutionTable();
+    const filtered = filterRunsByPeriod(executionsData, historyPeriod);
+    console.log('periodo', historyPeriod, 'filtrados', filtered.length);
     initializeHistoryChartFromRuns(filtered);
   } catch (err) {
     console.error('Falha ao carregar execuções:', err);
   }
 }
+
 
 // Constrói séries de aprovados e reprovados por timestamp (minuto)
 function buildPassedFailedSeries(runs) {
