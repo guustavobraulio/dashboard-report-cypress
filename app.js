@@ -569,10 +569,10 @@ async function loadRuns() {
     const res = await fetch('/.netlify/functions/get-results');
     const runs = await res.json();
     window.__allRuns = runs || [];
-    // atualizar cards/tabela com executionsData/filteredExecutions
+
     executionsData = (runs || []).map(r => ({
       id: r.runId || crypto.randomUUID(),
-      date: r.timestamp,
+      date: r.timestamp, // ISO (com Z) ou epoch ms aceitos por new Date()
       status: (r.totalFailed ?? 0) > 0 ? 'failed' : 'passed',
       duration: Math.round((r.totalDuration ?? 0) / 1000),
       totalTests: r.totalTests ?? (r.totalPassed ?? 0) + (r.totalFailed ?? 0),
@@ -587,11 +587,14 @@ async function loadRuns() {
       logs: Array.isArray(r.logs) ? r.logs : [],
       artifacts: Array.isArray(r.artifacts) ? r.artifacts : [],
     }));
+
     filteredExecutions = executionsData.slice();
     updateStatistics();
     initializeStatusChart();
     populateExecutionTable();
+
     const filtered = filterRunsByPeriod(executionsData, historyPeriod);
+    console.log('historyPeriod=', historyPeriod, 'total=', executionsData.length, 'filtrados=', filtered.length);
     initializeHistoryChartFromRuns(filtered);
   } catch (err) {
     console.error('Falha ao carregar execuções:', err);
@@ -640,25 +643,18 @@ let historyPeriod = '24h'; // default
 // Filtra runs no formato existente do projeto, assumindo run.date como string ISO ou timestamp
 function filterRunsByPeriod(runs, period = historyPeriod) {
   const now = Date.now();
-  let windowMs;
-  switch (period) {
-    case '24h':
-      windowMs = 24 * 60 * 60 * 1000;
-      break;
-    case '7d':
-      windowMs = 7 * 24 * 60 * 60 * 1000;
-      break;
-    case '30d':
-      windowMs = 30 * 24 * 60 * 60 * 1000;
-      break;
-    default:
-      windowMs = 7 * 24 * 60 * 60 * 1000;
-  }
+
+  let windowMs = 7 * 24 * 60 * 60 * 1000; // default 7d
+  if (period === '24h') windowMs = 24 * 60 * 60 * 1000;
+  else if (period === '30d') windowMs = 30 * 24 * 60 * 60 * 1000;
+
   const start = now - windowMs;
-  // Mantém datasets como {x, y} usando r.date (timeseries)
+
+  const toMs = (d) => typeof d === 'number' ? d : new Date(d).getTime();
+
   return runs.filter(r => {
-    const t = typeof r.date === 'number' ? r.date : new Date(r.date).getTime();
-    return t >= start && t <= now;
+    const t = toMs(r.date);
+    return Number.isFinite(t) && t >= start && t <= now;
   });
 }
 
@@ -671,15 +667,11 @@ function setupPeriodButtons() {
       if (!newPeriod || newPeriod === historyPeriod) return;
       historyPeriod = newPeriod;
 
-      // Alterna classe ativa
       buttons.forEach(b => b.classList.remove('period-btn--active'));
       btn.classList.add('period-btn--active');
 
-      // Se já há runs em memória, re-renderiza
-      if (window.__allRuns && Array.isArray(window.__allRuns)) {
-        const filtered = filterRunsByPeriod(window.__allRuns, historyPeriod);
-        initializeHistoryChartFromRuns(filtered);
-      }
+      const filtered = filterRunsByPeriod(executionsData, historyPeriod);
+      initializeHistoryChartFromRuns(filtered);
     });
   });
 }
