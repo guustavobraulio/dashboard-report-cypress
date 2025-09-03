@@ -505,6 +505,7 @@ function applyFilters() {
    Bootstrap
 =========================== */
 document.addEventListener("DOMContentLoaded", () => {
+  setupPeriodButtons
   setupEventListeners();
   loadRuns().catch(console.error);
   setInterval(() => loadRuns().catch(console.error), 30000);
@@ -531,14 +532,23 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 async function loadRuns() {
-  const runs = await fetchRuns();
-  runs.sort((a, b) => new Date(b.date) - new Date(a.date));
-  executionsData = runs;
-  filteredExecutions = [...runs];
-  updateStatistics();
-  initializeStatusChart();
-  populateExecutionTable();
-  initializeHistoryChartFromRuns(runs);
+  try {
+    const res = await fetch('/.netlify/functions/get-results');
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const runs = await res.json();
+
+    // Guarda runs completos para reuso pelo filtro
+    window.__allRuns = runs;
+
+    // Toda a UI já existente (tabela, modal etc.)
+    // ... código existente que usa runs ...
+
+    // Aplica filtro de período na criação do histórico
+    const filtered = filterRunsByPeriod(runs, historyPeriod);
+    initializeHistoryChartFromRuns(filtered);
+  } catch (err) {
+    console.error('Falha ao carregar execuções:', err);
+  }
 }
 
 // Constrói séries de aprovados e reprovados por timestamp (minuto)
@@ -574,3 +584,55 @@ function buildPassedFailedSeries(runs) {
     failedCounts: entries.map(([, v]) => v.failed),
   };
 }
+
+
+// Estado de período do histórico: '24h' | '7d' | '30d'
+let historyPeriod = '24h'; // default
+
+// Filtra runs no formato existente do projeto, assumindo run.date como string ISO ou timestamp
+function filterRunsByPeriod(runs, period = historyPeriod) {
+  const now = Date.now();
+  let windowMs;
+  switch (period) {
+    case '24h':
+      windowMs = 24 * 60 * 60 * 1000;
+      break;
+    case '7d':
+      windowMs = 7 * 24 * 60 * 60 * 1000;
+      break;
+    case '30d':
+      windowMs = 30 * 24 * 60 * 60 * 1000;
+      break;
+    default:
+      windowMs = 7 * 24 * 60 * 60 * 1000;
+  }
+  const start = now - windowMs;
+  // Mantém datasets como {x, y} usando r.date (timeseries)
+  return runs.filter(r => {
+    const t = typeof r.date === 'number' ? r.date : new Date(r.date).getTime();
+    return t >= start && t <= now;
+  });
+}
+
+// Liga botões de período e re-renderiza o histórico
+function setupPeriodButtons() {
+  const buttons = document.querySelectorAll('[data-history-period]');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      const newPeriod = btn.getAttribute('data-history-period');
+      if (!newPeriod || newPeriod === historyPeriod) return;
+      historyPeriod = newPeriod;
+
+      // Alterna classe ativa
+      buttons.forEach(b => b.classList.remove('period-btn--active'));
+      btn.classList.add('period-btn--active');
+
+      // Se já há runs em memória, re-renderiza
+      if (window.__allRuns && Array.isArray(window.__allRuns)) {
+        const filtered = filterRunsByPeriod(window.__allRuns, historyPeriod);
+        initializeHistoryChartFromRuns(filtered);
+      }
+    });
+  });
+}
+
