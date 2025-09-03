@@ -569,7 +569,7 @@ async function loadRuns() {
     const res = await fetch('/.netlify/functions/get-results');
     console.log('get-results status', res.status);
     const runs = await res.json();
-    console.log('runs recebidos', runs?.length, runs?.);
+    console.log('runs recebidos', runs?.length);
     window.__allRuns = runs || [];
     // atualizar cards/tabela com executionsData/filteredExecutions
     executionsData = (runs || []).map(r => ({
