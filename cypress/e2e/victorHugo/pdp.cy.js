@@ -25,7 +25,7 @@ describe("Validando a página de produto - Victor Hugp", () => {
         .click()
 
     cy.url()
-        .should('include','https://www.victorhugo.com.br/store/shopping-cartr')
+        .should('include','https://www.victorhugo.com.br/store/shopping-cart')
 
   });
 });
