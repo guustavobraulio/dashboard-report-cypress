@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -11,9 +12,9 @@
 
   <!-- Favicon -->
   <link rel="icon" type="image/png" sizes="16x16"
-        href="https://yt3.ggpht.com/xdwy80PUa6YIR6TkM2FfRAGi6ojTZ3H8H0Yw-KiYGYdP5wgLp7dYqdJipcWcFnHKWkeXBhKvUw4=s88-c-k-c0x00ffffff-no-rj">
+    href="https://yt3.ggpht.com/xdwy80PUa6YIR6TkM2FfRAGi6ojTZ3H8H0Yw-KiYGYdP5wgLp7dYqdJipcWcFnHKWkeXBhKvUw4=s88-c-k-c0x00ffffff-no-rj">
   <link rel="apple-touch-icon" sizes="180x180"
-        href="https://yt3.ggpht.com/xdwy80PUa6YIR6TkM2FfRAGi6ojTZ3H8H0Yw-KiYGYdP5wgLp7dYqdJipcWcFnHKWkeXBhKvUw4=s88-c-k-c0x00ffffff-no-rj">
+    href="https://yt3.ggpht.com/xdwy80PUa6YIR6TkM2FfRAGi6ojTZ3H8H0Yw-KiYGYdP5wgLp7dYqdJipcWcFnHKWkeXBhKvUw4=s88-c-k-c0x00ffffff-no-rj">
   <meta name="theme-color" content="#672162">
 
   <!-- Chart.js (uma vez) -->
@@ -107,10 +108,10 @@
           <div class="card">
             <div class="card__header">
               <h2>Histórico de Execuções</h2>
-              <div class="period-filters">
-                <button class="period-btn" data-period="24h">24h</button>
-                <button class="period-btn period-btn--active" data-period="7d">7 dias</button>
-                <button class="period-btn" data-period="30d">30 dias</button>
+              <div class="period-filters" id="historySection">
+                <button class="period-btn" data-history-period="24h">24h</button>
+                <button class="period-btn period-btn--active" data-history-period="7d">7 dias</button>
+                <button class="period-btn" data-history-period="30d">30 dias</button>
               </div>
             </div>
             <div class="card__body">

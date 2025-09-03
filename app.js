@@ -538,7 +538,7 @@ function applyFilters() {
    Bootstrap
 =========================== */
 document.addEventListener("DOMContentLoaded", () => {
-  setupPeriodButtons(); 
+  setupPeriodButtons(); // com parênteses
   setupEventListeners();
   loadRuns().catch(console.error);
   setInterval(() => loadRuns().catch(console.error), 30000);
@@ -660,19 +660,45 @@ function filterRunsByPeriod(runs, period = historyPeriod) {
 
 // Liga botões de período e re-renderiza o histórico
 function setupPeriodButtons() {
+  // Tenta bind direto
   const buttons = document.querySelectorAll('[data-history-period]');
-  buttons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      const newPeriod = btn.getAttribute('data-history-period');
-      if (!newPeriod || newPeriod === historyPeriod) return;
-      historyPeriod = newPeriod;
-
-      buttons.forEach(b => b.classList.remove('period-btn--active'));
-      btn.classList.add('period-btn--active');
-
-      const filtered = filterRunsByPeriod(executionsData, historyPeriod);
-      initializeHistoryChartFromRuns(filtered);
+  console.log('[history] Encontrados botões:', buttons.length);
+  if (buttons.length) {
+    buttons.forEach(btn => {
+      btn.addEventListener('click', onHistoryPeriodClick);
     });
+  }
+
+  // Fallback: delegação no container do gráfico (caso botões sejam recriados)
+  const container = document.querySelector('#historySection') || document;
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-history-period]');
+    if (!btn) return;
+    onHistoryPeriodClick.call(btn, e);
   });
+}
+
+function onHistoryPeriodClick(e) {
+  e.preventDefault();
+  const newPeriod = this.getAttribute('data-history-period');
+  if (!newPeriod || newPeriod === historyPeriod) return;
+
+  historyPeriod = newPeriod;
+
+  // Alterna estado visual
+  document.querySelectorAll('[data-history-period]')
+    .forEach(b => b.classList.remove('period-btn--active'));
+  this.classList.add('period-btn--active');
+
+  // Re-render
+  if (!Array.isArray(executionsData)) {
+    console.warn('[history] executionsData ausente; usando __allRuns');
+  }
+  const source = Array.isArray(executionsData) && executionsData.length
+    ? executionsData
+    : (window.__allRuns || []);
+  const filtered = filterRunsByPeriod(source, historyPeriod);
+  console.log('[history] período:', historyPeriod, 'pontos:', filtered.length);
+  initializeHistoryChartFromRuns(filtered);
 }
 
