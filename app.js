@@ -1,3 +1,4 @@
+// ...existing code...
 // app.js — Dashboard integrado às Netlify Functions
 
 // ===========================
@@ -73,7 +74,7 @@ async function fetchRuns() {
     date: r.timestamp || new Date().toISOString(),
     status: (r.totalFailed ?? 0) > 0 ? "failed" : "passed",
     duration: Math.round((r.totalDuration ?? 0) / 1000),
-    totalTests: r.totalTests ?? (r.totalPassed ?? 0) + (r.totalFailed ?? 0),
+    totalTests: r.totalTests ?? ((r.totalPassed ?? 0) + (r.totalFailed ?? 0)),
     passedTests: r.totalPassed ?? 0,
     failedTests: r.totalFailed ?? 0,
     branch: r.branch || "-",
@@ -90,7 +91,7 @@ async function fetchRuns() {
     logs: Array.isArray(r.logs) ? [...r.logs] : [],
     artifacts: Array.isArray(r.artifacts) ? [...r.artifacts] : []
   }));
-} [8]
+}
 
 // Disparo do pipeline (mantida sua lógica)
 async function executarPipeline() {
@@ -149,7 +150,7 @@ function updateStatistics() {
   if (tf) tf.textContent = totalFailed;
   if (ad) ad.textContent = `${avgDuration}s`;
   if (sr) sr.textContent = `${successRate}%`;
-} [5]
+}
 
 // ===========================
 // Tabela + Paginação
@@ -181,7 +182,7 @@ function populateExecutionTable() {
   });
 
   updatePagination();
-} [5]
+}
 
 function updatePagination() {
   const totalPages = Math.ceil(filteredExecutions.length / itemsPerPage);
@@ -216,7 +217,7 @@ function updatePagination() {
   next.disabled = currentPage === totalPages;
   next.onclick = () => changePage(currentPage + 1);
   el.appendChild(next);
-} [5]
+}
 
 function changePage(p) {
   const totalPages = Math.ceil(filteredExecutions.length / itemsPerPage);
@@ -224,7 +225,7 @@ function changePage(p) {
     currentPage = p;
     populateExecutionTable();
   }
-} [5]
+}
 
 // ===========================
 // Gráficos
@@ -248,17 +249,14 @@ function initializeStatusChart() {
     },
     options: { responsive: true, maintainAspectRatio: false }
   });
-} [12][10]
+}
 
 function initializeHistoryChartFromRuns(runs) {
   const ctx = document.getElementById('historyChart')?.getContext('2d');
   if (!ctx) return;
   if (historyChart) historyChart.destroy();
 
-  const suggestedMax = Math.max(
-    5,
-    ...runs.map(r => Math.max(r.passedTests || 0, r.failedTests || 0))
-  ) + 1;
+  const suggestedMax = Math.max(5, ...runs.map(r => Math.max(r.passedTests || 0, r.failedTests || 0))) + 1;
 
   historyChart = new Chart(ctx, {
     type: 'line',
@@ -269,52 +267,58 @@ function initializeHistoryChartFromRuns(runs) {
           data: runs.map(r => ({ x: r.date, y: r.passedTests || 0 })),
           borderColor: '#16a34a',
           backgroundColor: 'rgba(22,163,74,0.15)',
-          borderWidth: 3, pointRadius: 4, pointHoverRadius: 5, tension: 0.25
+          borderWidth: 3,
+          pointRadius: 4,
+          pointHoverRadius: 5,
+          tension: 0.25
         },
         {
           label: 'Falhados',
           data: runs.map(r => ({ x: r.date, y: r.failedTests || 0 })),
           borderColor: '#dc2626',
           backgroundColor: 'rgba(220,38,38,0.15)',
-          borderWidth: 3, pointRadius: 4, pointHoverRadius: 5, tension: 0.25
+          borderWidth: 3,
+          pointRadius: 4,
+          pointHoverRadius: 5,
+          tension: 0.25
         }
       ]
     },
     options: {
-options: {
-  responsive: true,
-  maintainAspectRatio: false,
-  interaction: { mode: 'nearest', intersect: false },
-  scales: {
-    x: {
-      type: 'timeseries',
-      adapters: { date: { locale: window?.dateFns?.locale?.ptBR } },
-      ticks: { autoSkip: true, maxRotation: 0 }
-    },
-    y: {
-      beginAtZero: true,
-      suggestedMax,
-      ticks: { precision: 0, stepSize: 1 }
-    }
-  },
-  plugins: {
-    legend: { position: 'top' },
-    tooltip: {
-      mode: 'index',
-      intersect: false,
-      callbacks: {
-        title(items) {
-          const p = items?.[0];
-          const x = p?.parsed?.x ?? p?.raw?.x;
-          if (!x) return '';
-          const base = dfBR.format(new Date(x));
-          return base.replace(/\s(\d{2}):/, ' às $1:');
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'nearest', intersect: false },
+      scales: {
+        x: {
+          type: 'time',
+          adapters: { date: { locale: window?.dateFns?.locale?.ptBR } },
+          ticks: { autoSkip: true, maxRotation: 0 }
+        },
+        y: {
+          beginAtZero: true,
+          suggestedMax,
+          ticks: { precision: 0, stepSize: 1 }
+        }
+      },
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            title(items) {
+              const p = items?.[0];
+              const x = p?.parsed?.x ?? p?.raw?.x;
+              if (!x) return '';
+              const base = dfBR.format(new Date(x));
+              return base.replace(/\s(\d{2}):/, ' às $1:');
+            }
+          }
         }
       }
     }
+  });
 }
-}
-}})
 
 // ===========================
 // Modal
@@ -375,7 +379,7 @@ function openExecutionModal(id) {
     modal.classList.remove("hidden");
     modal.style.display = "flex";
   }
-} [5]
+}
 
 function closeModal() {
   const modal = document.getElementById("executionModal");
@@ -388,7 +392,7 @@ function closeModal() {
   const overviewPanel = document.getElementById("overview-tab");
   if (overviewTab) overviewTab.classList.add("tab-button--active");
   if (overviewPanel) overviewPanel.classList.add("tab-panel--active");
-} [5]
+}
 
 // ===========================
 // Filtros e eventos
@@ -413,7 +417,7 @@ function setupEventListeners() {
       if (targetPanel) targetPanel.classList.add("tab-panel--active");
     });
   });
-} [5]
+}
 
 function applyFilters() {
   const branch = document.getElementById("branchFilter")?.value || "";
@@ -433,7 +437,7 @@ function applyFilters() {
   updateStatistics();
   initializeStatusChart();
   populateExecutionTable();
-} [5]
+}
 
 // ===========================
 // Histórico - filtro de período
@@ -449,7 +453,7 @@ function filterRunsByPeriod(runs, period = historyPeriod) {
     const t = toMs(r.date);
     return Number.isFinite(t) && t >= start && t <= now;
   });
-} [5]
+}
 
 function setupPeriodButtons() {
   const buttons = document.querySelectorAll('[data-history-period]');
@@ -460,7 +464,7 @@ function setupPeriodButtons() {
     if (!btn) return;
     onHistoryPeriodClick.call(btn, e);
   });
-} [5]
+}
 
 function onHistoryPeriodClick(e) {
   e.preventDefault();
@@ -472,7 +476,7 @@ function onHistoryPeriodClick(e) {
   const source = executionsData?.length ? executionsData : (window.__allRuns || []);
   const filtered = filterRunsByPeriod(source, historyPeriod);
   initializeHistoryChartFromRuns(filtered);
-} [5]
+}
 
 // ===========================
 // Bootstrap
@@ -487,7 +491,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const btn = document.getElementById("runPipelineBtn");
   btn?.addEventListener("click", executarPipeline);
-}); [5]
+});
 
 // ===========================
 // Orquestração de carregamento
@@ -510,4 +514,4 @@ async function loadRuns() {
   } catch (err) {
     console.error('Falha ao carregar execuções:', err);
   }
-}} [5]
+}
