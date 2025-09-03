@@ -324,31 +324,64 @@ function initializeStatusChart() {
 }
 
 function initializeHistoryChartFromRuns(runs) {
-  const ctx = document.getElementById("historyChart")?.getContext("2d");
+  const ctx = document.getElementById('historyChart')?.getContext('2d');
   if (!ctx) return;
-  const { labels, passedCounts, failedCounts } = buildPassedFailedSeries(runs);
 
   if (historyChart) historyChart.destroy();
+
+  // calcula um suggestedMax simples
+  const maxY = runs.reduce((m, r) => Math.max(m, (r.passedTests||0), (r.failedTests||0)), 0);
+  const suggestedMax = Math.max(5, maxY);
+
   historyChart = new Chart(ctx, {
-    type: "bar",
-      data: {
-        datasets: [
-          { label: 'Aprovados', data: runs.map(r => ({ x: r.date, y: r.passedTests })) },
-          { label: 'Falhados',  data: runs.map(r => ({ x: r.date, y: r.failedTests })) }
-        ]
-      },
+    type: 'line',
+    data: {
+      datasets: [
+        {
+          label: 'Aprovados',
+          data: runs.map(r => ({ x: r.date, y: r.passedTests || 0 })),
+          borderColor: '#16a34a',
+          backgroundColor: 'rgba(22,163,74,0.15)',
+          borderWidth: 3,
+          pointRadius: 4,
+          pointHoverRadius: 5,
+          tension: 0.25,
+        },
+        {
+          label: 'Falhados',
+          data: runs.map(r => ({ x: r.date, y: r.failedTests || 0 })),
+          borderColor: '#dc2626',
+          backgroundColor: 'rgba(220,38,38,0.15)',
+          borderWidth: 3,
+          pointRadius: 4,
+          pointHoverRadius: 5,
+          tension: 0.25,
+        }
+      ]
+    },
     options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'nearest', intersect: false },
       scales: {
         x: {
-          type: 'timeseries',   // ou 'time'
-          time: { unit: 'minute' }, // opcional
+          type: 'timeseries',
+          // time: { unit: 'minute' }, // opcional: deixar o adapter decidir
           ticks: { autoSkip: true, maxRotation: 0 }
         },
-        y: { beginAtZero: true }
+        y: {
+          beginAtZero: true,
+          suggestedMax,
+          ticks: {
+            precision: 0,   // força inteiros
+            stepSize: 1     // passos de 1
+          }
+        }
       }
     }
   });
 }
+
 
 /* ===========================
    Modal
@@ -505,7 +538,7 @@ function applyFilters() {
    Bootstrap
 =========================== */
 document.addEventListener("DOMContentLoaded", () => {
-  setupPeriodButtons
+  setupPeriodButtons(); 
   setupEventListeners();
   loadRuns().catch(console.error);
   setInterval(() => loadRuns().catch(console.error), 30000);
