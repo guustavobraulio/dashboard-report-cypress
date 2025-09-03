@@ -1,37 +1,33 @@
 // app.js — Dashboard integrado às Netlify Functions
 
-let executionsData = [];
-let filteredExecutions = [];
-let statusChart = null;
-let historyChart = null;
+// ===========================
+// Estados globais
+// ===========================
+let executionsData = [];          // cache de execuções normalizadas
+let filteredExecutions = [];      // lista usada por cards/tabela/pizza (filtros da UI)
+let statusChart = null;           // instância do pie
+let historyChart = null;          // instância do histórico
 let currentPage = 1;
 const itemsPerPage = 10;
+let historyPeriod = '24h';        // '24h' | '7d' | '30d'
 
-/* ===========================
-   Utils
-=========================== */
+// ===========================
+// Utils
+// ===========================
 const dfBR = new Intl.DateTimeFormat('pt-BR', {
-  day: '2-digit',
-  month: 'long',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit'
+  day: '2-digit', month: 'long', year: 'numeric',
+  hour: '2-digit', minute: '2-digit'
 });
 
 function formatDateTime(s) {
   const d = new Date(s);
-  // Ex.: “27 de setembro de 2025 14:30”
-  const base = dfBR.format(d);
-  // Insere “ às ” antes da hora
-  return base.replace(/\s(\d{2}):/, ' às $1:');
+  return dfBR.format(d).replace(/\s(\d{2}):/, ' às $1:');
 }
 
-// Garante: ícone + label + slot do spinner dentro do botão (sem overlay)
+// Estrutura do botão para conter label + ícone + slot de spinner
 function ensureButtonStructure() {
   const btn = document.getElementById("runPipelineBtn");
   if (!btn) return;
-
-  // Envolvimento do conteúdo
   if (!btn.querySelector(".btn-pipeline__content")) {
     const current = btn.innerHTML;
     btn.innerHTML = `
@@ -39,37 +35,22 @@ function ensureButtonStructure() {
         ${current}
         <span class="btn-spinner-slot" aria-hidden="true"></span>
       </span>`;
-    btn.setAttribute("aria-live", "polite"); // acessibilidade
-    return;
-  }
-
-  // Garante o slot do spinner mesmo se já existir content
-  const content = btn.querySelector(".btn-pipeline__content");
-  if (content && !content.querySelector(".btn-spinner-slot")) {
-    content.insertAdjacentHTML(
-      "beforeend",
-      '<span class="btn-spinner-slot" aria-hidden="true"></span>'
-    );
+    btn.setAttribute("aria-live", "polite");
+  } else if (!btn.querySelector(".btn-spinner-slot")) {
+    btn.querySelector(".btn-pipeline__content")
+      .insertAdjacentHTML("beforeend", '<span class="btn-spinner-slot" aria-hidden="true"></span>');
   }
 }
-
-// Troca somente o texto; preserva ícone e o slot do spinner
 function setButtonLabel(text) {
   const btn = document.getElementById("runPipelineBtn");
   if (!btn) return;
   const content = btn.querySelector(".btn-pipeline__content");
   if (!content) return;
-
   const icon = content.querySelector("i")?.outerHTML || "";
-  const slot =
-    content.querySelector(".btn-spinner-slot")?.outerHTML ||
-    '<span class="btn-spinner-slot" aria-hidden="true"></span>';
-
+  const slot = content.querySelector(".btn-spinner-slot")?.outerHTML || '<span class="btn-spinner-slot" aria-hidden="true"></span>';
   content.innerHTML = `${icon}${text}${slot}`;
 }
-
-// Aplica classes de estado visuais (sem overlay)
-function mostrarStatusNoBotao(statusText, variant = null) {
+function mostrarStatusNoBotao(statusText, variant=null) {
   const btn = document.getElementById("runPipelineBtn");
   if (!btn) return;
   btn.classList.remove("is-in-progress", "is-success", "is-failure");
@@ -79,19 +60,19 @@ function mostrarStatusNoBotao(statusText, variant = null) {
   if (variant === "failure") btn.classList.add("is-failure");
 }
 
-/* ===========================
-   Backend (Functions)
-=========================== */
+// ===========================
+// Backend (Functions)
+// ===========================
 async function fetchRuns() {
   const res = await fetch("/.netlify/functions/get-results");
   if (!res.ok) throw new Error(`Falha ao carregar resultados: ${res.status}`);
   const raw = await res.json();
-  if (!Array.isArray(raw)) return [];
-  return raw.map((r, idx) => ({
+  const arr = Array.isArray(raw?.executions) ? raw.executions : (Array.isArray(raw) ? raw : []);
+  return arr.map((r, idx) => ({
     id: r.runId || `exec-${String(idx + 1).padStart(3, "0")}`,
     date: r.timestamp || new Date().toISOString(),
     status: (r.totalFailed ?? 0) > 0 ? "failed" : "passed",
-    duration: Math.round((r.totalDuration ?? 0) / 1000), // ms -> s
+    duration: Math.round((r.totalDuration ?? 0) / 1000),
     totalTests: r.totalTests ?? (r.totalPassed ?? 0) + (r.totalFailed ?? 0),
     passedTests: r.totalPassed ?? 0,
     failedTests: r.totalFailed ?? 0,
@@ -100,159 +81,112 @@ async function fetchRuns() {
     commit: r.commit || "",
     author: r.author || "",
     githubUrl: r.githubRunUrl || "#",
-    tests: Array.isArray(r.tests)
-      ? r.tests.map((t) => ({
-        name:
-          t.title || (Array.isArray(t.title) ? t.title.join(" > ") : "spec"),
-        status: t.state || "passed",
-        duration: Math.round((t.duration ?? 0) / 1000), // ms -> s
-        error: t.error || t.displayError || "",
-      }))
-      : [],
+    tests: Array.isArray(r.tests) ? r.tests.map(t => ({
+      name: t.title || (Array.isArray(t.title) ? t.title.join(" > ") : "spec"),
+      status: t.state || "passed",
+      duration: Math.round((t.duration ?? 0) / 1000),
+      error: t.error || t.displayError || ""
+    })) : [],
     logs: Array.isArray(r.logs) ? [...r.logs] : [],
-    artifacts: Array.isArray(r.artifacts) ? [...r.artifacts] : [],
+    artifacts: Array.isArray(r.artifacts) ? [...r.artifacts] : []
   }));
-}
+} [8]
 
-/* ===========================
-   Trigger Pipeline (Functions)
-=========================== */
+// Disparo do pipeline (mantida sua lógica)
 async function executarPipeline() {
   const btn = document.getElementById("runPipelineBtn");
   if (!btn) return;
-
-  ensureButtonStructure(); // garante slot do spinner e estrutura interna
-
+  ensureButtonStructure();
   btn.disabled = true;
   btn.classList.add("btn--loading");
   mostrarStatusNoBotao("Iniciando...", "in_progress");
-
   try {
-    const start = await fetch("/.netlify/functions/trigger-pipeline", {
-      method: "POST",
-    });
+    const start = await fetch("/.netlify/functions/trigger-pipeline", { method: "POST" });
     if (!start.ok) throw new Error(`Falha ao disparar: ${start.status}`);
-
     let result = null;
     do {
-      await new Promise((r) => setTimeout(r, 5000));
+      await new Promise(r => setTimeout(r, 5000));
       const res = await fetch("/.netlify/functions/pipeline-status");
       if (!res.ok) throw new Error(`Falha no status: ${res.status}`);
       result = await res.json();
-
-      const label =
-        result.status === "queued"
-          ? "Na fila..."
-          : result.status === "in_progress"
-            ? "Executando..."
-            : result.status === "completed"
-              ? "Finalizando..."
-              : "Processando...";
-
+      const label = result.status === "queued" ? "Na fila..."
+        : result.status === "in_progress" ? "Executando..."
+        : result.status === "completed" ? "Finalizando..." : "Processando...";
       mostrarStatusNoBotao(label, "in_progress");
     } while (result.status !== "completed");
-
-    if (result.conclusion === "success") {
-      mostrarStatusNoBotao("Concluída ✓", "success");
-    } else {
-      mostrarStatusNoBotao("Falhou ✕", "failure");
-    }
+    if (result.conclusion === "success") mostrarStatusNoBotao("Concluída ✓", "success");
+    else mostrarStatusNoBotao("Falhou ✕", "failure");
   } catch (e) {
     console.error(e);
     mostrarStatusNoBotao("Erro ao executar", "failure");
   } finally {
     setTimeout(() => {
       btn.disabled = false;
-      btn.classList.remove(
-        "btn--loading",
-        "is-in-progress",
-        "is-success",
-        "is-failure"
-      );
+      btn.classList.remove("btn--loading","is-in-progress","is-success","is-failure");
       setButtonLabel("Executar Pipeline");
-      ensureButtonStructure(); // mantém slot para próximos loads
+      ensureButtonStructure();
     }, 1800);
   }
 }
 
-/* ===========================
-   Cards/Estatísticas
-=========================== */
+// ===========================
+// Cards/Estatísticas
+// ===========================
 function updateStatistics() {
-  const totalPassed = filteredExecutions.reduce(
-    (s, e) => s + (e.passedTests || 0),
-    0
-  );
-  const totalFailed = filteredExecutions.reduce(
-    (s, e) => s + (e.failedTests || 0),
-    0
-  );
+  const totalPassed = filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
+  const totalFailed = filteredExecutions.reduce((s, e) => s + (e.failedTests || 0), 0);
   const totalTests = totalPassed + totalFailed;
   const avgDuration = filteredExecutions.length
-    ? Math.round(
-      filteredExecutions.reduce((s, e) => s + (e.duration || 0), 0) /
-      filteredExecutions.length
-    )
+    ? Math.round(filteredExecutions.reduce((s, e) => s + (e.duration || 0), 0) / filteredExecutions.length)
     : 0;
-  const successRate = totalTests
-    ? Math.round((totalPassed / totalTests) * 100)
-    : 0;
+  const successRate = totalTests ? Math.round((totalPassed / totalTests) * 100) : 0;
 
-  document.getElementById("totalPassed").textContent = totalPassed;
-  document.getElementById("totalFailed").textContent = totalFailed;
-  document.getElementById("avgDuration").textContent = `${avgDuration}s`;
-  document.getElementById("successRate").textContent = `${successRate}%`;
-}
+  const tp = document.getElementById("totalPassed");
+  const tf = document.getElementById("totalFailed");
+  const ad = document.getElementById("avgDuration");
+  const sr = document.getElementById("successRate");
+  if (tp) tp.textContent = totalPassed;
+  if (tf) tf.textContent = totalFailed;
+  if (ad) ad.textContent = `${avgDuration}s`;
+  if (sr) sr.textContent = `${successRate}%`;
+} [5]
 
-/* ===========================
-   Tabela
-=========================== */
+// ===========================
+// Tabela + Paginação
+// ===========================
 function populateExecutionTable() {
   const tbody = document.getElementById("executionTableBody");
+  if (!tbody) return;
   const start = (currentPage - 1) * itemsPerPage;
   const page = filteredExecutions.slice(start, start + itemsPerPage);
-
-  tbody.innerHTML = page
-    .map(
-      (e) => `
+  tbody.innerHTML = page.map(e => `
     <tr>
       <td><code>${e.id}</code></td>
       <td>${formatDateTime(e.date)}</td>
       <td><code>${e.branch}</code></td>
       <td><span class="status status--info">${e.environment}</span></td>
-      <td><span class="status status--${e.status}">${e.status === "passed" ? "Aprovado" : "Falhado"
-        }</span></td>
+      <td><span class="status status--${e.status}">${e.status === "passed" ? "Aprovado" : "Falhado"}</span></td>
       <td>${e.passedTests}/${e.totalTests}</td>
       <td>${e.duration}s</td>
       <td>
         <button class="action-btn action-btn--view" data-execution-id="${e.id}">
           <i class="fas fa-eye"></i> Ver
         </button>
-        ${e.githubUrl && e.githubUrl !== "#"
-          ? `<a class="btn btn--sm btn--outline" href="${e.githubUrl}" target="_blank" rel="noopener">Ação</a>`
-          : ""
-        }
+        ${e.githubUrl && e.githubUrl !== "#" ? `<a class="btn btn--sm btn--outline" href="${e.githubUrl}" target="_blank" rel="noopener">Ação</a>` : ""}
       </td>
-    </tr>
-  `
-    )
-    .join("");
+    </tr>`).join("");
 
-  document.querySelectorAll(".action-btn--view").forEach((btn) => {
-    btn.addEventListener("click", () =>
-      openExecutionModal(btn.getAttribute("data-execution-id"))
-    );
+  document.querySelectorAll(".action-btn--view").forEach(btn => {
+    btn.addEventListener("click", () => openExecutionModal(btn.getAttribute("data-execution-id")));
   });
 
   updatePagination();
-}
+} [5]
 
-/* ===========================
-   Paginação
-=========================== */
 function updatePagination() {
   const totalPages = Math.ceil(filteredExecutions.length / itemsPerPage);
   const el = document.getElementById("pagination");
+  if (!el) return;
   el.innerHTML = "";
   if (totalPages <= 1) return;
 
@@ -263,11 +197,7 @@ function updatePagination() {
   el.appendChild(prev);
 
   for (let i = 1; i <= totalPages; i++) {
-    if (
-      i === 1 ||
-      i === totalPages ||
-      (i >= currentPage - 1 && i <= currentPage + 1)
-    ) {
+    if (i === 1 || i === totalPages || (i >= currentPage - 1 && i <= currentPage + 1)) {
       const b = document.createElement("button");
       b.textContent = i;
       b.className = i === currentPage ? "active" : "";
@@ -286,7 +216,7 @@ function updatePagination() {
   next.disabled = currentPage === totalPages;
   next.onclick = () => changePage(currentPage + 1);
   el.appendChild(next);
-}
+} [5]
 
 function changePage(p) {
   const totalPages = Math.ceil(filteredExecutions.length / itemsPerPage);
@@ -294,46 +224,41 @@ function changePage(p) {
     currentPage = p;
     populateExecutionTable();
   }
-}
+} [5]
 
-/* ===========================
-   Gráficos
-=========================== */
+// ===========================
+// Gráficos
+// ===========================
 function initializeStatusChart() {
   const ctx = document.getElementById("statusChart")?.getContext("2d");
   if (!ctx) return;
-  const totalPassed = filteredExecutions.reduce(
-    (s, e) => s + (e.passedTests || 0),
-    0
-  );
-  const totalFailed = filteredExecutions.reduce(
-    (s, e) => s + (e.failedTests || 0),
-    0
-  );
+  const totalPassed = filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
+  const totalFailed = filteredExecutions.reduce((s, e) => s + (e.failedTests || 0), 0);
+
   if (statusChart) statusChart.destroy();
   statusChart = new Chart(ctx, {
     type: "pie",
     data: {
       labels: ["Aprovados", "Falhados"],
-      datasets: [
-        {
-          data: [totalPassed, totalFailed],
-          backgroundColor: ["#1FB8CD", "#B4413C"],
-        },
-      ],
+      datasets: [{
+        data: [totalPassed, totalFailed],
+        backgroundColor: ["#16a34a", "#dc2626"],   // verde/vermelho
+        borderColor: ["#16a34a", "#dc2626"]
+      }]
     },
-    options: { responsive: true, maintainAspectRatio: false },
+    options: { responsive: true, maintainAspectRatio: false }
   });
-}
+} [12][10]
 
 function initializeHistoryChartFromRuns(runs) {
   const ctx = document.getElementById('historyChart')?.getContext('2d');
   if (!ctx) return;
-
   if (historyChart) historyChart.destroy();
 
-  const maxY = runs.reduce((m, r) => Math.max(m, (r.passedTests || 0), (r.failedTests || 0)), 0);
-  const suggestedMax = Math.max(5, maxY);
+  const suggestedMax = Math.max(
+    5,
+    ...runs.map(r => Math.max(r.passedTests || 0, r.failedTests || 0))
+  ) + 1;
 
   historyChart = new Chart(ctx, {
     type: 'line',
@@ -344,195 +269,146 @@ function initializeHistoryChartFromRuns(runs) {
           data: runs.map(r => ({ x: r.date, y: r.passedTests || 0 })),
           borderColor: '#16a34a',
           backgroundColor: 'rgba(22,163,74,0.15)',
-          borderWidth: 3,
-          pointRadius: 4,
-          pointHoverRadius: 5,
-          tension: 0.25,
+          borderWidth: 3, pointRadius: 4, pointHoverRadius: 5, tension: 0.25
         },
         {
           label: 'Falhados',
           data: runs.map(r => ({ x: r.date, y: r.failedTests || 0 })),
           borderColor: '#dc2626',
           backgroundColor: 'rgba(220,38,38,0.15)',
-          borderWidth: 3,
-          pointRadius: 4,
-          pointHoverRadius: 5,
-          tension: 0.25,
+          borderWidth: 3, pointRadius: 4, pointHoverRadius: 5, tension: 0.25
         }
       ]
     },
     options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      interaction: { mode: 'nearest', intersect: false },
+      responsive: true, maintainAspectRatio: false, interaction: { mode: 'nearest', intersect: false },
       scales: {
-        x: {
-          type: 'timeseries',
-          adapters: { date: { locale: window.dateFns?.locale?.ptBR } },
-          ticks: { autoSkip: true, maxRotation: 0 }
-        },
-        y: {
-          beginAtZero: true,
-          suggestedMax,
-          ticks: { precision: 0, stepSize: 1 }
-        }
+        x: { type: 'timeseries', adapters: { date: { locale: window?.dateFns?.locale?.ptBR } }, ticks: { autoSkip: true, maxRotation: 0 } },
+        y: { beginAtZero: true, suggestedMax, ticks: { precision: 0, stepSize: 1 } }
       },
       plugins: {
+        legend: { position: 'top' },
         tooltip: {
           callbacks: {
-            // Título do tooltip com data/hora em pt-BR: "3 de setembro de 2025 às 13:51"
             title(items) {
-              if (!items || items.length === 0) return '';
-              const v = items.parsed.x; // Primeiro item do array, depois o timestamp
+              if (!items?.length) return '';
+              const v = items.parsed.x;
               const base = dfBR.format(new Date(v));
               return base.replace(/\s(\d{2}):/, ' às $1:');
             }
           }
-        },
-        legend: { position: 'top' }
+        }
       }
     }
   });
-}
+} [3][5]
 
-
-
-/* ===========================
-   Modal
-=========================== */
+// ===========================
+// Modal
+// ===========================
 function openExecutionModal(id) {
-  const e = executionsData.find((x) => x.id === id);
+  const e = executionsData.find(x => x.id === id);
   if (!e) return;
-
-  document.getElementById("modalExecutionId").textContent = e.id;
-  document.getElementById("modalExecutionDate").textContent = formatDateTime(
-    e.date
-  );
-  document.getElementById("modalExecutionBranch").textContent = e.branch;
-  document.getElementById("modalExecutionEnvironment").textContent =
-    e.environment;
-  document.getElementById("modalExecutionAuthor").textContent = e.author || "-";
-  document.getElementById("modalExecutionCommit").textContent = e.commit || "-";
-  document.getElementById(
-    "modalExecutionDuration"
-  ).textContent = `${e.duration}s`;
-  document.getElementById(
-    "modalExecutionStatus"
-  ).innerHTML = `<span class="status status--${e.status}">${e.status === "passed" ? "Aprovado" : "Falhado"
-  }</span>`;
-  document.getElementById("modalGithubLink").href = e.githubUrl || "#";
+  const set = (id, val, prop='textContent') => {
+    const el = document.getElementById(id);
+    if (el) el[prop] = val;
+  };
+  set("modalExecutionId", e.id);
+  set("modalExecutionDate", formatDateTime(e.date));
+  set("modalExecutionBranch", e.branch);
+  set("modalExecutionEnvironment", e.environment);
+  set("modalExecutionAuthor", e.author || "-");
+  set("modalExecutionCommit", e.commit || "-");
+  set("modalExecutionDuration", `${e.duration}s`);
+  const statusEl = document.getElementById("modalExecutionStatus");
+  if (statusEl) statusEl.innerHTML = `<span class="status status--${e.status}">${e.status === "passed" ? "Aprovado" : "Falhado"}</span>`;
+  const gh = document.getElementById("modalGithubLink");
+  if (gh) gh.href = e.githubUrl || "#";
 
   const testsTabBtn = document.querySelector('[data-tab="tests"]');
   const logsTabBtn = document.querySelector('[data-tab="logs"]');
   const artifactsTabBtn = document.querySelector('[data-tab="artifacts"]');
-
   if (testsTabBtn) testsTabBtn.disabled = !(e.tests && e.tests.length);
   if (logsTabBtn) logsTabBtn.disabled = !(e.logs && e.logs.length);
-  if (artifactsTabBtn)
-    artifactsTabBtn.disabled = !(e.artifacts && e.artifacts.length);
+  if (artifactsTabBtn) artifactsTabBtn.disabled = !(e.artifacts && e.artifacts.length);
 
   const testsList = document.getElementById("modalTestsList");
-  testsList.innerHTML = (e.tests || [])
-    .map(
-      (t) => `
-    <div class="test-item test-item--${t.status || "passed"}">
-      <div class="test-info">
-        <div class="test-name">${t.name}</div>
-        ${t.error ? `<div class="test-error">${t.error}</div>` : ""}
-      </div>
-      <div class="test-duration">${t.duration || 0}s</div>
-    </div>
-  `
-    )
-    .join("");
+  if (testsList) {
+    testsList.innerHTML = (e.tests || []).map(t => `
+      <div class="test-item test-item--${t.status || "passed"}">
+        <div class="test-info">
+          <div class="test-name">${t.name}</div>
+          ${t.error ? `<div class="test-error">${t.error}</div>` : ""}
+        </div>
+        <div class="test-duration">${t.duration || 0}s</div>
+      </div>`).join("");
+  }
 
   const logsPre = document.getElementById("modalLogs");
-  logsPre.textContent = (e.logs || []).join("\n\n");
+  if (logsPre) logsPre.textContent = (e.logs || []).join("\n\n");
 
   const artifactsWrap = document.getElementById("modalArtifacts");
-  artifactsWrap.innerHTML = (e.artifacts || [])
-    .map(
-      (a) => `
-    <div class="artifact-item">
-      <i class="fas fa-file-alt"></i>
-      <span>${a.name || "artifact"}</span>
-      ${a.url
-          ? `<a class="btn btn--sm btn--outline" href="${a.url}" target="_blank" rel="noopener">Abrir</a>`
-          : ""
-        }
-    </div>
-  `
-    )
-    .join("");
+  if (artifactsWrap) {
+    artifactsWrap.innerHTML = (e.artifacts || []).map(a => `
+      <div class="artifact-item">
+        <i class="fas fa-file-alt"></i>
+        <span>${a.name || "artifact"}</span>
+        ${a.url ? `<a class="btn btn--sm btn--outline" href="${a.url}" target="_blank" rel="noopener">Abrir</a>` : ""}
+      </div>`).join("");
+  }
 
   const modal = document.getElementById("executionModal");
-  modal.classList.remove("hidden");
-  modal.style.display = "flex";
-}
+  if (modal) {
+    modal.classList.remove("hidden");
+    modal.style.display = "flex";
+  }
+} [5]
 
 function closeModal() {
   const modal = document.getElementById("executionModal");
+  if (!modal) return;
   modal.classList.add("hidden");
   modal.style.display = "none";
-
-  document
-    .querySelectorAll(".tab-button")
-    .forEach((btn) => btn.classList.remove("tab-button--active"));
-  document
-    .querySelectorAll(".tab-panel")
-    .forEach((panel) => panel.classList.remove("tab-panel--active"));
-  const overviewTab = document.querySelector(
-    '.tab-button[data-tab="overview"]'
-  );
+  document.querySelectorAll(".tab-button").forEach(btn => btn.classList.remove("tab-button--active"));
+  document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("tab-panel--active"));
+  const overviewTab = document.querySelector('.tab-button[data-tab="overview"]');
   const overviewPanel = document.getElementById("overview-tab");
   if (overviewTab) overviewTab.classList.add("tab-button--active");
   if (overviewPanel) overviewPanel.classList.add("tab-panel--active");
-}
+} [5]
 
-/* ===========================
-   Filtros e eventos
-=========================== */
+// ===========================
+// Filtros e eventos
+// ===========================
 function setupEventListeners() {
-  document
-    .getElementById("branchFilter")
-    .addEventListener("change", applyFilters);
-  document
-    .getElementById("environmentFilter")
-    .addEventListener("change", applyFilters);
-  document
-    .getElementById("statusFilter")
-    .addEventListener("change", applyFilters);
-  document
-    .getElementById("dateFilter")
-    .addEventListener("change", applyFilters);
-  document.getElementById("closeModal").addEventListener("click", closeModal);
-  const backdrop = document.querySelector("#executionModal .modal-backdrop");
-  backdrop?.addEventListener("click", closeModal);
+  const el = id => document.getElementById(id);
+  el("branchFilter")?.addEventListener("change", applyFilters);
+  el("environmentFilter")?.addEventListener("change", applyFilters);
+  el("statusFilter")?.addEventListener("change", applyFilters);
+  el("dateFilter")?.addEventListener("change", applyFilters);
+  el("closeModal")?.addEventListener("click", closeModal);
+  document.querySelector("#executionModal .modal-backdrop")?.addEventListener("click", closeModal);
 
-  document.querySelectorAll(".tab-button").forEach((button) => {
+  document.querySelectorAll(".tab-button").forEach(button => {
     button.addEventListener("click", () => {
       if (button.disabled) return;
       const tabName = button.dataset.tab;
-      document
-        .querySelectorAll(".tab-button")
-        .forEach((btn) => btn.classList.remove("tab-button--active"));
-      document
-        .querySelectorAll(".tab-panel")
-        .forEach((panel) => panel.classList.remove("tab-panel--active"));
+      document.querySelectorAll(".tab-button").forEach(btn => btn.classList.remove("tab-button--active"));
+      document.querySelectorAll(".tab-panel").forEach(panel => panel.classList.remove("tab-panel--active"));
       button.classList.add("tab-button--active");
       const targetPanel = document.getElementById(`${tabName}-tab`);
       if (targetPanel) targetPanel.classList.add("tab-panel--active");
     });
   });
-}
+} [5]
 
 function applyFilters() {
-  const branch = document.getElementById("branchFilter").value;
-  const env = document.getElementById("environmentFilter").value;
-  const status = document.getElementById("statusFilter").value;
-  const date = document.getElementById("dateFilter").value;
+  const branch = document.getElementById("branchFilter")?.value || "";
+  const env = document.getElementById("environmentFilter")?.value || "";
+  const status = document.getElementById("statusFilter")?.value || "";
+  const date = document.getElementById("dateFilter")?.value || "";
 
-  filteredExecutions = executionsData.filter((e) => {
+  filteredExecutions = executionsData.filter(e => {
     if (branch && e.branch !== branch) return false;
     if (env && e.environment !== env) return false;
     if (status && e.status !== status) return false;
@@ -544,173 +420,81 @@ function applyFilters() {
   updateStatistics();
   initializeStatusChart();
   populateExecutionTable();
-}
+} [5]
 
-/* ===========================
-   Bootstrap
-=========================== */
-document.addEventListener("DOMContentLoaded", () => {
-  setupPeriodButtons(); // com parênteses
-  setupEventListeners();
-  loadRuns().catch(console.error);
-  setInterval(() => loadRuns().catch(console.error), 30000);
-
-  // Estrutura do botão para status embutido (ícone + label + slot spinner)
-  const btn = document.getElementById("runPipelineBtn");
-  if (btn) {
-    if (!btn.querySelector(".btn-pipeline__content")) {
-      const current = btn.innerHTML;
-      btn.innerHTML = `<span class="btn-pipeline__content">${current}<span class="btn-spinner-slot" aria-hidden="true"></span></span>`;
-      btn.setAttribute("aria-live", "polite");
-    } else if (!btn.querySelector(".btn-spinner-slot")) {
-      btn
-        .querySelector(".btn-pipeline__content")
-        .insertAdjacentHTML(
-          "beforeend",
-          '<span class="btn-spinner-slot" aria-hidden="true"></span>'
-        );
-    }
-    btn.addEventListener("click", executarPipeline);
-  } else {
-    console.error("Botão runPipelineBtn não encontrado no DOM");
-  }
-});
-
-async function loadRuns() {
-  try {
-    const res = await fetch('/.netlify/functions/get-results');
-    const runs = await res.json();
-    window.__allRuns = runs || [];
-
-    executionsData = (runs || []).map(r => ({
-      id: r.runId || crypto.randomUUID(),
-      date: r.timestamp, // ISO (com Z) ou epoch ms aceitos por new Date()
-      status: (r.totalFailed ?? 0) > 0 ? 'failed' : 'passed',
-      duration: Math.round((r.totalDuration ?? 0) / 1000),
-      totalTests: r.totalTests ?? (r.totalPassed ?? 0) + (r.totalFailed ?? 0),
-      passedTests: r.totalPassed ?? 0,
-      failedTests: r.totalFailed ?? 0,
-      branch: r.branch || '-',
-      environment: r.environment || '-',
-      commit: r.commit || '',
-      author: r.author || '',
-      githubUrl: r.githubRunUrl || '#',
-      tests: Array.isArray(r.tests) ? r.tests : [],
-      logs: Array.isArray(r.logs) ? r.logs : [],
-      artifacts: Array.isArray(r.artifacts) ? r.artifacts : [],
-    }));
-
-    filteredExecutions = executionsData.slice();
-    updateStatistics();
-    initializeStatusChart();
-    populateExecutionTable();
-
-    const filtered = filterRunsByPeriod(executionsData, historyPeriod);
-    console.log('historyPeriod=', historyPeriod, 'total=', executionsData.length, 'filtrados=', filtered.length);
-    initializeHistoryChartFromRuns(filtered);
-  } catch (err) {
-    console.error('Falha ao carregar execuções:', err);
-  }
-}
-
-
-// Constrói séries de aprovados e reprovados por timestamp (minuto)
-function buildPassedFailedSeries(runs) {
-  const bucket = (iso) => {
-    const d = new Date(iso);
-    return d.toLocaleString("pt-BR", {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
-  const map = new Map(); // label -> { passed, failed }
-  for (const r of runs) {
-    const label = bucket(r.date);
-    const passed = r.passedTests || 0;
-    const failed = r.failedTests || 0;
-    if (!map.has(label)) map.set(label, { passed: 0, failed: 0 });
-    const agg = map.get(label);
-    agg.passed += passed;
-    agg.failed += failed;
-  }
-
-  const entries = Array.from(map.entries()).sort(
-    (a, b) => new Date(a) - new Date(b)
-  );
-  return {
-    labels: entries.map(([label]) => label),
-    passedCounts: entries.map(([, v]) => v.passed),
-    failedCounts: entries.map(([, v]) => v.failed),
-  };
-}
-
-
-// Estado de período do histórico: '24h' | '7d' | '30d'
-let historyPeriod = '24h'; // default
-
-// Filtra runs no formato existente do projeto, assumindo run.date como string ISO ou timestamp
+// ===========================
+// Histórico - filtro de período
+// ===========================
 function filterRunsByPeriod(runs, period = historyPeriod) {
   const now = Date.now();
-
-  let windowMs = 7 * 24 * 60 * 60 * 1000; // default 7d
-  if (period === '24h') windowMs = 24 * 60 * 60 * 1000;
-  else if (period === '30d') windowMs = 30 * 24 * 60 * 60 * 1000;
-
+  let windowMs = 24 * 60 * 60 * 1000;
+  if (period === '7d') windowMs = 7 * 24 * 60 * 60 * 1000;
+  if (period === '30d') windowMs = 30 * 24 * 60 * 60 * 1000;
   const start = now - windowMs;
-
-  const toMs = (d) => typeof d === 'number' ? d : new Date(d).getTime();
-
+  const toMs = d => typeof d === 'number' ? d : new Date(d).getTime();
   return runs.filter(r => {
     const t = toMs(r.date);
     return Number.isFinite(t) && t >= start && t <= now;
   });
-}
+} [5]
 
-// Liga botões de período e re-renderiza o histórico
 function setupPeriodButtons() {
-  // Tenta bind direto
   const buttons = document.querySelectorAll('[data-history-period]');
-  console.log('[history] Encontrados botões:', buttons.length);
-  if (buttons.length) {
-    buttons.forEach(btn => {
-      btn.addEventListener('click', onHistoryPeriodClick);
-    });
-  }
-
-  // Fallback: delegação no container do gráfico (caso botões sejam recriados)
+  buttons.forEach(btn => btn.addEventListener('click', onHistoryPeriodClick));
   const container = document.querySelector('#historySection') || document;
   container.addEventListener('click', (e) => {
     const btn = e.target.closest('[data-history-period]');
     if (!btn) return;
     onHistoryPeriodClick.call(btn, e);
   });
-}
+} [5]
 
 function onHistoryPeriodClick(e) {
   e.preventDefault();
   const newPeriod = this.getAttribute('data-history-period');
   if (!newPeriod || newPeriod === historyPeriod) return;
-
   historyPeriod = newPeriod;
-
-  // Alterna estado visual
-  document.querySelectorAll('[data-history-period]')
-    .forEach(b => b.classList.remove('period-btn--active'));
+  document.querySelectorAll('[data-history-period]').forEach(b => b.classList.remove('period-btn--active'));
   this.classList.add('period-btn--active');
-
-  // Re-render
-  if (!Array.isArray(executionsData)) {
-    console.warn('[history] executionsData ausente; usando __allRuns');
-  }
-  const source = Array.isArray(executionsData) && executionsData.length
-    ? executionsData
-    : (window.__allRuns || []);
+  const source = executionsData?.length ? executionsData : (window.__allRuns || []);
   const filtered = filterRunsByPeriod(source, historyPeriod);
-  console.log('[history] período:', historyPeriod, 'pontos:', filtered.length);
   initializeHistoryChartFromRuns(filtered);
-}
+} [5]
 
+// ===========================
+// Bootstrap
+// ===========================
+document.addEventListener("DOMContentLoaded", () => {
+  setupPeriodButtons();
+  setupEventListeners();
+  ensureButtonStructure();
+
+  loadRuns().catch(console.error);
+  setInterval(() => loadRuns().catch(console.error), 30000);
+
+  const btn = document.getElementById("runPipelineBtn");
+  btn?.addEventListener("click", executarPipeline);
+}); [5]
+
+// ===========================
+// Orquestração de carregamento
+// ===========================
+async function loadRuns() {
+  try {
+    const runs = await fetchRuns();
+    window.__allRuns = runs || [];
+    executionsData = runs;
+
+    // Base para cards/tabela/pizza = lista completa + filtros da UI
+    filteredExecutions = executionsData.slice();
+    updateStatistics();
+    initializeStatusChart();
+    populateExecutionTable();
+
+    // Base para o histórico = filtragem por período
+    const filtered = filterRunsByPeriod(executionsData, historyPeriod);
+    initializeHistoryChartFromRuns(filtered);
+  } catch (err) {
+    console.error('Falha ao carregar execuções:', err);
+  }
+} [5]
