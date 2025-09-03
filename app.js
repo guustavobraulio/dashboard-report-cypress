@@ -10,15 +10,20 @@ const itemsPerPage = 10;
 /* ===========================
    Utils
 =========================== */
+const dfBR = new Intl.DateTimeFormat('pt-BR', {
+  day: '2-digit',
+  month: 'long',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit'
+});
+
 function formatDateTime(s) {
   const d = new Date(s);
-  return d.toLocaleString("pt-BR", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+  // Ex.: “27 de setembro de 2025 14:30”
+  const base = dfBR.format(d);
+  // Insere “ às ” antes da hora
+  return base.replace(/\s(\d{2}):/, ' às $1:');
 }
 
 // Garante: ícone + label + slot do spinner dentro do botão (sem overlay)
@@ -329,7 +334,6 @@ function initializeHistoryChartFromRuns(runs) {
 
   if (historyChart) historyChart.destroy();
 
-  // calcula um suggestedMax simples
   const maxY = runs.reduce((m, r) => Math.max(m, (r.passedTests||0), (r.failedTests||0)), 0);
   const suggestedMax = Math.max(5, maxY);
 
@@ -366,21 +370,32 @@ function initializeHistoryChartFromRuns(runs) {
       scales: {
         x: {
           type: 'timeseries',
-          // time: { unit: 'minute' }, // opcional: deixar o adapter decidir
+          adapters: { date: { locale: window.dateFns.locale.ptBR } },
           ticks: { autoSkip: true, maxRotation: 0 }
         },
         y: {
           beginAtZero: true,
           suggestedMax,
-          ticks: {
-            precision: 0,   // força inteiros
-            stepSize: 1     // passos de 1
-          }
+          ticks: { precision: 0, stepSize: 1 }
         }
+      },
+      plugins: {
+        tooltip: {
+          callbacks: {
+            // Título do tooltip com data/hora em pt-BR: “27 de setembro de 2025 às 14:30”
+            title(items) {
+              const v = items.parsed.x; // epoch ms ou ISO parseável
+              const base = dfBR.format(new Date(v));
+              return base.replace(/\s(\d{2}):/, ' às $1:');
+            }
+          }
+        },
+        legend: { position: 'top' }
       }
     }
   });
 }
+
 
 
 /* ===========================
