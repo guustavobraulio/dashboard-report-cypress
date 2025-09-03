@@ -286,22 +286,22 @@ function initializeHistoryChartFromRuns(runs) {
         x: { type: 'timeseries', adapters: { date: { locale: window?.dateFns?.locale?.ptBR } }, ticks: { autoSkip: true, maxRotation: 0 } },
         y: { beginAtZero: true, suggestedMax, ticks: { precision: 0, stepSize: 1 } }
       },
-      plugins: {
-        legend: { position: 'top' },
-        tooltip: {
-          mode: 'index',
-          intersect: false,
-          callbacks: {
-            title(items) {
-              const p = items?.;
-              const x = p?.parsed?.x ?? p?.raw?.x;
-              if (!x) return '';
-              const base = dfBR.format(new Date(x));
-              return base.replace(/\s(\d{2}):/, ' às $1:');
-            }
+    plugins: {
+      legend: { position: 'top' },
+      tooltip: {
+        mode: 'index',
+        intersect: false,
+        callbacks: {
+          title(items) {
+            const p = items?.[0];
+            const x = p?.parsed?.x ?? p?.raw?.x;
+            if (!x) return '';
+            const base = dfBR.format(new Date(x));
+            return base.replace(/\s(\d{2}):/, ' às $1:');
           }
         }
       }
+    }
     }
   });
 } [3][5]
