@@ -380,8 +380,10 @@ function initializeHistoryChartFromRuns(runs) {
       plugins: {
         tooltip: {
           callbacks: {
+            // Título do tooltip com data/hora em pt-BR: "3 de setembro de 2025 às 13:51"
             title(items) {
-              const v = items.parsed.x;
+              if (!items || items.length === 0) return '';
+              const v = items.parsed.x; // Primeiro item do array, depois o timestamp
               const base = dfBR.format(new Date(v));
               return base.replace(/\s(\d{2}):/, ' às $1:');
             }
@@ -417,7 +419,7 @@ function openExecutionModal(id) {
   document.getElementById(
     "modalExecutionStatus"
   ).innerHTML = `<span class="status status--${e.status}">${e.status === "passed" ? "Aprovado" : "Falhado"
-    }</span>`;
+  }</span>`;
   document.getElementById("modalGithubLink").href = e.githubUrl || "#";
 
   const testsTabBtn = document.querySelector('[data-tab="tests"]');
