@@ -19,7 +19,7 @@ const dfBR = new Intl.DateTimeFormat('pt-BR', {
 
 function formatDateTime(s) {
   const d = new Date(s);
-  return dfBR.format(d).replace(/\s(\d{2}):/, ' às $1:');
+  return dfBR.format(d).replace(/\s(\d{2}):/, ' $1:');
 }
 
 // Estrutura do botão para conter label + ícone + slot de spinner
