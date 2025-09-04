@@ -293,7 +293,33 @@ function initializeHistoryChartFromRuns(runs) {
 
   // 1) Filtra e ordena os pontos por data (garante time scale estável)
   const runsOk = (runs || []).filter(r => r?.date && Number.isFinite(new Date(r.date).getTime()));
-  const sorted = [...runsOk].sort((a, b) => new Date(a.date) - new Date(b.date));  // ordenação crescente [3]
+  const sorted = [...runsOk].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+  // DEBUG: confirme quantidade e range
+  console.log('history(sorted) len=', sorted.length, 'first=', sorted?.date, 'last=', sorted.at(-1)?.date); // [4]
+
+  // 2) Fallback quando não houver pontos válidos
+  if (!sorted.length) {
+    historyChart = new Chart(ctx, {
+      type: 'line',
+      data: { datasets: [
+        { label: 'Aprovados', data: [] },
+        { label: 'Falhados',  data: [] }
+      ]},
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        parsing: false,
+        normalized: true,
+        scales: {
+          x: { type: 'time', time: { unit: 'hour' }, ticks: { autoSkip: true, maxRotation: 0 } },
+          y: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } }
+        },
+        plugins: { legend: { position: 'top' } }
+      }
+    });
+    return;
+  }
 
   const suggestedMax = Math.max(5, ...sorted.map(r => Math.max(Number(r.passedTests || 0), Number(r.failedTests || 0)))) + 1;
 
@@ -303,7 +329,7 @@ function initializeHistoryChartFromRuns(runs) {
       datasets: [
         {
           label: 'Aprovados',
-          data: sorted.map(r => ({ x: r.date, y: Number(r.passedTests ?? 0) })), // y sempre numérico [3]
+          data: sorted.map(r => ({ x: r.date, y: Number(r.passedTests ?? 0) })), // y sempre numérico
           borderColor: '#16a34a',
           backgroundColor: 'rgba(22,163,74,0.15)',
           borderWidth: 3,
@@ -326,13 +352,13 @@ function initializeHistoryChartFromRuns(runs) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      parsing: false,      // usa {x,y} diretamente [2]
-      normalized: true,    // melhora a precisão/performance [2]
+      parsing: false,        // usa {x,y} diretamente
+      normalized: true,      // melhora precisão/performance
       interaction: { mode: 'nearest', intersect: false },
       scales: {
         x: {
           type: 'time',
-          time: { unit: 'hour' }, // ou 'day' para 7d/30d
+          time: { unit: 'hour' }, // mude para 'day' quando historyPeriod for 7d/30d, se desejar
           adapters: { date: { locale: window?.dateFns?.locale?.ptBR } },
           ticks: { autoSkip: true, maxRotation: 0 }
         },
@@ -349,6 +375,7 @@ function initializeHistoryChartFromRuns(runs) {
           intersect: false,
           callbacks: {
             title(items) {
+              // corrigido: pegar o primeiro item do array
               const first = (items && items.length) ? items : null;
               const t = first && (first.parsed?.x ?? first.raw?.x);
               return t ? dfBR.format(new Date(t)).replace(/\s(\d{2}):/, ' às $1:') : '';
@@ -513,10 +540,14 @@ function onHistoryPeriodClick(e) {
   const newPeriod = this.getAttribute('data-history-period');
   if (!newPeriod || newPeriod === historyPeriod) return;
   historyPeriod = newPeriod;
+
   document.querySelectorAll('[data-history-period]').forEach(b => b.classList.remove('period-btn--active'));
   this.classList.add('period-btn--active');
+
   const source = executionsData?.length ? executionsData : (window.__allRuns || []);
   const filtered = filterRunsByPeriod(source, historyPeriod);
+  // DEBUG: verificar tamanho pós-filtro de período
+  console.log('historyPeriod(click)=', historyPeriod, 'count=', filtered.length); [web:270]
   initializeHistoryChartFromRuns(filtered);
 }
 
@@ -551,7 +582,12 @@ async function loadRuns() {
     updateStatusChartForBranch();
     populateExecutionTable();
 
+    // Histórico (período)
     const filtered = filterRunsByPeriod(executionsData, historyPeriod);
+
+    // DEBUG: verificar tamanho pós-filtro de período no load
+    console.log('historyPeriod(load)=', historyPeriod, 'count=', filtered.length); [3]
+
     initializeHistoryChartFromRuns(filtered);
   } catch (err) {
     console.error('Falha ao carregar execuções:', err);
