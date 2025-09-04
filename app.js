@@ -13,7 +13,7 @@ let historyPeriod = '24h';        // '24h' | '7d' | '30d'
 // Utils
 // ===========================
 const dfBR = new Intl.DateTimeFormat('pt-BR', {
-  day: '2-digit', month: 'long', year: 'numeric',
+  day: '2-digit', month: 'short', year: '2-digit',
   hour: '2-digit', minute: '2-digit'
 });
 
@@ -391,13 +391,9 @@ function closeModal() {
   if (overviewPanel) overviewPanel.classList.add("tab-panel--active");
 }
 
-// ===========================
-// Filtros e eventos
-// ===========================
 function setupEventListeners() {
   const el = id => document.getElementById(id);
-  el("branchFilter")?.addEventListener("change", applyFilters);
-  el("environmentFilter")?.addEventListener("change", applyFilters);
+
   el("statusFilter")?.addEventListener("change", applyFilters);
   el("dateFilter")?.addEventListener("change", applyFilters);
   el("closeModal")?.addEventListener("click", closeModal);
@@ -416,15 +412,12 @@ function setupEventListeners() {
   });
 }
 
+
 function applyFilters() {
-  const branch = document.getElementById("branchFilter")?.value || "";
-  const env = document.getElementById("environmentFilter")?.value || "";
   const status = document.getElementById("statusFilter")?.value || "";
   const date = document.getElementById("dateFilter")?.value || "";
 
   filteredExecutions = executionsData.filter(e => {
-    if (branch && e.branch !== branch) return false;
-    if (env && e.environment !== env) return false;
     if (status && e.status !== status) return false;
     if (date && !String(e.date).startsWith(date)) return false;
     return true;
