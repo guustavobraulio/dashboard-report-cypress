@@ -7,7 +7,9 @@ let statusChart = null;           // instância do pie
 let historyChart = null;          // instância do histórico
 let currentPage = 1;
 const itemsPerPage = 10;
-let historyPeriod = '24h';        // '24h' | '7d' | '30d'
+let historyPeriod = '24h';   
+let autoRefreshSeconds = 30;
+let autoRefreshTimer = null;     // Timer para auto-refresh
 
 // ===========================
 // Utils
@@ -476,11 +478,19 @@ document.addEventListener("DOMContentLoaded", () => {
   setupEventListeners();
   ensureButtonStructure();
 
-  loadRuns().catch(console.error);
-  setInterval(() => loadRuns().catch(console.error), 30000);
+  loadRuns().catch(console.error).finally(() => {
+    startAutoRefreshCountdown();
+  });
 
   const btn = document.getElementById("runPipelineBtn");
   btn?.addEventListener("click", executarPipeline);
+
+  // após 30segs atualizar a página
+  if (autoRefreshTimer) {
+  // apenas ressincroniza sem recriar intervalo
+  autoRefreshSeconds = 30;
+  updateAutoRefreshLabel();
+}
 });
 
 // ===========================
@@ -511,4 +521,36 @@ async function loadRuns() {
   } catch (err) {
     console.error('Falha ao carregar execuções:', err);
   }
+
+  // Auto-refresh
+  function updateAutoRefreshLabel() {
+    const label = document.querySelector('.auto-refresh span');
+    if (label) label.textContent = `Auto-refresh: ${autoRefreshSeconds}s`;
+  }
+
+  function startAutoRefreshCountdown() {
+    // evita múltiplos timers
+    if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+
+    autoRefreshSeconds = 30;
+    updateAutoRefreshLabel();
+
+    autoRefreshTimer = setInterval(async () => {
+      autoRefreshSeconds -= 1;
+      updateAutoRefreshLabel();
+
+      if (autoRefreshSeconds <= 0) {
+        clearInterval(autoRefreshTimer);
+        autoRefreshTimer = null;
+
+        // dispara o refresh e reinicia o contador ao concluir
+        try {
+          await loadRuns();
+        } finally {
+          startAutoRefreshCountdown();
+        }
+      }
+    }, 1000);
+  }
+
 }
