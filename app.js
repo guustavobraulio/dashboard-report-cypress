@@ -25,6 +25,14 @@ function formatDateTime(s) {
   return dfBR.format(d).replace(/\s(\d{2}):/, ' às $1:');
 }
 
+// ==== Branch helpers ====
+function uniqueBranches(items){
+  return [...new Set(items.map(i => i.branch).filter(Boolean))].sort();
+}
+function filterByBranch(items, branchValue){
+  return branchValue ? items.filter(i => i.branch === branchValue) : items;
+}
+
 // Estrutura do botão para conter label + ícone + slot de spinner
 function ensureButtonStructure() {
   const btn = document.getElementById("runPipelineBtn");
@@ -249,6 +257,33 @@ function initializeStatusChart() {
     },
     options: { responsive: true, maintainAspectRatio: false }
   });
+  window.statusChart = statusChart;
+
+}
+
+function populateBranchFilter(){
+  const sel = document.getElementById('branchFilter');
+  if (!sel) return;
+
+  const current = sel.value || '';
+  sel.innerHTML = '<option value="">Todas as branches</option>';
+
+  const branches = uniqueBranches(filteredExecutions || []);
+  for (const b of branches){
+    sel.add(new Option(b, b, false, b === current));
+  }
+}
+
+function updateStatusChartForBranch(){
+  const sel = document.getElementById('branchFilter');
+  if (!sel || !window.statusChart) return;
+
+  const withBranch = filterByBranch(filteredExecutions || [], sel.value);
+  const totalPassed = withBranch.reduce((s, e) => s + (e.passedTests || 0), 0);
+  const totalFailed = withBranch.reduce((s, e) => s + (e.failedTests || 0), 0);
+
+  window.statusChart.data.datasets.data = [totalPassed, totalFailed];  
+  window.statusChart?.update(); // atualização conforme doc Chart.js [3][2][9]
 }
 
 function initializeHistoryChartFromRuns(runs) {
@@ -432,12 +467,14 @@ function applyFilters() {
     if (date && !String(e.date).startsWith(date)) return false;
     return true;
   });
-
   currentPage = 1;
   updateStatistics();
-  initializeStatusChart();
+  initializeStatusChart();      
+  populateBranchFilter();       
+  updateStatusChartForBranch(); 
   populateExecutionTable();
 }
+
 
 // ===========================
 // Histórico - filtro de período
@@ -502,13 +539,13 @@ async function loadRuns() {
     window.__allRuns = runs || [];
     executionsData = runs;
 
-    // Base para cards/tabela/pizza = lista completa + filtros da UI
     filteredExecutions = executionsData.slice();
     updateStatistics();
     initializeStatusChart();
+    populateBranchFilter();        
+    updateStatusChartForBranch();  
     populateExecutionTable();
 
-    // Base para o histórico = filtragem por período
     const filtered = filterRunsByPeriod(executionsData, historyPeriod);
     initializeHistoryChartFromRuns(filtered);
   } catch (err) {
