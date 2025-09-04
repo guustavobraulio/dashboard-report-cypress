@@ -547,7 +547,7 @@ function onHistoryPeriodClick(e) {
   const source = executionsData?.length ? executionsData : (window.__allRuns || []);
   const filtered = filterRunsByPeriod(source, historyPeriod);
   // DEBUG: verificar tamanho pós-filtro de período
-  console.log('historyPeriod(click)=', historyPeriod, 'count=', filtered.length); [web:270]
+  console.log('historyPeriod(click)=', historyPeriod, 'count=', filtered.length);
   initializeHistoryChartFromRuns(filtered);
 }
 
