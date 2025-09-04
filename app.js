@@ -277,13 +277,24 @@ function populateBranchFilter() {
 }
 
 function updateStatusChartForBranch() {
+  const sel = document.getElementById('branchFilter');
+  if (!sel || !window.statusChart) return;
+
+  // CORREÇÃO: garantir a definição de withBranch
+  const base = Array.isArray(filteredExecutions) ? filteredExecutions : [];
+  const withBranch = filterByBranch(base, sel.value || '');
+
   const totalPassed = withBranch.reduce((s, e) => s + (e.passedTests || 0), 0);
   const totalFailed = withBranch.reduce((s, e) => s + (e.failedTests || 0), 0);
 
-  // CORREÇÃO: Acessa o primeiro item do array 'datasets'
-  window.statusChart.data.datasets[0].data = [totalPassed, totalFailed];
-  window.statusChart?.update();
+  // CORREÇÃO: datasets.data
+  const ds0 = window.statusChart?.data?.datasets?.[0]; // acesso seguro ao primeiro dataset
+  if (ds0) {
+    ds0.data = [totalPassed, totalFailed];
+    window.statusChart.update();
+  }
 }
+
 
 function initializeHistoryChartFromRuns(runs) {
   const ctx = document.getElementById('historyChart')?.getContext('2d');
@@ -377,12 +388,11 @@ function initializeHistoryChartFromRuns(runs) {
           mode: 'index',
           intersect: false,
           callbacks: {
-            title(items) {
-              // CORREÇÃO: Pega o primeiro item do array 'items' em vez do array inteiro
-              const first = (items && items.length) ? items[0] : null;
-              const t = first && (first.parsed?.x ?? first.raw?.x);
-              return t ? dfBR.format(new Date(t)).replace(/\s(\d{2}):/, ' às $1:') : '';
-            }
+          title(items) {
+            const first = (items && items.length) ? items : null;
+            const t = first && (first.parsed?.x ?? first.raw?.x);
+            return t ? dfBR.format(new Date(t)).replace(/\s(\d{2}):/, ' às $1:') : '';
+          } 
           }
 
         }
@@ -496,19 +506,21 @@ function applyFilters() {
   const status = document.getElementById("statusFilter")?.value || "";
   const date = document.getElementById("dateFilter")?.value || "";
 
-  filteredExecutions = executionsData.filter(e => {
-    if (branch && e.branch !== branch) return false;
-    if (env && e.environment !== env) return false;
-    if (status && e.status !== status) return false;
-    if (date && !String(e.date).startsWith(date)) return false;
-    return true;
-  });
-  currentPage = 1;
+  filteredExecutions = executionsData.slice();
   updateStatistics();
-  initializeStatusChart();
+  initializeStatusChart(); // cria window.statusChart
+
   populateBranchFilter();
-  updateStatusChartForBranch();
+  try { updateStatusChartForBranch(); } catch (_) { /* no-op */ }
   populateExecutionTable();
+
+  // histórico por período
+  const filtered = filterRunsByPeriod(executionsData, historyPeriod);
+  console.log('historyPeriod(load)=', historyPeriod, 'count=', filtered.length);
+  initializeHistoryChartFromRuns(filtered);
+    populateBranchFilter();
+    updateStatusChartForBranch();
+    populateExecutionTable();
 }
 
 
