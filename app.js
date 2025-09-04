@@ -255,7 +255,23 @@ function initializeHistoryChartFromRuns(runs) {
   if (!ctx) return;
   if (historyChart) historyChart.destroy();
 
-  const suggestedMax = Math.max(5, ...runs.map(r => Math.max(r.passedTests || 0, r.failedTests || 0))) + 1;
+  // 1) Sanear: manter apenas pontos com date válido e ordenar por data crescente
+  const runsOk = (runs || []).filter(r => {
+    const t = r?.date ? new Date(r.date).getTime() : NaN;
+    return Number.isFinite(t);
+  }).sort((a, b) => new Date(a.date) - new Date(b.date));  // garante timeseries estável [2][3]
+
+  // 2) SuggestedMax a partir dos pontos válidos
+  const suggestedMax = Math.max(
+    5,
+    ...runsOk.map(r => Math.max(Number(r.passedTests || 0), Number(r.failedTests || 0)))
+  ) + 1;  // melhora escala Y sem “estourar” [2]
+
+  // 3) Formatador pt-BR com fuso de Brasília (24h)
+  const dfBRtz = new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+    timeZone: 'America/Sao_Paulo', hour12: false
+  });  // formatação local sem AM/PM [4]
 
   historyChart = new Chart(ctx, {
     type: 'line',
@@ -263,7 +279,7 @@ function initializeHistoryChartFromRuns(runs) {
       datasets: [
         {
           label: 'Aprovados',
-          data: runs.map(r => ({ x: r.date, y: r.passedTests || 0 })),
+          data: runsOk.map(r => ({ x: r.date, y: Number(r.passedTests || 0) })),  // {x,y} timeseries [2]
           borderColor: '#16a34a',
           backgroundColor: 'rgba(22,163,74,0.15)',
           borderWidth: 3,
@@ -273,7 +289,7 @@ function initializeHistoryChartFromRuns(runs) {
         },
         {
           label: 'Falhados',
-          data: runs.map(r => ({ x: r.date, y: r.failedTests || 0 })),
+          data: runsOk.map(r => ({ x: r.date, y: Number(r.failedTests || 0) })),   // {x,y} timeseries [2]
           borderColor: '#dc2626',
           backgroundColor: 'rgba(220,38,38,0.15)',
           borderWidth: 3,
@@ -286,12 +302,24 @@ function initializeHistoryChartFromRuns(runs) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      parsing: false,
+      normalized: true,
       interaction: { mode: 'nearest', intersect: false },
       scales: {
         x: {
-          type: 'time',
-          adapters: { date: { locale: window?.dateFns?.locale?.ptBR } },
-          ticks: { autoSkip: true, maxRotation: 0 }
+          type: 'timeseries',               // usa série temporal baseada nos pontos [2][3]
+          distribution: 'linear',           // não cria intervalos artificiais [2]
+          time: {
+            // sem unit forçada; o adapter determina com base nos pontos [2]
+            tooltipFormat: 'dd/MM/yyyy HH:mm'  // fallback do adapter [2]
+          },
+          ticks: {
+            autoSkip: true,
+            maxRotation: 0,
+            callback(value) {
+              return dfBRtz.format(new Date(value));  // rótulos no fuso de Brasília [4]
+            }
+          }
         },
         y: {
           beginAtZero: true,
@@ -306,11 +334,9 @@ function initializeHistoryChartFromRuns(runs) {
           intersect: false,
           callbacks: {
             title(items) {
-              const p = items?.[0];
-              const x = p?.parsed?.x ?? p?.raw?.x;
-              if (!x) return '';
-              const base = dfBR.format(new Date(x));
-              return base.replace(/\s(\d{2}):/, ' $1:');
+              const first = (items && items.length) ? items : null;  // usar o primeiro item [1]
+              const t = first && (first.parsed?.x ?? first.raw?.x);
+              return t ? dfBRtz.format(new Date(t)) : '';  // título em pt-BR/BRL 24h [1][4]
             }
           }
         }
@@ -318,6 +344,7 @@ function initializeHistoryChartFromRuns(runs) {
     }
   });
 }
+
 
 // ===========================
 // Modal
