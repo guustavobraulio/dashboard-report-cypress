@@ -80,11 +80,13 @@ async function fetchRuns() {
   return arr.map((r, idx) => ({
     id: r.runId || `exec-${String(idx + 1).padStart(3, "0")}`,
     date: r.timestamp ? new Date(r.timestamp).toISOString() : new Date().toISOString(),
+    passedTests: Number(r.totalPassed ?? 0),
+    failedTests: Number(r.totalFailed ?? 0),
     status: (r.totalFailed ?? 0) > 0 ? "failed" : "passed",
     duration: Math.round((r.totalDuration ?? 0) / 1000),
     totalTests: r.totalTests ?? ((r.totalPassed ?? 0) + (r.totalFailed ?? 0)),
-    passedTests: r.totalPassed ?? 0,
-    failedTests: r.totalFailed ?? 0,
+    // passedTests: r.totalPassed ?? 0,
+    // failedTests: r.totalFailed ?? 0,
     branch: r.branch || "-",
     environment: r.environment || "-",
     commit: r.commit || "",
@@ -292,7 +294,11 @@ function initializeHistoryChartFromRuns(runs) {
   if (historyChart) historyChart.destroy();
 
   // 1) Filtra e ordena os pontos por data (garante time scale estável)
-  const runsOk = (runs || []).filter(r => r?.date && Number.isFinite(new Date(r.date).getTime()));
+  const runsOk = (runs || []).filter(r => {
+    if (!r || !r.date) return false;
+    const t = new Date(r.date).getTime();
+    return Number.isFinite(t);
+  });
   const sorted = [...runsOk].sort((a, b) => new Date(a.date) - new Date(b.date));
 
   // DEBUG: confirme quantidade e range
