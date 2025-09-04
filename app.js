@@ -285,7 +285,7 @@ function updateStatusChartForBranch() {
   const totalFailed = withBranch.reduce((s, e) => s + (e.failedTests || 0), 0);
 
   window.statusChart.data.datasets.data = [totalPassed, totalFailed];
-  window.statusChart?.update(); // atualização conforme doc Chart.js [3][2][9]
+  window.statusChart?.update(); // Chart.js update
 }
 
 function initializeHistoryChartFromRuns(runs) {
@@ -302,7 +302,7 @@ function initializeHistoryChartFromRuns(runs) {
   const sorted = [...runsOk].sort((a, b) => new Date(a.date) - new Date(b.date));
 
   // DEBUG: confirme quantidade e range
-  console.log('history(sorted) len=', sorted.length, 'first=', sorted?.date, 'last=', sorted.at(-1)?.date); // [4]
+  console.log('history(sorted) len=', sorted.length, 'first=', sorted?.date, 'last=', sorted.at(-1)?.date);
 
   // 2) Fallback quando não houver pontos válidos
   if (!sorted.length) {
@@ -380,12 +380,11 @@ function initializeHistoryChartFromRuns(runs) {
           mode: 'index',
           intersect: false,
           callbacks: {
-            title(items) {
-              // corrigido: pegar o primeiro item do array
-              const first = (items && items.length) ? items : null;
-              const t = first && (first.parsed?.x ?? first.raw?.x);
-              return t ? dfBR.format(new Date(t)).replace(/\s(\d{2}):/, ' às $1:') : '';
-            }
+          title(items) {
+            const first = (items && items.length) ? items : null;
+            const t = first && (first.parsed?.x ?? first.raw?.x);
+            return t ? dfBR.format(new Date(t)).replace(/\s(\d{2}):/, ' às $1:') : '';
+          }     
           }
         }
       }
@@ -589,8 +588,7 @@ async function loadRuns() {
     populateExecutionTable();
 
     // Histórico (período)
-    const filtered = filterRunsByPeriod(executionsData, historyPeriod);
-
+    console.log('historyPeriod(load)=', historyPeriod, 'count=', filtered.length);
     // DEBUG: verificar tamanho pós-filtro de período no load
     console.log('historyPeriod(load)=', historyPeriod, 'count=', filtered.length); [3]
 
