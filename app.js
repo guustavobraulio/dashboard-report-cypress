@@ -312,6 +312,8 @@ function initializeHistoryChartFromRuns(runs) {
   // DEBUG: confirme quantidade e range
   console.log('history(sorted) len=', sorted.length, 'first=', sorted[0]?.date, 'last=', sorted.at(-1)?.date);
 
+  const ptBR = (window && window.dateFns && window.dateFns.locale && window.dateFns.locale.ptBR) ? window.dateFns.locale.ptBR : null;
+
   // 2) Fallback quando não houver pontos válidos
   if (!sorted.length) {
     historyChart = new Chart(ctx, {
@@ -325,12 +327,37 @@ function initializeHistoryChartFromRuns(runs) {
         maintainAspectRatio: false,
         parsing: false,
         normalized: true,
-        scales: {
-          x: { type: 'time', time: { unit: 'hour' }, ticks: { autoSkip: true, maxRotation: 0 } },
-          y: { beginAtZero: true, ticks: { precision: 0, stepSize: 1 } }
+        interaction: { mode: 'nearest', intersect: false },
+
+      scales: {
+        x: {
+          type: 'time',
+          time: { unit: 'hour' },
+          ...(ptBR ? { adapters: { date: { locale: ptBR } } } : {}),
+          ticks: { autoSkip: true, maxRotation: 0 }
         },
-        plugins: { legend: { position: 'top' } }
+
+        y: {
+          beginAtZero: true,
+          suggestedMax,
+          ticks: { precision: 0, stepSize: 1 }
+        }
+      },
+      plugins: {
+        legend: { position: 'top' },
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            title(items) {
+              const first = (items && items.length) ? items : null;  // <- ajuste
+              const t = first && (first.parsed?.x ?? first.raw?.x);
+              return t ? dfBR.format(new Date(t)).replace(/\s(\d{2}):/, ' às $1:') : '';
+            }
+          }
+        }
       }
+    }
     });
     return;
   }
