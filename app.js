@@ -1,6 +1,3 @@
-// ...existing code...
-// app.js — Dashboard integrado às Netlify Functions
-
 // ===========================
 // Estados globais
 // ===========================
@@ -311,7 +308,7 @@ function initializeHistoryChartFromRuns(runs) {
               const x = p?.parsed?.x ?? p?.raw?.x;
               if (!x) return '';
               const base = dfBR.format(new Date(x));
-              return base.replace(/\s(\d{2}):/, ' às $1:');
+              return base.replace(/\s(\d{2}):/, ' $1:');
             }
           }
         }
@@ -499,6 +496,13 @@ document.addEventListener("DOMContentLoaded", () => {
 async function loadRuns() {
   try {
     const runs = await fetchRuns();
+    const uniqMap = new Map();
+    for (const r of runs || []) uniqMap.set(r.id, r);
+    const uniq = Array.from(uniqMap.values());
+
+    // use somente 'uniq' daqui em diante
+    window.__allRuns = uniq;
+    executionsData = uniq.slice();
     window.__allRuns = runs || [];
     executionsData = runs;
 
