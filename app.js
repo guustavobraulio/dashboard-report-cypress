@@ -255,48 +255,35 @@ function initializeHistoryChartFromRuns(runs) {
   if (!ctx) return;
   if (historyChart) historyChart.destroy();
 
-  // 1) Sanear: manter apenas pontos com date válido e ordenar por data crescente
-  const runsOk = (runs || []).filter(r => {
-    const t = r?.date ? new Date(r.date).getTime() : NaN;
-    return Number.isFinite(t);
-  }).sort((a, b) => new Date(a.date) - new Date(b.date));  // garante timeseries estável [2][3]
+  // 1) Logs de diagnóstico — COLE AQUI
+  console.log('history(raw) len=', Array.isArray(runs) ? runs.length : -1, (runs || []).slice(0,3));
+  const runsOk = (runs || [])
+    .filter(r => Number.isFinite(new Date(r?.date).getTime()))
+    .sort((a,b) => new Date(a.date) - new Date(b.date));
+  console.log('history(valid) len=', runsOk.length, runsOk.slice(0,3));
+  const ptsAprov = runsOk.map(r => ({ x: new Date(r.date), y: Number(r.passedTests||0) }));
+  const ptsFalha = runsOk.map(r => ({ x: new Date(r.date), y: Number(r.failedTests||0) }));
+  console.log('history(points) aprov sample=', ptsAprov.slice(0,3), 'falha sample=', ptsFalha.slice(0,3));
 
-  // 2) SuggestedMax a partir dos pontos válidos
+  // 2) Se preferir, saia cedo para verificar visualmente os dados
+  // if (!runsOk.length) { console.warn('Sem pontos válidos para o histórico'); return; }
+
   const suggestedMax = Math.max(
     5,
-    ...runsOk.map(r => Math.max(Number(r.passedTests || 0), Number(r.failedTests || 0)))
-  ) + 1;  // melhora escala Y sem “estourar” [2]
+    ...runsOk.map(r => Math.max(Number(r.passedTests||0), Number(r.failedTests||0)))
+  ) + 1;
 
-  // 3) Formatador pt-BR com fuso de Brasília (24h)
   const dfBRtz = new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
     timeZone: 'America/Sao_Paulo', hour12: false
-  });  // formatação local sem AM/PM [4]
+  });
 
   historyChart = new Chart(ctx, {
     type: 'line',
     data: {
       datasets: [
-        {
-          label: 'Aprovados',
-          data: runsOk.map(r => ({ x: r.date, y: Number(r.passedTests || 0) })),  // {x,y} timeseries [2]
-          borderColor: '#16a34a',
-          backgroundColor: 'rgba(22,163,74,0.15)',
-          borderWidth: 3,
-          pointRadius: 4,
-          pointHoverRadius: 5,
-          tension: 0.25
-        },
-        {
-          label: 'Falhados',
-          data: runsOk.map(r => ({ x: r.date, y: Number(r.failedTests || 0) })),   // {x,y} timeseries [2]
-          borderColor: '#dc2626',
-          backgroundColor: 'rgba(220,38,38,0.15)',
-          borderWidth: 3,
-          pointRadius: 4,
-          pointHoverRadius: 5,
-          tension: 0.25
-        }
+        { label: 'Aprovados', data: ptsAprov, borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,0.15)', borderWidth: 3, pointRadius: 4, pointHoverRadius: 5, tension: 0.25 },
+        { label: 'Falhados',  data: ptsFalha, borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,0.15)', borderWidth: 3, pointRadius: 4, pointHoverRadius: 5, tension: 0.25 }
       ]
     },
     options: {
@@ -307,43 +294,28 @@ function initializeHistoryChartFromRuns(runs) {
       interaction: { mode: 'nearest', intersect: false },
       scales: {
         x: {
-          type: 'timeseries',               // usa série temporal baseada nos pontos [2][3]
-          distribution: 'linear',           // não cria intervalos artificiais [2]
-          time: {
-            // sem unit forçada; o adapter determina com base nos pontos [2]
-            tooltipFormat: 'dd/MM/yyyy HH:mm'  // fallback do adapter [2]
-          },
+          type: 'time', // use 'time' para isolar; depois volte para 'timeseries' se quiser
+          time: { tooltipFormat: 'dd/MM/yyyy HH:mm' },
           ticks: {
-            autoSkip: true,
-            maxRotation: 0,
-            callback(value) {
-              return dfBRtz.format(new Date(value));  // rótulos no fuso de Brasília [4]
-            }
+            autoSkip: true, maxRotation: 0,
+            callback(v){ return dfBRtz.format(new Date(v)); }
           }
         },
-        y: {
-          beginAtZero: true,
-          suggestedMax,
-          ticks: { precision: 0, stepSize: 1 }
-        }
+        y: { beginAtZero: true, suggestedMax, ticks: { precision: 0, stepSize: 1 } }
       },
       plugins: {
         legend: { position: 'top' },
         tooltip: {
-          mode: 'index',
-          intersect: false,
+          mode: 'index', intersect: false,
           callbacks: {
-            title(items) {
-              const first = (items && items.length) ? items : null;  // usar o primeiro item [1]
-              const t = first && (first.parsed?.x ?? first.raw?.x);
-              return t ? dfBRtz.format(new Date(t)) : '';  // título em pt-BR/BRL 24h [1][4]
-            }
+            title(items){ const f = items?.[0]; const t = f && (f.parsed?.x ?? f.raw?.x); return t ? dfBRtz.format(new Date(t)) : ''; }
           }
         }
       }
     }
   });
 }
+
 
 
 // ===========================
