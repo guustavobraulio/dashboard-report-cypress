@@ -26,7 +26,8 @@
       <div class="header-content">
         <div class="logo-section">
           <img src="https://www.socialsa.com/wp-content/uploads/2024/11/Logo-Colorida-2.webp"
-            alt="Social Digital Commerce" class="brand-logo" width="28" height="28" decoding="async" loading="eager" margin-left="13px" />
+            alt="Social Digital Commerce" class="brand-logo" width="28" height="28" decoding="async" loading="eager"
+            margin-left="13px" />
           <h1>Social Watch</h1>
         </div>
         <div class="header-actions">
@@ -113,16 +114,22 @@
             <div class="card">
               <div class="card__header">
                 <h2>Status dos Testes</h2>
+
                 <div class="chart-filters">
-                  <select id="branchFilter" class="form-control">
+                  <!-- Branch: novo filtro -->
+                  <select id="branchFilter" class="form-control" aria-label="Filtrar por branch">
                     <option value="">Todas as branches</option>
                   </select>
-                  <select id="environmentFilter" class="form-control">
+
+                  <!-- Ambiente: filtro já existente -->
+                  <select id="environmentFilter" class="form-control" aria-label="Filtrar por ambiente">
                     <option value="">Todos os ambientes</option>
                   </select>
                 </div>
               </div>
+
               <div class="card__body">
+                <!-- Importante: container com altura definida para o Chart.js -->
                 <div class="chart-container" style="position: relative; height: 300px;">
                   <canvas id="statusChart"></canvas>
                 </div>
@@ -253,7 +260,8 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/date-fns@3.6.0/dist/date-fns.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/date-fns@3.6.0/locale/pt-BR/index.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
   <script src="app.js"></script>
 </body>
 
