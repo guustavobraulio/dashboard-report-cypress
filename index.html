@@ -4,18 +4,25 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
   <title>Social Watch</title>
 
-  <!-- Estilos -->
+  <!-- Estilos: ajuste o href se seu CSS estiver em 'css/styles.css' -->
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" sizes="16x16"
-    href="https://yt3.ggpht.com/xdwy80PUa6YIR6TkM2FfRAGi6ojTZ3H8H0Yw-KiYGYdP5wgLp7dYqdJipcWcFnHKWkeXBhKvUw4=s88-c-k-c0x00ffffff-no-rj">
-  <link rel="apple-touch-icon" sizes="180x180"
-    href="https://yt3.ggpht.com/xdwy80PUa6YIR6TkM2FfRAGi6ojTZ3H8H0Yw-KiYGYdP5wgLp7dYqdJipcWcFnHKWkeXBhKvUw4=s88-c-k-c0x00ffffff-no-rj">
-  <meta name="theme-color" content="#672162">
+  <!-- Favicon: ajuste o href para o arquivo real -->
+  <link rel="icon" href="favicon.ico" />
+
+  <!-- Chart.js (UMD) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js" defer></script>
+  <!-- Adapter de datas (bundle inclui date-fns) -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"
+    defer></script>
+  <!-- jQuery (se o seu app depender dele) -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="" crossorigin="anonymous" defer></script>
+  <!-- Seu script principal (coloque o caminho correto: app.js ou js/app.bundle.js) -->
+  <script src="app.js" defer></script>
 </head>
 
 <body>
@@ -44,7 +51,6 @@
       </div>
     </div>
   </header>
-
 
   <!-- Main Content -->
   <main class="main-content">
@@ -122,16 +128,22 @@
             <div class="card">
               <div class="card__header">
                 <h2>Status dos Testes</h2>
+
                 <div class="chart-filters">
-                  <select id="branchFilter" class="form-control">
+                  <!-- Branch: novo filtro -->
+                  <select id="branchFilter" class="form-control" aria-label="Filtrar por branch">
                     <option value="">Todas as branches</option>
                   </select>
-                  <select id="environmentFilter" class="form-control">
+
+                  <!-- Ambiente: filtro já existente -->
+                  <select id="environmentFilter" class="form-control" aria-label="Filtrar por ambiente">
                     <option value="">Todos os ambientes</option>
                   </select>
                 </div>
               </div>
+
               <div class="card__body">
+                <!-- Importante: container com altura definida para o Chart.js -->
                 <div class="chart-container" style="position: relative; height: 300px;">
                   <canvas id="statusChart"></canvas>
                 </div>
