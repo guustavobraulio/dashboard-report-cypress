@@ -2,27 +2,21 @@
 <html lang="pt-BR">
 
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
   <title>Social Watch</title>
 
-  <!-- Estilos: ajuste o href se seu CSS estiver em 'css/styles.css' -->
+  <!-- Estilos -->
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-  <!-- Favicon: ajuste o href para o arquivo real -->
-  <link rel="icon" href="favicon.ico" />
-
-  <!-- Chart.js (UMD) -->
-  <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js" defer></script>
-  <!-- Adapter de datas (bundle inclui date-fns) -->
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"
-    defer></script>
-  <!-- jQuery (se o seu app depender dele) -->
-  <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="" crossorigin="anonymous" defer></script>
-  <!-- Seu script principal (coloque o caminho correto: app.js ou js/app.bundle.js) -->
-  <script src="app.js" defer></script>
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" sizes="16x16"
+    href="https://yt3.ggpht.com/xdwy80PUa6YIR6TkM2FfRAGi6ojTZ3H8H0Yw-KiYGYdP5wgLp7dYqdJipcWcFnHKWkeXBhKvUw4=s88-c-k-c0x00ffffff-no-rj">
+  <link rel="apple-touch-icon" sizes="180x180"
+    href="https://yt3.ggpht.com/xdwy80PUa6YIR6TkM2FfRAGi6ojTZ3H8H0Yw-KiYGYdP5wgLp7dYqdJipcWcFnHKWkeXBhKvUw4=s88-c-k-c0x00ffffff-no-rj">
+  <meta name="theme-color" content="#672162">
 </head>
 
 <body>
@@ -32,7 +26,7 @@
       <div class="header-content">
         <div class="logo-section">
           <img src="https://www.socialsa.com/wp-content/uploads/2024/11/Logo-Colorida-2.webp"
-            alt="Social Digital Commerce" class="brand-logo" width="28" height="28" decoding="async" loading="eager" />
+            alt="Social Digital Commerce" class="brand-logo" width="28" height="28" decoding="async" loading="eager" margin-left="13px" />
           <h1>Social Watch</h1>
         </div>
         <div class="header-actions">
@@ -52,19 +46,10 @@
     </div>
   </header>
 
+
   <!-- Main Content -->
   <main class="main-content">
     <div class="container">
-      <!-- Sidebar Simplificada -->
-      <aside class="sidebar">
-        <nav class="nav">
-          <a href="#" class="nav-item nav-item--active">
-            <i class="fas fa-tachometer-alt"></i>
-            Dashboard
-          </a>
-        </nav>
-      </aside>
-
       <!-- Dashboard Content -->
       <section class="dashboard-content">
         <!-- Statistics Cards -->
@@ -128,22 +113,16 @@
             <div class="card">
               <div class="card__header">
                 <h2>Status dos Testes</h2>
-
                 <div class="chart-filters">
-                  <!-- Branch: novo filtro -->
-                  <select id="branchFilter" class="form-control" aria-label="Filtrar por branch">
+                  <select id="branchFilter" class="form-control">
                     <option value="">Todas as branches</option>
                   </select>
-
-                  <!-- Ambiente: filtro já existente -->
-                  <select id="environmentFilter" class="form-control" aria-label="Filtrar por ambiente">
+                  <select id="environmentFilter" class="form-control">
                     <option value="">Todos os ambientes</option>
                   </select>
                 </div>
               </div>
-
               <div class="card__body">
-                <!-- Importante: container com altura definida para o Chart.js -->
                 <div class="chart-container" style="position: relative; height: 300px;">
                   <canvas id="statusChart"></canvas>
                 </div>
@@ -271,12 +250,11 @@
       <p>Executando pipeline...</p>
     </div>
   </div>
-  xml
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/date-fns@3.6.0/dist/date-fns.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/date-fns@3.6.0/locale/pt-BR/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
-  <script src="app.js"></script>[2][1]
+  <script src="app.js"></script>
 </body>
 
 </html>
