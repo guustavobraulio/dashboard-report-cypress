@@ -4,22 +4,25 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Social Watch</title>
 
   <!-- Estilos -->
   <link rel="stylesheet" href="style.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" sizes="16x16" href="https://yt3.ggpht.com/xdwy80PUa6YIR6TkM2FfRAGi6ojTZ3H8H0Yw-KiYGYdP5wgLp7dYqdJipcWcFnHKWkeXBhKvUw4=s88-c-k-c0x00ffffff-no-rj">
-  <link rel="apple-touch-icon" sizes="180x180" href="https://yt3.ggpht.com/xdwy80PUa6YIR6TkM2FfRAGi6ojTZ3H8H0Yw-KiYGYdP5wgLp7dYqdJipcWcFnHKWkeXBhKvUw4=s88-c-k-c0x00ffffff-no-rj">
-  <meta name="theme-color" content="#672162">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js" defer></script>[1]
+  <!-- Favicon e outros ... -->
+  <link rel="icon" ...>
+
+  <!-- 1. Chart.js (versão UMD para navegadores) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js/dist/chart.umd.js" defer></script>
+
+  <!-- 2. Adaptador de data (o '.bundle' já inclui a biblioteca date-fns) -->
   <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"
-    defer>
-  </script>[3]
+    defer></script>
+
+  <!-- 3. Seu script principal, carregado por último -->
   <script src="app.js" defer></script>
+
 </head>
 
 <body>
@@ -260,9 +263,6 @@
       <p>Executando pipeline...</p>
     </div>
   </div>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/date-fns@3.6.0/dist/date-fns.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/date-fns@3.6.0/locale/pt-BR/index.min.js"></script>
 </body>
 
 </html>

@@ -277,15 +277,12 @@ function populateBranchFilter() {
 }
 
 function updateStatusChartForBranch() {
-  const sel = document.getElementById('branchFilter');
-  if (!sel || !window.statusChart) return;
-
-  const withBranch = filterByBranch(filteredExecutions || [], sel.value);
   const totalPassed = withBranch.reduce((s, e) => s + (e.passedTests || 0), 0);
   const totalFailed = withBranch.reduce((s, e) => s + (e.failedTests || 0), 0);
 
-  window.statusChart.data.datasets.data = [totalPassed, totalFailed];
-  window.statusChart?.update();// Chart.js update
+  // CORREÇÃO: Acessa o primeiro item do array 'datasets'
+  window.statusChart.data.datasets[0].data = [totalPassed, totalFailed];
+  window.statusChart?.update();
 }
 
 function initializeHistoryChartFromRuns(runs) {
@@ -302,7 +299,7 @@ function initializeHistoryChartFromRuns(runs) {
   const sorted = [...runsOk].sort((a, b) => new Date(a.date) - new Date(b.date));
 
   // DEBUG: confirme quantidade e range
-  console.log('history(sorted) len=', sorted.length, 'first=', sorted?.date, 'last=', sorted.at(-1)?.date);
+  console.log('history(sorted) len=', sorted.length, 'first=', sorted[0]?.date, 'last=', sorted.at(-1)?.date);
 
   // 2) Fallback quando não houver pontos válidos
   if (!sorted.length) {
@@ -380,12 +377,14 @@ function initializeHistoryChartFromRuns(runs) {
           mode: 'index',
           intersect: false,
           callbacks: {
-          title(items) {
-            const first = (items && items.length) ? items : null;
-            const t = first && (first.parsed?.x ?? first.raw?.x);
-            return t ? dfBR.format(new Date(t)).replace(/\s(\d{2}):/, ' às $1:') : '';
-          }     
+            title(items) {
+              // CORREÇÃO: Pega o primeiro item do array 'items' em vez do array inteiro
+              const first = (items && items.length) ? items[0] : null;
+              const t = first && (first.parsed?.x ?? first.raw?.x);
+              return t ? dfBR.format(new Date(t)).replace(/\s(\d{2}):/, ' às $1:') : '';
+            }
           }
+
         }
       }
     }
@@ -586,10 +585,17 @@ async function loadRuns() {
     populateBranchFilter();
     updateStatusChartForBranch();
     populateExecutionTable();
-    // DEBUG: verificar tamanho pós-filtro de período no load
-    console.log('historyPeriod(load)=', historyPeriod, 'count=', filtered.length); [3]
+    // --- CORREÇÃO APLICADA AQUI ---
+    // 1. Filtra os dados com base no período de tempo selecionado (ex: '24h')
+     const filtered = filterRunsByPeriod(executionsData, historyPeriod);
 
+    // Log para depuração para confirmar que o filtro está funcionando
+    console.log('historyPeriod(load)=', historyPeriod, 'count=', filtered.length);
+
+    // Chama a função do gráfico com os dados JÁ FILTRADOS
     initializeHistoryChartFromRuns(filtered);
+    // --- FIM DA CORREÇÃO ---
+
   } catch (err) {
     console.error('Falha ao carregar execuções:', err);
   }
