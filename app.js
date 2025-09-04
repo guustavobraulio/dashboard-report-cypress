@@ -1,6 +1,3 @@
-// ...existing code...
-// app.js — Dashboard integrado às Netlify Functions
-
 // ===========================
 // Estados globais
 // ===========================
@@ -33,7 +30,9 @@ function filterByBranch(items, branchValue) {
   return branchValue ? items.filter(i => i.branch === branchValue) : items;
 }
 
-// Estrutura do botão para conter label + ícone + slot de spinner
+// ===========================
+// Botão pipeline
+// ===========================
 function ensureButtonStructure() {
   const btn = document.getElementById("runPipelineBtn");
   if (!btn) return;
@@ -85,25 +84,32 @@ async function fetchRuns() {
     status: (r.totalFailed ?? 0) > 0 ? "failed" : "passed",
     duration: Math.round((r.totalDuration ?? 0) / 1000),
     totalTests: r.totalTests ?? ((r.totalPassed ?? 0) + (r.totalFailed ?? 0)),
-    // passedTests: r.totalPassed ?? 0,
-    // failedTests: r.totalFailed ?? 0,
     branch: r.branch || "-",
     environment: r.environment || "-",
     commit: r.commit || "",
     author: r.author || "",
     githubUrl: r.githubRunUrl || "#",
-    tests: Array.isArray(r.tests) ? r.tests.map(t => ({
-      name: t.title || (Array.isArray(t.title) ? t.title.join(" > ") : "spec"),
-      status: t.state || "passed",
-      duration: Math.round((t.duration ?? 0) / 1000),
-      error: t.error || t.displayError || ""
-    })) : [],
+    tests: Array.isArray(r.tests) ? r.tests.map(t => {
+      // Título: prioriza Array -> string -> fallback
+      const title = Array.isArray(t.title) ? t.title.join(' > ')
+                    : (typeof t.title === 'string' ? t.title
+                      : (Array.isArray(t.spec) ? t.spec.join(' > ') : 'spec'));
+      // Estado: diversas formas possíveis (state, pass/fail)
+      const state = t.state || (t.passed || t.pass ? 'passed' : (t.failed || t.fail ? 'failed' : 'unknown'));
+      const durationMs = typeof t.duration === 'number' ? t.duration : (Number(t.duration) || 0);
+      return {
+        name: title,
+        status: state,
+        duration: Math.round((durationMs ?? 0) / 1000),
+        error: t.displayError || t.error || ''
+      };
+    }) : [],
     logs: Array.isArray(r.logs) ? [...r.logs] : [],
     artifacts: Array.isArray(r.artifacts) ? [...r.artifacts] : []
   }));
 }
 
-// Disparo do pipeline (mantida sua lógica)
+// Disparo do pipeline
 async function executarPipeline() {
   const btn = document.getElementById("runPipelineBtn");
   if (!btn) return;
@@ -253,14 +259,13 @@ function initializeStatusChart() {
       labels: ["Aprovados", "Falhados"],
       datasets: [{
         data: [totalPassed, totalFailed],
-        backgroundColor: ["#16a34a", "#dc2626"],   // verde/vermelho
+        backgroundColor: ["#16a34a", "#dc2626"],
         borderColor: ["#16a34a", "#dc2626"]
       }]
     },
     options: { responsive: true, maintainAspectRatio: false }
   });
   window.statusChart = statusChart;
-
 }
 
 function populateBranchFilter() {
@@ -270,7 +275,7 @@ function populateBranchFilter() {
   const current = sel.value || '';
   sel.innerHTML = '<option value="">Todas as branches</option>';
 
-  const branches = uniqueBranches(filteredExecutions || []);
+  const branches = uniqueBranches(executionsData || []);
   for (const b of branches) {
     sel.add(new Option(b, b, false, b === current));
   }
@@ -280,47 +285,39 @@ function updateStatusChartForBranch() {
   const sel = document.getElementById('branchFilter');
   if (!sel || !window.statusChart) return;
 
-  // CORREÇÃO: garantir a definição de withBranch
   const base = Array.isArray(filteredExecutions) ? filteredExecutions : [];
   const withBranch = filterByBranch(base, sel.value || '');
 
   const totalPassed = withBranch.reduce((s, e) => s + (e.passedTests || 0), 0);
   const totalFailed = withBranch.reduce((s, e) => s + (e.failedTests || 0), 0);
 
-  // CORREÇÃO: datasets.data
-  const ds0 = window.statusChart?.data?.datasets?.[0]; // acesso seguro ao primeiro dataset
+  const ds0 = window.statusChart?.data?.datasets?.[0];
   if (ds0) {
     ds0.data = [totalPassed, totalFailed];
     window.statusChart.update();
   }
 }
 
-
 function initializeHistoryChartFromRuns(runs) {
   const ctx = document.getElementById('historyChart')?.getContext('2d');
   if (!ctx) return;
   if (historyChart) historyChart.destroy();
 
-  // 1) Filtra e ordena os pontos por data (garante time scale estável)
-  const runsOk = (runs || []).filter(r => {
-    if (!r || !r.date) return false;
-    const t = new Date(r.date).getTime();
-    return Number.isFinite(t);
-  });
+  // filtra pontos válidos e ordena
+  const runsOk = (runs || []).filter(r => r && r.date && Number.isFinite(new Date(r.date).getTime()));
   const sorted = [...runsOk].sort((a, b) => new Date(a.date) - new Date(b.date));
 
-  // DEBUG: confirme quantidade e range
-  console.log('history(sorted) len=', sorted.length, 'first=', sorted[0]?.date, 'last=', sorted.at(-1)?.date);
+  const ptBR = window?.dateFns?.locale?.ptBR || null;
+  const timeUnit = (historyPeriod === '24h') ? 'hour' : 'day';
+  const suggestedMax = Math.max(5, ...sorted.map(r => Math.max(Number(r.passedTests || 0), Number(r.failedTests || 0)))) + 1;
 
-  const ptBR = (window && window.dateFns && window.dateFns.locale && window.dateFns.locale.ptBR) ? window.dateFns.locale.ptBR : null;
-
-  // 2) Fallback quando não houver pontos válidos
+  // quando não há pontos, cria gráfico vazio com escala/time adapters corretos
   if (!sorted.length) {
     historyChart = new Chart(ctx, {
       type: 'line',
       data: { datasets: [
-        { label: 'Aprovados', data: [] },
-        { label: 'Falhados',  data: [] }
+        { label: 'Aprovados', data: [], borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,0.12)', borderWidth: 2, tension: 0.25 },
+        { label: 'Falhados', data: [], borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,0.12)', borderWidth: 2, tension: 0.25 }
       ]},
       options: {
         responsive: true,
@@ -328,41 +325,37 @@ function initializeHistoryChartFromRuns(runs) {
         parsing: false,
         normalized: true,
         interaction: { mode: 'nearest', intersect: false },
-
-      scales: {
-        x: {
-          type: 'time',
-          time: { unit: 'hour' },
-          ...(ptBR ? { adapters: { date: { locale: ptBR } } } : {}),
-          ticks: { autoSkip: true, maxRotation: 0 }
+        scales: {
+          x: {
+            type: 'time',
+            time: { unit: timeUnit },
+            ...(ptBR ? { adapters: { date: { locale: ptBR } } } : {}),
+            ticks: { autoSkip: true, maxRotation: 0 }
+          },
+          y: {
+            beginAtZero: true,
+            suggestedMax,
+            ticks: { precision: 0, stepSize: 1 }
+          }
         },
-
-        y: {
-          beginAtZero: true,
-          suggestedMax,
-          ticks: { precision: 0, stepSize: 1 }
-        }
-      },
-      plugins: {
-        legend: { position: 'top' },
-        tooltip: {
-          mode: 'index',
-          intersect: false,
-          callbacks: {
-            title(items) {
-              const first = (items && items.length) ? items : null;  // <- ajuste
-              const t = first && (first.parsed?.x ?? first.raw?.x);
-              return t ? dfBR.format(new Date(t)).replace(/\s(\d{2}):/, ' às $1:') : '';
+        plugins: {
+          legend: { position: 'top' },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              title(items) {
+                const first = (items && items.length) ? items[0] : null;
+                const t = first && (first.parsed?.x ?? first.raw?.x);
+                return t ? dfBR.format(new Date(t)).replace(/\s(\d{2}):/, ' às $1:') : '';
+              }
             }
           }
         }
       }
-    }
     });
     return;
   }
-
-  const suggestedMax = Math.max(5, ...sorted.map(r => Math.max(Number(r.passedTests || 0), Number(r.failedTests || 0)))) + 1;
 
   historyChart = new Chart(ctx, {
     type: 'line',
@@ -370,7 +363,7 @@ function initializeHistoryChartFromRuns(runs) {
       datasets: [
         {
           label: 'Aprovados',
-          data: sorted.map(r => ({ x: r.date, y: Number(r.passedTests ?? 0) })), // y sempre numérico
+          data: sorted.map(r => ({ x: r.date, y: Number(r.passedTests ?? 0) })),
           borderColor: '#16a34a',
           backgroundColor: 'rgba(22,163,74,0.15)',
           borderWidth: 3,
@@ -393,14 +386,14 @@ function initializeHistoryChartFromRuns(runs) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      parsing: false,        // usa {x,y} diretamente
-      normalized: true,      // melhora precisão/performance
+      parsing: false,
+      normalized: true,
       interaction: { mode: 'nearest', intersect: false },
       scales: {
         x: {
           type: 'time',
-          time: { unit: 'hour' }, // mude para 'day' quando historyPeriod for 7d/30d, se desejar
-          adapters: { date: { locale: window?.dateFns?.locale?.ptBR } },
+          time: { unit: timeUnit },
+          ...(ptBR ? { adapters: { date: { locale: ptBR } } } : {}),
           ticks: { autoSkip: true, maxRotation: 0 }
         },
         y: {
@@ -415,13 +408,12 @@ function initializeHistoryChartFromRuns(runs) {
           mode: 'index',
           intersect: false,
           callbacks: {
-          title(items) {
-            const first = (items && items.length) ? items : null;
-            const t = first && (first.parsed?.x ?? first.raw?.x);
-            return t ? dfBR.format(new Date(t)).replace(/\s(\d{2}):/, ' às $1:') : '';
-          } 
+            title(items) {
+              const first = (items && items.length) ? items[0] : null;
+              const t = first && (first.parsed?.x ?? first.raw?.x);
+              return t ? dfBR.format(new Date(t)).replace(/\s(\d{2}):/, ' às $1:') : '';
+            }
           }
-
         }
       }
     }
@@ -533,23 +525,36 @@ function applyFilters() {
   const status = document.getElementById("statusFilter")?.value || "";
   const date = document.getElementById("dateFilter")?.value || "";
 
-  filteredExecutions = executionsData.slice();
-  updateStatistics();
-  initializeStatusChart(); // cria window.statusChart
+  // Começa com todas as execuções carregadas
+  let src = Array.isArray(executionsData) ? executionsData.slice() : [];
 
+  if (branch) src = filterByBranch(src, branch);
+  if (env) src = src.filter(e => (e.environment || '') === env);
+  if (status) src = src.filter(e => (e.status || '') === status);
+  if (date) {
+    const dayStart = new Date(date);
+    dayStart.setHours(0,0,0,0);
+    const dayEnd = dayStart.getTime() + (24*60*60*1000);
+    src = src.filter(e => {
+      const t = new Date(e.date).getTime();
+      return Number.isFinite(t) && t >= dayStart.getTime() && t < dayEnd;
+    });
+  }
+
+  filteredExecutions = src;
+
+  // Atualiza UI baseada em filteredExecutions
+  updateStatistics();
+  initializeStatusChart();
   populateBranchFilter();
   try { updateStatusChartForBranch(); } catch (_) { /* no-op */ }
   populateExecutionTable();
 
-  // histórico por período
-  const filtered = filterRunsByPeriod(executionsData, historyPeriod);
-  console.log('historyPeriod(load)=', historyPeriod, 'count=', filtered.length);
-  initializeHistoryChartFromRuns(filtered);
-    populateBranchFilter();
-    updateStatusChartForBranch();
-    populateExecutionTable();
+  // Histórico por período (base: todas as execuções)
+  const historySource = executionsData || [];
+  const filteredForHistory = filterRunsByPeriod(historySource, historyPeriod);
+  initializeHistoryChartFromRuns(filteredForHistory);
 }
-
 
 // ===========================
 // Histórico - filtro de período
@@ -561,7 +566,7 @@ function filterRunsByPeriod(runs, period = historyPeriod) {
   if (period === '30d') windowMs = 30 * 24 * 60 * 60 * 1000;
   const start = now - windowMs;
   const toMs = d => typeof d === 'number' ? d : new Date(d).getTime();
-  return runs.filter(r => {
+  return (runs || []).filter(r => {
     const t = toMs(r.date);
     return Number.isFinite(t) && t >= start && t <= now;
   });
@@ -589,7 +594,6 @@ function onHistoryPeriodClick(e) {
 
   const source = executionsData?.length ? executionsData : (window.__allRuns || []);
   const filtered = filterRunsByPeriod(source, historyPeriod);
-  // DEBUG: verificar tamanho pós-filtro de período
   console.log('historyPeriod(load)=', historyPeriod, 'count=', filtered.length);
   initializeHistoryChartFromRuns(filtered);
 }
@@ -624,16 +628,11 @@ async function loadRuns() {
     populateBranchFilter();
     updateStatusChartForBranch();
     populateExecutionTable();
-    // --- CORREÇÃO APLICADA AQUI ---
-    // 1. Filtra os dados com base no período de tempo selecionado (ex: '24h')
-     const filtered = filterRunsByPeriod(executionsData, historyPeriod);
 
-    // Log para depuração para confirmar que o filtro está funcionando
+    // filtra por período e inicializa histórico
+    const filtered = filterRunsByPeriod(executionsData, historyPeriod);
     console.log('historyPeriod(load)=', historyPeriod, 'count=', filtered.length);
-
-    // Chama a função do gráfico com os dados JÁ FILTRADOS
     initializeHistoryChartFromRuns(filtered);
-    // --- FIM DA CORREÇÃO ---
 
   } catch (err) {
     console.error('Falha ao carregar execuções:', err);
