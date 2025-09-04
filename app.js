@@ -470,6 +470,37 @@ function onHistoryPeriodClick(e) {
   initializeHistoryChartFromRuns(filtered);
 }
 
+// Auto-refresh
+function updateAutoRefreshLabel() {
+  const label = document.querySelector('.auto-refresh span');
+  if (label) label.textContent = `Auto-refresh: ${autoRefreshSeconds}s`;
+}
+
+function startAutoRefreshCountdown() {
+  // evita múltiplos timers
+  if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+
+  autoRefreshSeconds = 30;
+  updateAutoRefreshLabel();
+
+  autoRefreshTimer = setInterval(async () => {
+    autoRefreshSeconds -= 1;
+    updateAutoRefreshLabel();
+
+    if (autoRefreshSeconds <= 0) {
+      clearInterval(autoRefreshTimer);
+      autoRefreshTimer = null;
+
+      // dispara o refresh e reinicia o contador ao concluir
+      try {
+        await loadRuns();
+      } finally {
+        startAutoRefreshCountdown();
+      }
+    }
+  }, 1000);
+}
+
 // ===========================
 // Bootstrap
 // ===========================
@@ -478,19 +509,18 @@ document.addEventListener("DOMContentLoaded", () => {
   setupEventListeners();
   ensureButtonStructure();
 
-  loadRuns().catch(console.error).finally(() => {
-    startAutoRefreshCountdown();
-  });
+  loadRuns()
+    .catch(console.error)
+    .finally(() => { startAutoRefreshCountdown(); });
 
   const btn = document.getElementById("runPipelineBtn");
   btn?.addEventListener("click", executarPipeline);
 
   // após 30segs atualizar a página
   if (autoRefreshTimer) {
-  // apenas ressincroniza sem recriar intervalo
-  autoRefreshSeconds = 30;
-  updateAutoRefreshLabel();
-}
+    autoRefreshSeconds = 30;
+    updateAutoRefreshLabel();
+  }
 });
 
 // ===========================
@@ -521,36 +551,4 @@ async function loadRuns() {
   } catch (err) {
     console.error('Falha ao carregar execuções:', err);
   }
-
-  // Auto-refresh
-  function updateAutoRefreshLabel() {
-    const label = document.querySelector('.auto-refresh span');
-    if (label) label.textContent = `Auto-refresh: ${autoRefreshSeconds}s`;
-  }
-
-  function startAutoRefreshCountdown() {
-    // evita múltiplos timers
-    if (autoRefreshTimer) clearInterval(autoRefreshTimer);
-
-    autoRefreshSeconds = 30;
-    updateAutoRefreshLabel();
-
-    autoRefreshTimer = setInterval(async () => {
-      autoRefreshSeconds -= 1;
-      updateAutoRefreshLabel();
-
-      if (autoRefreshSeconds <= 0) {
-        clearInterval(autoRefreshTimer);
-        autoRefreshTimer = null;
-
-        // dispara o refresh e reinicia o contador ao concluir
-        try {
-          await loadRuns();
-        } finally {
-          startAutoRefreshCountdown();
-        }
-      }
-    }, 1000);
-  }
-
 }
