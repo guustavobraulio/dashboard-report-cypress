@@ -285,7 +285,7 @@ function updateStatusChartForBranch() {
   const totalFailed = withBranch.reduce((s, e) => s + (e.failedTests || 0), 0);
 
   window.statusChart.data.datasets.data = [totalPassed, totalFailed];
-  window.statusChart?.update(); // Chart.js update
+  window.statusChart?.update();// Chart.js update
 }
 
 function initializeHistoryChartFromRuns(runs) {
@@ -552,7 +552,7 @@ function onHistoryPeriodClick(e) {
   const source = executionsData?.length ? executionsData : (window.__allRuns || []);
   const filtered = filterRunsByPeriod(source, historyPeriod);
   // DEBUG: verificar tamanho pós-filtro de período
-  console.log('historyPeriod(click)=', historyPeriod, 'count=', filtered.length);
+  console.log('historyPeriod(load)=', historyPeriod, 'count=', filtered.length);
   initializeHistoryChartFromRuns(filtered);
 }
 
@@ -586,9 +586,6 @@ async function loadRuns() {
     populateBranchFilter();
     updateStatusChartForBranch();
     populateExecutionTable();
-
-    // Histórico (período)
-    console.log('historyPeriod(load)=', historyPeriod, 'count=', filtered.length);
     // DEBUG: verificar tamanho pós-filtro de período no load
     console.log('historyPeriod(load)=', historyPeriod, 'count=', filtered.length); [3]
 
