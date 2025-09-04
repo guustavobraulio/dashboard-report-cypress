@@ -26,10 +26,10 @@ function formatDateTime(s) {
 }
 
 // ==== Branch helpers ====
-function uniqueBranches(items){
+function uniqueBranches(items) {
   return [...new Set(items.map(i => i.branch).filter(Boolean))].sort();
 }
-function filterByBranch(items, branchValue){
+function filterByBranch(items, branchValue) {
   return branchValue ? items.filter(i => i.branch === branchValue) : items;
 }
 
@@ -59,7 +59,7 @@ function setButtonLabel(text) {
   const slot = content.querySelector(".btn-spinner-slot")?.outerHTML || '<span class="btn-spinner-slot" aria-hidden="true"></span>';
   content.innerHTML = `${icon}${text}${slot}`;
 }
-function mostrarStatusNoBotao(statusText, variant=null) {
+function mostrarStatusNoBotao(statusText, variant = null) {
   const btn = document.getElementById("runPipelineBtn");
   if (!btn) return;
   btn.classList.remove("is-in-progress", "is-success", "is-failure");
@@ -79,7 +79,7 @@ async function fetchRuns() {
   const arr = Array.isArray(raw?.executions) ? raw.executions : (Array.isArray(raw) ? raw : []);
   return arr.map((r, idx) => ({
     id: r.runId || `exec-${String(idx + 1).padStart(3, "0")}`,
-    date: r.timestamp || new Date().toISOString(),
+    date: r.timestamp ? new Date(r.timestamp).toISOString() : new Date().toISOString(),
     status: (r.totalFailed ?? 0) > 0 ? "failed" : "passed",
     duration: Math.round((r.totalDuration ?? 0) / 1000),
     totalTests: r.totalTests ?? ((r.totalPassed ?? 0) + (r.totalFailed ?? 0)),
@@ -120,7 +120,7 @@ async function executarPipeline() {
       result = await res.json();
       const label = result.status === "queued" ? "Na fila..."
         : result.status === "in_progress" ? "Executando..."
-        : result.status === "completed" ? "Finalizando..." : "Processando...";
+          : result.status === "completed" ? "Finalizando..." : "Processando...";
       mostrarStatusNoBotao(label, "in_progress");
     } while (result.status !== "completed");
     if (result.conclusion === "success") mostrarStatusNoBotao("Concluída ✓", "success");
@@ -131,7 +131,7 @@ async function executarPipeline() {
   } finally {
     setTimeout(() => {
       btn.disabled = false;
-      btn.classList.remove("btn--loading","is-in-progress","is-success","is-failure");
+      btn.classList.remove("btn--loading", "is-in-progress", "is-success", "is-failure");
       setButtonLabel("Executar Pipeline");
       ensureButtonStructure();
     }, 1800);
@@ -261,7 +261,7 @@ function initializeStatusChart() {
 
 }
 
-function populateBranchFilter(){
+function populateBranchFilter() {
   const sel = document.getElementById('branchFilter');
   if (!sel) return;
 
@@ -269,12 +269,12 @@ function populateBranchFilter(){
   sel.innerHTML = '<option value="">Todas as branches</option>';
 
   const branches = uniqueBranches(filteredExecutions || []);
-  for (const b of branches){
+  for (const b of branches) {
     sel.add(new Option(b, b, false, b === current));
   }
 }
 
-function updateStatusChartForBranch(){
+function updateStatusChartForBranch() {
   const sel = document.getElementById('branchFilter');
   if (!sel || !window.statusChart) return;
 
@@ -282,7 +282,7 @@ function updateStatusChartForBranch(){
   const totalPassed = withBranch.reduce((s, e) => s + (e.passedTests || 0), 0);
   const totalFailed = withBranch.reduce((s, e) => s + (e.failedTests || 0), 0);
 
-  window.statusChart.data.datasets.data = [totalPassed, totalFailed];  
+  window.statusChart.data.datasets.data = [totalPassed, totalFailed];
   window.statusChart?.update(); // atualização conforme doc Chart.js [3][2][9]
 }
 
@@ -291,7 +291,11 @@ function initializeHistoryChartFromRuns(runs) {
   if (!ctx) return;
   if (historyChart) historyChart.destroy();
 
-  const suggestedMax = Math.max(5, ...runs.map(r => Math.max(r.passedTests || 0, r.failedTests || 0))) + 1;
+  // 1) Filtra e ordena os pontos por data (garante time scale estável)
+  const runsOk = (runs || []).filter(r => r?.date && Number.isFinite(new Date(r.date).getTime()));
+  const sorted = [...runsOk].sort((a, b) => new Date(a.date) - new Date(b.date));  // ordenação crescente [3]
+
+  const suggestedMax = Math.max(5, ...sorted.map(r => Math.max(Number(r.passedTests || 0), Number(r.failedTests || 0)))) + 1;
 
   historyChart = new Chart(ctx, {
     type: 'line',
@@ -299,7 +303,7 @@ function initializeHistoryChartFromRuns(runs) {
       datasets: [
         {
           label: 'Aprovados',
-          data: runs.map(r => ({ x: r.date, y: r.passedTests || 0 })),
+          data: sorted.map(r => ({ x: r.date, y: Number(r.passedTests ?? 0) })), // y sempre numérico [3]
           borderColor: '#16a34a',
           backgroundColor: 'rgba(22,163,74,0.15)',
           borderWidth: 3,
@@ -309,7 +313,7 @@ function initializeHistoryChartFromRuns(runs) {
         },
         {
           label: 'Falhados',
-          data: runs.map(r => ({ x: r.date, y: r.failedTests || 0 })),
+          data: sorted.map(r => ({ x: r.date, y: Number(r.failedTests ?? 0) })),
           borderColor: '#dc2626',
           backgroundColor: 'rgba(220,38,38,0.15)',
           borderWidth: 3,
@@ -322,10 +326,13 @@ function initializeHistoryChartFromRuns(runs) {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      parsing: false,      // usa {x,y} diretamente [2]
+      normalized: true,    // melhora a precisão/performance [2]
       interaction: { mode: 'nearest', intersect: false },
       scales: {
         x: {
           type: 'time',
+          time: { unit: 'hour' }, // ou 'day' para 7d/30d
           adapters: { date: { locale: window?.dateFns?.locale?.ptBR } },
           ticks: { autoSkip: true, maxRotation: 0 }
         },
@@ -342,11 +349,9 @@ function initializeHistoryChartFromRuns(runs) {
           intersect: false,
           callbacks: {
             title(items) {
-              const p = items?.[0];
-              const x = p?.parsed?.x ?? p?.raw?.x;
-              if (!x) return '';
-              const base = dfBR.format(new Date(x));
-              return base.replace(/\s(\d{2}):/, ' às $1:');
+              const first = (items && items.length) ? items : null;
+              const t = first && (first.parsed?.x ?? first.raw?.x);
+              return t ? dfBR.format(new Date(t)).replace(/\s(\d{2}):/, ' às $1:') : '';
             }
           }
         }
@@ -361,7 +366,7 @@ function initializeHistoryChartFromRuns(runs) {
 function openExecutionModal(id) {
   const e = executionsData.find(x => x.id === id);
   if (!e) return;
-  const set = (id, val, prop='textContent') => {
+  const set = (id, val, prop = 'textContent') => {
     const el = document.getElementById(id);
     if (el) el[prop] = val;
   };
@@ -469,9 +474,9 @@ function applyFilters() {
   });
   currentPage = 1;
   updateStatistics();
-  initializeStatusChart();      
-  populateBranchFilter();       
-  updateStatusChartForBranch(); 
+  initializeStatusChart();
+  populateBranchFilter();
+  updateStatusChartForBranch();
   populateExecutionTable();
 }
 
@@ -542,8 +547,8 @@ async function loadRuns() {
     filteredExecutions = executionsData.slice();
     updateStatistics();
     initializeStatusChart();
-    populateBranchFilter();        
-    updateStatusChartForBranch();  
+    populateBranchFilter();
+    updateStatusChartForBranch();
     populateExecutionTable();
 
     const filtered = filterRunsByPeriod(executionsData, historyPeriod);
