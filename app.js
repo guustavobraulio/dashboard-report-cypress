@@ -255,38 +255,36 @@ function initializeHistoryChartFromRuns(runs) {
   if (!ctx) return;
   if (historyChart) historyChart.destroy();
 
-  // 1) Logs de diagnóstico
-  console.log('history(raw) len=', Array.isArray(runs) ? runs.length : -1, (runs || []).slice(0,3));
+  // 1) Sanitizar, validar e ordenar
   const runsOk = (runs || [])
     .filter(r => Number.isFinite(new Date(r?.date).getTime()))
-    .sort((a,b) => new Date(a.date) - new Date(b.date));
-  console.log('history(valid) len=', runsOk.length, runsOk.slice(0,3));
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-  // 2) CONSOLIDAÇÃO por timestamp (soma aprovados/falhados no mesmo instante)
+  // 2) Consolidar por instante (ou por hora -> descomentar truncagem)
   const byTs = new Map();
   for (const r of runsOk) {
-    const d = new Date(r.date);
-    d.setMinutes(0, 0, 0);           // trunca para o início da hora
-    const ts = d.getTime();
-    const cur = byTs.get(ts) || { x: new Date(ts), passed: 0, failed: 0 };
-    cur.passed += Number(r.passedTests || 0);
-    cur.failed += Number(r.failedTests || 0);
+    // AGREGAR POR HORA (opcional): descomente as 2 linhas abaixo e comente a linha "const ts = new Date(r.date).getTime();"
+    // const d = new Date(r.date); d.setMinutes(0, 0, 0);
+    // const ts = d.getTime();
+
+    const ts = new Date(r.date).getTime();
+    const cur = byTs.get(ts) || { x: new Date(ts), total: 0 };
+    cur.total += Number(r.passedTests || 0) + Number(r.failedTests || 0);
     byTs.set(ts, cur);
   }
   const points = Array.from(byTs.values()).sort((a, b) => a.x - b.x);
-  console.log('history(consolidated) len=', points.length, points.slice(0,3));
 
-  const ptsAprov = points.map(p => ({ x: p.x, y: p.passed }));
-  const ptsFalha = points.map(p => ({ x: p.x, y: p.failed }));
-  console.log('history(points) aprov sample=', ptsAprov.slice(0,3), 'falha sample=', ptsFalha.slice(0,3));
+  // 3) Dataset único “Executados”
+  const ptsExecutados = points.map(p => ({ x: p.x, y: p.total }));
 
-  // 3) Limites do eixo X para ocupar todo o range dos dados
-  const xMin = points[0]?.x;
+  // 4) Eixo X cobrindo todo o range
+  const xMin = points?.x;
   const xMax = points.at(-1)?.x;
 
-  // 4) Teto sugerido do eixo Y baseado nos pontos consolidados
-  const suggestedMax = Math.max(5, ...points.map(p => Math.max(p.passed, p.failed))) + 1;
+  // 5) Y sugerido
+  const suggestedMax = Math.max(5, ...points.map(p => p.total)) + 1;
 
+  // 6) Formatação BR 24h
   const dfBRtz = new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
     timeZone: 'America/Sao_Paulo', hour12: false
@@ -296,12 +294,21 @@ function initializeHistoryChartFromRuns(runs) {
     type: 'line',
     data: {
       datasets: [
-        { label: 'Aprovados', data: ptsAprov, borderColor: '#16a34a', backgroundColor: 'rgba(22,163,74,0.15)', borderWidth: 3, pointRadius: 4, pointHoverRadius: 5, tension: 0.25 },
-        { label: 'Falhados',  data: ptsFalha, borderColor: '#dc2626', backgroundColor: 'rgba(220,38,38,0.15)', borderWidth: 3, pointRadius: 4, pointHoverRadius: 5, tension: 0.25 }
+        {
+          label: 'Executados',
+          data: ptsExecutados,
+          borderColor: '#16a34a',
+          backgroundColor: 'rgba(22,163,74,0.15)',
+          borderWidth: 3,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          tension: 0.25,
+          fill: true // área como no exemplo
+        }
       ]
     },
     options: {
-      spanGaps: 1000 * 60 * 60 * 2,
+      spanGaps: 1000 * 60 * 60 * 2, // conecta pontos com lacunas < 2h; ajuste conforme seu ciclo [7]
       responsive: true,
       maintainAspectRatio: false,
       parsing: false,
@@ -311,15 +318,19 @@ function initializeHistoryChartFromRuns(runs) {
         x: {
           type: 'time',
           time: { tooltipFormat: 'dd/MM/yyyy HH:mm' },
-          min: xMin,                     // cobre todo o intervalo dos dados
-          max: xMax,                     // garante que a linha vá até o fim
+          min: xMin,
+          max: xMax,
           ticks: {
             autoSkip: true,
             maxRotation: 0,
             callback(v){ return dfBRtz.format(new Date(v)); }
           }
         },
-        y: { beginAtZero: true, suggestedMax, ticks: { precision: 0, stepSize: 1 } }
+        y: {
+          beginAtZero: true,
+          suggestedMax,
+          ticks: { precision: 0, stepSize: 1 }
+        }
       },
       plugins: {
         legend: { position: 'top' },
@@ -327,10 +338,14 @@ function initializeHistoryChartFromRuns(runs) {
           mode: 'index',
           intersect: false,
           callbacks: {
-            title(items){
-              const f = items?.[0];
+            title(items) {
+              const f = items?.[0];                      // correto para array com optional chaining
               const t = f && (f.parsed?.x ?? f.raw?.x);
               return t ? dfBRtz.format(new Date(t)) : '';
+            },
+            label(ctx) {
+              const v = ctx.parsed?.y ?? ctx.raw?.y ?? 0;
+              return `Executados: ${v}`;
             }
           }
         }
@@ -338,6 +353,7 @@ function initializeHistoryChartFromRuns(runs) {
     }
   });
 }
+
 
 
 // ===========================
