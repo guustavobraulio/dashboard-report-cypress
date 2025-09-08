@@ -528,24 +528,25 @@ document.addEventListener("DOMContentLoaded", () => {
 async function loadRuns() {
   try {
     const runs = await fetchRuns();
+
+    // 1) Deduplicar por id e usar somente 'uniq'
     const uniqMap = new Map();
     for (const r of runs || []) uniqMap.set(r.id, r);
     const uniq = Array.from(uniqMap.values());
 
-    // use somente 'uniq' daqui em diante
     window.__allRuns = uniq;
     executionsData = uniq.slice();
-    window.__allRuns = runs || [];
-    executionsData = runs;
 
-    // Base para cards/tabela/pizza = lista completa + filtros da UI
+    // 2) Base para cards/tabela/pizza
     filteredExecutions = executionsData.slice();
     updateStatistics();
     initializeStatusChart();
     populateExecutionTable();
 
-    // Base para o histórico = filtragem por período
+    // 3) Histórico por período
+    console.log('loadRuns: total execs=', executionsData.length, 'period=', historyPeriod);
     const filtered = filterRunsByPeriod(executionsData, historyPeriod);
+    console.log('loadRuns -> history filtered len=', filtered.length);
     initializeHistoryChartFromRuns(filtered);
   } catch (err) {
     console.error('Falha ao carregar execuções:', err);
