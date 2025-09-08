@@ -268,21 +268,23 @@ function initializeHistoryChartFromRuns(runs) {
     // const ts = d.getTime();
 
     const ts = new Date(r.date).getTime();
-    const cur = byTs.get(ts) || { x: new Date(ts), total: 0 };
-    cur.total += Number(r.passedTests || 0) + Number(r.failedTests || 0);
+    const cur = byTs.get(ts) || { x: new Date(ts), passed: 0, failed: 0 };
+    cur.passed += Number(r.passedTests || 0);
+    cur.failed += Number(r.failedTests || 0);
     byTs.set(ts, cur);
   }
   const points = Array.from(byTs.values()).sort((a, b) => a.x - b.x);
 
-  // 3) Dataset único “Executados”
-  const ptsExecutados = points.map(p => ({ x: p.x, y: p.total }));
+  // 3) Datasets: Executados (passed+failed) e Falhados
+  const ptsExecutados = points.map(p => ({ x: p.x, y: (p.passed + p.failed) }));
+  const ptsFalhados   = points.map(p => ({ x: p.x, y: p.failed }));
 
   // 4) Eixo X cobrindo todo o range
-  const xMin = points?.x;
-  const xMax = points.at(-1)?.x;
+  const xMin = points.length ? points.x : undefined;
+  const xMax = points.length ? points[points.length - 1].x : undefined;
 
-  // 5) Y sugerido
-  const suggestedMax = Math.max(5, ...points.map(p => p.total)) + 1;
+  // 5) Y sugerido (com base no maior “executados”)
+  const suggestedMax = Math.max(5, ...ptsExecutados.map(p => p.y)) + 1;
 
   // 6) Formatação BR 24h
   const dfBRtz = new Intl.DateTimeFormat('pt-BR', {
@@ -303,12 +305,23 @@ function initializeHistoryChartFromRuns(runs) {
           pointRadius: 3,
           pointHoverRadius: 5,
           tension: 0.25,
-          fill: true // área como no exemplo
+          fill: true
+        },
+        {
+          label: 'Falhados',
+          data: ptsFalhados,
+          borderColor: '#dc2626',
+          backgroundColor: 'rgba(220,38,38,0.10)',
+          borderWidth: 2,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          tension: 0.25,
+          fill: false
         }
       ]
     },
     options: {
-      spanGaps: 1000 * 60 * 60 * 2, // conecta pontos com lacunas < 2h; ajuste conforme seu ciclo [7]
+      spanGaps: 1000 * 60 * 60 * 2, // conecta pontos com lacunas < 2h [7]
       responsive: true,
       maintainAspectRatio: false,
       parsing: false,
@@ -339,13 +352,13 @@ function initializeHistoryChartFromRuns(runs) {
           intersect: false,
           callbacks: {
             title(items) {
-              const f = items?.[0];                      // correto para array com optional chaining
+              const f = items?.[0];
               const t = f && (f.parsed?.x ?? f.raw?.x);
               return t ? dfBRtz.format(new Date(t)) : '';
             },
             label(ctx) {
               const v = ctx.parsed?.y ?? ctx.raw?.y ?? 0;
-              return `Executados: ${v}`;
+              return `${ctx.dataset?.label || 'Valor'}: ${v}`;
             }
           }
         }
@@ -353,6 +366,7 @@ function initializeHistoryChartFromRuns(runs) {
     }
   });
 }
+
 
 
 
