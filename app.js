@@ -73,7 +73,7 @@ async function fetchRuns() {
     const valid = Number.isFinite(new Date(ts).getTime());
     return {
       id: r.runId || `exec-${String(idx + 1).padStart(3, "0")}`,
-      date: valid ? ts : null,                        // nunca “agora”
+      date: Number.isFinite(new Date(r.timestamp).getTime()) ? r.timestamp : null,
       status: (r.totalFailed ?? 0) > 0 ? "failed" : "passed",
       duration: Math.round((r.totalDuration ?? 0) / 1000),
       totalTests: r.totalTests ?? ((r.totalPassed ?? 0) + (r.totalFailed ?? 0)),
@@ -328,7 +328,7 @@ function initializeHistoryChartFromRuns(runs) {
       ]
     },
     options: {
-      spanGaps: true, // linha contínua; use um limite em ms se preferir [23]
+      spanGaps: true,  // linha contínua; use um limite em ms se preferir
       responsive: true,
       maintainAspectRatio: false,
       parsing: false,
@@ -337,9 +337,9 @@ function initializeHistoryChartFromRuns(runs) {
       scales: {
         x: {
           type: 'time',
-          min: xMin,
-          max: xMax,
-          offset: false,
+          min: xMin,                 // points.x
+          max: xMax,                 // points[points.length - 1].x
+          offset: false,             // sem margem extra nas extremidades
           time: { tooltipFormat: 'dd/MM/yyyy HH:mm' },
           ticks: {
             autoSkip: true,
@@ -360,8 +360,8 @@ function initializeHistoryChartFromRuns(runs) {
           intersect: false,
           callbacks: {
             title(items) {
-              const f = items?.[0];        
-              const t = f && (f.parsed?.x ?? f.raw?.x);
+              const f = items?.[0]; 
+              const t = f && (f.parsed?.x ?? f.raw?.x); 
               return t ? dfBRtzTooltip.format(new Date(t)) : '';
             },
             label(ctx) {
