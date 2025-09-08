@@ -255,23 +255,37 @@ function initializeHistoryChartFromRuns(runs) {
   if (!ctx) return;
   if (historyChart) historyChart.destroy();
 
-  // 1) Logs de diagnóstico — COLE AQUI
+  // 1) Logs de diagnóstico
   console.log('history(raw) len=', Array.isArray(runs) ? runs.length : -1, (runs || []).slice(0,3));
   const runsOk = (runs || [])
     .filter(r => Number.isFinite(new Date(r?.date).getTime()))
     .sort((a,b) => new Date(a.date) - new Date(b.date));
   console.log('history(valid) len=', runsOk.length, runsOk.slice(0,3));
-  const ptsAprov = runsOk.map(r => ({ x: new Date(r.date), y: Number(r.passedTests||0) }));
-  const ptsFalha = runsOk.map(r => ({ x: new Date(r.date), y: Number(r.failedTests||0) }));
+
+  // 2) CONSOLIDAÇÃO por timestamp (soma aprovados/falhados no mesmo instante)
+  const byTs = new Map();
+  for (const r of runsOk) {
+    const d = new Date(r.date);
+    d.setMinutes(0, 0, 0);           // trunca para o início da hora
+    const ts = d.getTime();
+    const cur = byTs.get(ts) || { x: new Date(ts), passed: 0, failed: 0 };
+    cur.passed += Number(r.passedTests || 0);
+    cur.failed += Number(r.failedTests || 0);
+    byTs.set(ts, cur);
+  }
+  const points = Array.from(byTs.values()).sort((a, b) => a.x - b.x);
+  console.log('history(consolidated) len=', points.length, points.slice(0,3));
+
+  const ptsAprov = points.map(p => ({ x: p.x, y: p.passed }));
+  const ptsFalha = points.map(p => ({ x: p.x, y: p.failed }));
   console.log('history(points) aprov sample=', ptsAprov.slice(0,3), 'falha sample=', ptsFalha.slice(0,3));
 
-  // 2) Se preferir, saia cedo para verificar visualmente os dados
-  // if (!runsOk.length) { console.warn('Sem pontos válidos para o histórico'); return; }
+  // 3) Limites do eixo X para ocupar todo o range dos dados
+  const xMin = points[0]?.x;
+  const xMax = points.at(-1)?.x;
 
-  const suggestedMax = Math.max(
-    5,
-    ...runsOk.map(r => Math.max(Number(r.passedTests||0), Number(r.failedTests||0)))
-  ) + 1;
+  // 4) Teto sugerido do eixo Y baseado nos pontos consolidados
+  const suggestedMax = Math.max(5, ...points.map(p => Math.max(p.passed, p.failed))) + 1;
 
   const dfBRtz = new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
@@ -287,6 +301,7 @@ function initializeHistoryChartFromRuns(runs) {
       ]
     },
     options: {
+      spanGaps: 1000 * 60 * 60 * 2,
       responsive: true,
       maintainAspectRatio: false,
       parsing: false,
@@ -294,10 +309,13 @@ function initializeHistoryChartFromRuns(runs) {
       interaction: { mode: 'nearest', intersect: false },
       scales: {
         x: {
-          type: 'time', // use 'time' para isolar; depois volte para 'timeseries' se quiser
+          type: 'time',
           time: { tooltipFormat: 'dd/MM/yyyy HH:mm' },
+          min: xMin,                     // cobre todo o intervalo dos dados
+          max: xMax,                     // garante que a linha vá até o fim
           ticks: {
-            autoSkip: true, maxRotation: 0,
+            autoSkip: true,
+            maxRotation: 0,
             callback(v){ return dfBRtz.format(new Date(v)); }
           }
         },
@@ -306,16 +324,20 @@ function initializeHistoryChartFromRuns(runs) {
       plugins: {
         legend: { position: 'top' },
         tooltip: {
-          mode: 'index', intersect: false,
+          mode: 'index',
+          intersect: false,
           callbacks: {
-            title(items){ const f = items?.[0]; const t = f && (f.parsed?.x ?? f.raw?.x); return t ? dfBRtz.format(new Date(t)) : ''; }
+            title(items){
+              const f = items?.[0];
+              const t = f && (f.parsed?.x ?? f.raw?.x);
+              return t ? dfBRtz.format(new Date(t)) : '';
+            }
           }
         }
       }
     }
   });
 }
-
 
 
 // ===========================
