@@ -262,13 +262,12 @@ function initializeHistoryChartFromRuns(runs) {
     .filter(r => Number.isFinite(new Date(r?.date).getTime()))
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-  // 2) Consolidar por instante (ou por hora -> descomentar truncagem)
-// 2) Consolidar por hora (recomendado para 7d/30d)
+  // 2) Consolidar por hora (recomendado para 7d/30d)
   const byTs = new Map();
   for (const r of runsOk) {
     const d = new Date(r.date);
     if (!Number.isFinite(d.getTime())) continue;
-    d.setMinutes(0, 0, 0);                 // <-- truncar para o início da hora
+    d.setMinutes(0, 0, 0);                 // truncar para o início da hora
     const ts = d.getTime();
 
     const cur = byTs.get(ts) || { x: new Date(ts), passed: 0, failed: 0 };
@@ -278,22 +277,24 @@ function initializeHistoryChartFromRuns(runs) {
   }
   const points = Array.from(byTs.values()).sort((a, b) => a.x - b.x);
 
-  // Datasets
+  // 3) Datasets
   const ptsExecutados = points.map(p => ({ x: p.x, y: p.passed + p.failed }));
   const ptsFalhados   = points.map(p => ({ x: p.x, y: p.failed }));
 
-  // Eixo X do primeiro ao último ponto do período
-  const xMin = points.length ? points[0].x : undefined;
+  // 4) Eixo X do primeiro ao último ponto do período (sem margens)
+  const xMin = points.length ? points.x : undefined;
   const xMax = points.length ? points[points.length - 1].x : undefined;
-
 
   // 5) Y sugerido (com base no maior “executados”)
   const suggestedMax = Math.max(5, ...ptsExecutados.map(p => p.y)) + 1;
 
-  // 6) Formatação BR 24h
-  const dfBRtz = new Intl.DateTimeFormat('pt-BR', {
+  // 6) Formatadores (tooltip com hora; eixo sem hora)
+  const dfBRtzTooltip = new Intl.DateTimeFormat('pt-BR', {
     day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
     timeZone: 'America/Sao_Paulo', hour12: false
+  });
+  const dfBRtzAxis = new Intl.DateTimeFormat('pt-BR', {
+    day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo'
   });
 
   historyChart = new Chart(ctx, {
@@ -325,7 +326,8 @@ function initializeHistoryChartFromRuns(runs) {
       ]
     },
     options: {
-      spanGaps: 1000 * 60 * 60 * 2, // conecta pontos com lacunas < 2h [7]
+      // Linha contínua (sem espaços)
+      spanGaps: true, // ou defina um limite em ms, ex.: 1000*60*60*24 [7]
       responsive: true,
       maintainAspectRatio: false,
       parsing: false,
@@ -334,13 +336,19 @@ function initializeHistoryChartFromRuns(runs) {
       scales: {
         x: {
           type: 'time',
-          time: { tooltipFormat: 'dd/MM/yyyy HH:mm' },
           min: xMin,
           max: xMax,
+          offset: false, // evita margem nas extremidades [3]
+          time: {
+            tooltipFormat: 'dd/MM/yyyy HH:mm' // só afeta tooltip; rótulo é via callback
+          },
           ticks: {
             autoSkip: true,
             maxRotation: 0,
-            callback(v){ return dfBRtz.format(new Date(v)); }
+            // Eixo sem horário (apenas data)
+            callback(v) {
+              return dfBRtzAxis.format(new Date(v));
+            }
           }
         },
         y: {
@@ -358,7 +366,7 @@ function initializeHistoryChartFromRuns(runs) {
             title(items) {
               const f = items?.[0];
               const t = f && (f.parsed?.x ?? f.raw?.x);
-              return t ? dfBRtz.format(new Date(t)) : '';
+              return t ? dfBRtzTooltip.format(new Date(t)) : '';
             },
             label(ctx) {
               const v = ctx.parsed?.y ?? ctx.raw?.y ?? 0;
@@ -370,6 +378,7 @@ function initializeHistoryChartFromRuns(runs) {
     }
   });
 }
+
 
 
 
