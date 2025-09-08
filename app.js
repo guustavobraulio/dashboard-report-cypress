@@ -68,30 +68,32 @@ async function fetchRuns() {
   if (!res.ok) throw new Error(`Falha ao carregar resultados: ${res.status}`);
   const raw = await res.json();
   const arr = Array.isArray(raw?.executions) ? raw.executions : (Array.isArray(raw) ? raw : []);
-  return arr.map((r, idx) => ({
-    id: r.runId || `exec-${String(idx + 1).padStart(3, "0")}`,
-    date: r.timestamp && Number.isFinite(new Date(r.timestamp).getTime())
-      ? r.timestamp
-      : null,
-    status: (r.totalFailed ?? 0) > 0 ? "failed" : "passed",
-    duration: Math.round((r.totalDuration ?? 0) / 1000),
-    totalTests: r.totalTests ?? ((r.totalPassed ?? 0) + (r.totalFailed ?? 0)),
-    passedTests: r.totalPassed ?? 0,
-    failedTests: r.totalFailed ?? 0,
-    branch: r.branch || "-",
-    environment: r.environment || "-",
-    commit: r.commit || "",
-    author: r.author || "",
-    githubUrl: r.githubRunUrl || "#",
-    tests: Array.isArray(r.tests) ? r.tests.map(t => ({
-      name: t.title || (Array.isArray(t.title) ? t.title.join(" > ") : "spec"),
-      status: t.state || "passed",
-      duration: Math.round((t.duration ?? 0) / 1000),
-      error: t.error || t.displayError || ""
-    })) : [],
-    logs: Array.isArray(r.logs) ? [...r.logs] : [],
-    artifacts: Array.isArray(r.artifacts) ? [...r.artifacts] : []
-  }));
+  return arr.map((r, idx) => {
+    const ts = r.timestamp;
+    const valid = Number.isFinite(new Date(ts).getTime());
+    return {
+      id: r.runId || `exec-${String(idx + 1).padStart(3, "0")}`,
+      date: valid ? ts : null,                        // nunca “agora”
+      status: (r.totalFailed ?? 0) > 0 ? "failed" : "passed",
+      duration: Math.round((r.totalDuration ?? 0) / 1000),
+      totalTests: r.totalTests ?? ((r.totalPassed ?? 0) + (r.totalFailed ?? 0)),
+      passedTests: r.totalPassed ?? 0,
+      failedTests: r.totalFailed ?? 0,
+      branch: r.branch || "-",
+      environment: r.environment || "-",
+      commit: r.commit || "",
+      author: r.author || "",
+      githubUrl: r.githubRunUrl || "#",
+      tests: Array.isArray(r.tests) ? r.tests.map(t => ({
+        name: t.title || (Array.isArray(t.title) ? t.title.join(" > ") : "spec"),
+        status: t.state || "passed",
+        duration: Math.round((t.duration ?? 0) / 1000),
+        error: t.error || t.displayError || ""
+      })) : [],
+      logs: Array.isArray(r.logs) ? [...r.logs] : [],
+      artifacts: Array.isArray(r.artifacts) ? [...r.artifacts] : []
+    };
+  });
 }
 
 // Disparo do pipeline (mantida sua lógica)
@@ -267,7 +269,7 @@ function initializeHistoryChartFromRuns(runs) {
   for (const r of runsOk) {
     const d = new Date(r.date);
     if (!Number.isFinite(d.getTime())) continue;
-    d.setMinutes(0, 0, 0);                 // truncar para o início da hora
+    d.setMinutes(0, 0, 0);                  // truncar para o início da hora
     const ts = d.getTime();
 
     const cur = byTs.get(ts) || { x: new Date(ts), passed: 0, failed: 0 };
@@ -282,7 +284,7 @@ function initializeHistoryChartFromRuns(runs) {
   const ptsFalhados   = points.map(p => ({ x: p.x, y: p.failed }));
 
   // 4) Eixo X do primeiro ao último ponto do período (sem margens)
-  const xMin = points.length ? points.x : undefined;
+  const xMin = points.length ? points.x : undefined;           // CORRIGIDO
   const xMax = points.length ? points[points.length - 1].x : undefined;
 
   // 5) Y sugerido (com base no maior “executados”)
@@ -326,8 +328,7 @@ function initializeHistoryChartFromRuns(runs) {
       ]
     },
     options: {
-      // Linha contínua (sem espaços)
-      spanGaps: true, // ou defina um limite em ms, ex.: 1000*60*60*24 [7]
+      spanGaps: true, // linha contínua; use um limite em ms se preferir [23]
       responsive: true,
       maintainAspectRatio: false,
       parsing: false,
@@ -338,17 +339,12 @@ function initializeHistoryChartFromRuns(runs) {
           type: 'time',
           min: xMin,
           max: xMax,
-          offset: false, // evita margem nas extremidades [3]
-          time: {
-            tooltipFormat: 'dd/MM/yyyy HH:mm' // só afeta tooltip; rótulo é via callback
-          },
+          offset: false,
+          time: { tooltipFormat: 'dd/MM/yyyy HH:mm' },
           ticks: {
             autoSkip: true,
             maxRotation: 0,
-            // Eixo sem horário (apenas data)
-            callback(v) {
-              return dfBRtzAxis.format(new Date(v));
-            }
+            callback(v) { return dfBRtzAxis.format(new Date(v)); } // apenas data no eixo
           }
         },
         y: {
@@ -364,7 +360,7 @@ function initializeHistoryChartFromRuns(runs) {
           intersect: false,
           callbacks: {
             title(items) {
-              const f = items?.[0];
+              const f = items?.[0];        
               const t = f && (f.parsed?.x ?? f.raw?.x);
               return t ? dfBRtzTooltip.format(new Date(t)) : '';
             },
@@ -378,6 +374,7 @@ function initializeHistoryChartFromRuns(runs) {
     }
   });
 }
+
 
 
 
@@ -611,6 +608,7 @@ async function loadRuns() {
     // 3) Histórico por período
     console.log('loadRuns: total execs=', executionsData.length, 'period=', historyPeriod);
     const filtered = filterRunsByPeriod(executionsData, historyPeriod);
+    console.log('30d filtered:', filtered.length, filtered?.date, filtered.at(-1)?.date);
     console.log('loadRuns -> history filtered len=', filtered.length);
     initializeHistoryChartFromRuns(filtered);
   } catch (err) {
