@@ -70,7 +70,9 @@ async function fetchRuns() {
   const arr = Array.isArray(raw?.executions) ? raw.executions : (Array.isArray(raw) ? raw : []);
   return arr.map((r, idx) => ({
     id: r.runId || `exec-${String(idx + 1).padStart(3, "0")}`,
-    date: r.timestamp || new Date().toISOString(),
+    date: r.timestamp && Number.isFinite(new Date(r.timestamp).getTime())
+      ? r.timestamp
+      : null,
     status: (r.totalFailed ?? 0) > 0 ? "failed" : "passed",
     duration: Math.round((r.totalDuration ?? 0) / 1000),
     totalTests: r.totalTests ?? ((r.totalPassed ?? 0) + (r.totalFailed ?? 0)),
@@ -261,13 +263,14 @@ function initializeHistoryChartFromRuns(runs) {
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 
   // 2) Consolidar por instante (ou por hora -> descomentar truncagem)
+// 2) Consolidar por hora (recomendado para 7d/30d)
   const byTs = new Map();
   for (const r of runsOk) {
-    // AGREGAR POR HORA (opcional): descomente as 2 linhas abaixo e comente a linha "const ts = new Date(r.date).getTime();"
-    // const d = new Date(r.date); d.setMinutes(0, 0, 0);
-    // const ts = d.getTime();
+    const d = new Date(r.date);
+    if (!Number.isFinite(d.getTime())) continue;
+    d.setMinutes(0, 0, 0);                 // <-- truncar para o início da hora
+    const ts = d.getTime();
 
-    const ts = new Date(r.date).getTime();
     const cur = byTs.get(ts) || { x: new Date(ts), passed: 0, failed: 0 };
     cur.passed += Number(r.passedTests || 0);
     cur.failed += Number(r.failedTests || 0);
@@ -275,13 +278,14 @@ function initializeHistoryChartFromRuns(runs) {
   }
   const points = Array.from(byTs.values()).sort((a, b) => a.x - b.x);
 
-  // 3) Datasets: Executados (passed+failed) e Falhados
-  const ptsExecutados = points.map(p => ({ x: p.x, y: (p.passed + p.failed) }));
+  // Datasets
+  const ptsExecutados = points.map(p => ({ x: p.x, y: p.passed + p.failed }));
   const ptsFalhados   = points.map(p => ({ x: p.x, y: p.failed }));
 
-  // 4) Eixo X cobrindo todo o range
-  const xMin = points.length ? points.x : undefined;
+  // Eixo X do primeiro ao último ponto do período
+  const xMin = points.length ? points[0].x : undefined;
   const xMax = points.length ? points[points.length - 1].x : undefined;
+
 
   // 5) Y sugerido (com base no maior “executados”)
   const suggestedMax = Math.max(5, ...ptsExecutados.map(p => p.y)) + 1;
