@@ -264,124 +264,125 @@
     });
   }
 
-  function initializeHistoryChartFromRuns(runs) {
-    const ctx = document.getElementById('historyChart')?.getContext('2d');
-    if (!ctx) return;
-    if (ns.historyChart) ns.historyChart.destroy();
+ function initializeHistoryChartFromRuns(runs) {
+  const ctx = document.getElementById('historyChart')?.getContext('2d');
+  if (!ctx) return;
+  if (ns.historyChart) ns.historyChart.destroy();
 
-    // 1) Sanitizar, validar e ordenar
-    const runsOk = (runs || [])
-      .filter(r => Number.isFinite(new Date(r?.date).getTime()))
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
+  // 1) Sanitizar, validar e ordenar
+  const runsOk = (runs || [])
+    .filter(r => Number.isFinite(new Date(r?.date).getTime()))
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    // 2) Consolidar por hora (recomendado para 7d/30d)
-    const byTs = new Map();
-    for (const r of runsOk) {
-      const d = new Date(r.date);
-      if (!Number.isFinite(d.getTime())) continue;
-      d.setMinutes(0, 0, 0); // truncar para o início da hora
-      const ts = d.getTime();
+  // 2) Consolidar por hora
+  const byHour = new Map();
+  for (const r of runsOk) {
+    const d = new Date(r.date);
+    if (!Number.isFinite(d.getTime())) continue;
+    
+    // Extrair apenas a hora (0-23)
+    const hour = d.getHours();
+    
+    const cur = byHour.get(hour) || { hour, passed: 0, failed: 0 };
+    cur.passed += Number(r.passedTests || 0);
+    cur.failed += Number(r.failedTests || 0);
+    byHour.set(hour, cur);
+  }
 
-      const cur = byTs.get(ts) || { x: new Date(ts), passed: 0, failed: 0 };
-      cur.passed += Number(r.passedTests || 0);
-      cur.failed += Number(r.failedTests || 0);
-      byTs.set(ts, cur);
-    }
-    const points = Array.from(byTs.values()).sort((a, b) => a.x - b.x);
+  // 3) Criar array completo 0-23h (mesmo sem dados)
+  const hourlyData = [];
+  for (let h = 0; h < 24; h++) {
+    const data = byHour.get(h) || { hour: h, passed: 0, failed: 0 };
+    hourlyData.push(data);
+  }
 
-    // 3) Datasets
-    const ptsExecutados = points.map(p => ({ x: p.x, y: p.passed + p.failed }));
-    const ptsFalhados   = points.map(p => ({ x: p.x, y: p.failed }));
+  // 4) Preparar dados para Chart.js
+  const labels = hourlyData.map(d => `${d.hour}h`);
+  const passedData = hourlyData.map(d => d.passed);
+  const failedData = hourlyData.map(d => d.failed);
 
-    // 4) Eixo X do primeiro ao último ponto (sem margens)
-    const xMin = points.length ? points[0].x : undefined;
-    const xMax = points.length ? points[points.length - 1].x : undefined;
-
-    // 5) Y sugerido
-    const suggestedMax = Math.max(5, ...ptsExecutados.map(p => p.y)) + 1;
-
-    // 6) Formatadores
-    const dfBRtzTooltip = new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
-      timeZone: 'America/Sao_Paulo', hour12: false
-    });
-    const dfBRtzAxis = new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit', month: '2-digit', timeZone: 'America/Sao_Paulo'
-    });
-
-    ns.historyChart = new Chart(ctx, {
-      type: 'line',
-      data: { datasets: [
+  // 5) Configurar gráfico stacked bar
+  ns.historyChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
         {
-          label: 'Executados',
-          data: ptsExecutados,
+          label: 'Aprovados',
+          data: passedData,
+          backgroundColor: '#16a34a', // Verde sólido
           borderColor: '#16a34a',
-          backgroundColor: 'rgba(22,163,74,0.15)',
-          borderWidth: 3,
-          pointRadius: 3,
-          pointHoverRadius: 5,
-          tension: 0.25,
-          fill: true
+          borderWidth: 0,
+          stack: 'stack1'
         },
         {
           label: 'Falhados',
-          data: ptsFalhados,
+          data: failedData,
+          backgroundColor: '#dc2626', // Vermelho sólido
           borderColor: '#dc2626',
-          backgroundColor: 'rgba(220,38,38,0.10)',
-          borderWidth: 2,
-          pointRadius: 3,
-          pointHoverRadius: 5,
-          tension: 0.25,
-          fill: false
+          borderWidth: 0,
+          stack: 'stack1'
         }
-      ]},
-      options: {
-        spanGaps: 12 * 60 * 60 * 1000,
-        responsive: true,
-        maintainAspectRatio: false,
-        parsing: false,
-        normalized: true,
-        interaction: { mode: 'nearest', intersect: false },
-        scales: {
-          x: {
-            type: 'time',
-            min: xMin,
-            max: xMax,
-            offset: false,
-            time: { tooltipFormat: 'dd/MM/yyyy HH:mm' },
-            ticks: {
-              autoSkip: true,
-              maxRotation: 0,
-              callback(v) { return dfBRtzAxis.format(new Date(v)); }
-            }
-          },
-          y: {
-            beginAtZero: true,
-            suggestedMax,
-            ticks: { precision: 0, stepSize: 1 }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: {
+          position: 'top',
+          labels: {
+            usePointStyle: true,
+            padding: 20
           }
         },
-        plugins: {
-          legend: { position: 'top' },
-          tooltip: {
-            mode: 'index',
-            intersect: false,
-            callbacks: {
-              title(items) {
-                const f = items[0];
-                const t = f && (f.parsed?.x ?? f.raw?.x);
-                return t ? dfBRtzTooltip.format(new Date(t)) : '';
-              },
-              label(ctx) {
-                const v = ctx.parsed?.y ?? ctx.raw?.y ?? 0;
-                return `${ctx.dataset?.label || 'Valor'}: ${v}`;
-              }
+        tooltip: {
+          mode: 'index',
+          intersect: false,
+          callbacks: {
+            title: function(tooltipItems) {
+              return `Hora: ${tooltipItems[0].label}`;
+            },
+            label: function(context) {
+              return `${context.dataset.label}: ${context.parsed.y}`;
+            },
+            footer: function(tooltipItems) {
+              const total = tooltipItems.reduce((sum, item) => sum + item.parsed.y, 0);
+              return total > 0 ? `Total: ${total}` : '';
             }
           }
         }
+      },
+      scales: {
+        x: {
+          title: {
+            display: true,
+            text: 'Hora do Dia'
+          },
+          grid: {
+            display: false
+          }
+        },
+        y: {
+          stacked: true,
+          beginAtZero: true,
+          title: {
+            display: true,
+            text: 'Número de Testes'
+          },
+          ticks: {
+            precision: 0,
+            stepSize: 1
+          }
+        }
+      },
+      interaction: {
+        mode: 'nearest',
+        intersect: false
       }
-    });
-  }
+    }
+  });
+}
 
   // ===========================
   // Modal
