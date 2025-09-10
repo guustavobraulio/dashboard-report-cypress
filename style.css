@@ -1994,3 +1994,10 @@ body {
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
+
+.trend-indicator {
+  font-weight: 500;
+  font-size: 0.8em;
+  margin-top: 4px;
+  display: block;
+}
