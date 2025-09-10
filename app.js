@@ -183,16 +183,22 @@ function updateStatistics() {
   console.log('====================');
   
   // Função para formatar trend visual
+  // Função para formatar trend visual (VERSÃO CORRIGIDA)
   function formatTrend(trendData) {
-    if (!trendData.change || trendData.trend === 'new') {
+    // ✅ CORREÇÃO: Tratar trends 'new' como válidos
+    if (!trendData.change && trendData.trend !== 'new') {
       console.log('Trend não exibido:', trendData.trend, 'change:', trendData.change);
       return '';
     }
-    
+
+    if (trendData.trend === 'new') {
+      return `<span class="trend-indicator" style="color: #6b7280; font-size: 0.85em; margin-left: 8px;">🆕</span>`;
+    }
+
     const arrow = trendData.trend === 'up' ? '↗️' : trendData.trend === 'down' ? '↘️' : '➡️';
     const color = trendData.trend === 'up' ? '#16a34a' : trendData.trend === 'down' ? '#dc2626' : '#6b7280';
     const sign = trendData.change > 0 ? '+' : '';
-    
+
     return `<span class="trend-indicator" style="color: ${color}; font-size: 0.85em; margin-left: 8px;">${arrow} ${sign}${trendData.percent}%</span>`;
   }
   
