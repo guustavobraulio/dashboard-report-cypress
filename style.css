@@ -536,13 +536,13 @@ pre code {
 }
 
 /* Form elements */
-.form-control {
-  display: block;
-  width: 100%;
-  padding: var(--space-8) var(--space-12);
-  font-size: var(--font-size-md);
+.form-control{
+  display: block!important;
+  width: 100%!important;
+  padding: var(--space-8) var(--space-12)!important;
+  font-size: 9px!important;
   line-height: 1.5;
-  color: var(--color-text);
+  color: var(--color-text)!important;
   background-color: var(--color-surface);
   border: 1px solid var(--color-border);
   border-radius: var(--radius-base);
@@ -2491,28 +2491,18 @@ body {
 
 /* Forçar apenas os trend-indicator a aparecerem corretamente */
 .stat-content .trend-indicator {
-  font-size: 0.75rem !important; /* Só o badge aumenta */
+  font-size: 0.6rem !important;
   font-weight: 600 !important;
-  padding: 3px 8px !important;
+  padding: 2px 6px !important;
   border-radius: 8px !important;
   display: inline-block !important;
   line-height: 1.1 !important;
-  margin-left: 8px !important;
+  margin-left: 6px !important;
   position: relative !important;
   top: -10px !important;
   white-space: nowrap !important;
   vertical-align: baseline !important;
 }
-
-
-/* MANTER o tamanho dos números dos testes (107, 28, etc.) */
-.stat-content .card-value span:first-child {
-  font-size: 2.5rem !important; /* Números grandes permanecem iguais */
-  font-weight: 700 !important;
-  color: #1f2937 !important;
-  line-height: 1 !important;
-}
-
 
 /* Cores específicas */
 .stat-content .trend-up {
