@@ -294,7 +294,7 @@
     const ptsFalhados   = points.map(p => ({ x: p.x, y: p.failed }));
 
     // 4) Eixo X do primeiro ao último ponto (sem margens)
-    const xMin = points.length ? points.x : undefined;           // corrigido
+    const xMin = points.length ? points[0].x : undefined;
     const xMax = points.length ? points[points.length - 1].x : undefined;
 
     // 5) Y sugerido
@@ -336,7 +336,7 @@
         }
       ]},
       options: {
-        spanGaps: true,
+        spanGaps: 12 * 60 * 60 * 1000,
         responsive: true,
         maintainAspectRatio: false,
         parsing: false,
@@ -425,7 +425,7 @@
     }
 
     const logsPre = document.getElementById("modalLogs");
-    if (logsPre) logs.textContent = (e.logs || []).join("\n\n");
+    if (logsPre) logsPre.textContent = (e.logs || []).join("\n\n");
 
     const artifactsWrap = document.getElementById("modalArtifacts");
     if (artifactsWrap) {
@@ -586,33 +586,44 @@
   // Orquestração de carregamento
   // ===========================
   async function loadRuns() {
-    try {
-      const runs = await fetchRuns();
+  try {
+    const runs = await fetchRuns();
 
-      // 1) Deduplicar por id e usar somente 'uniq'
-      const uniqMap = new Map();
-      for (const r of runs || []) uniqMap.set(r.id, r);
-      const uniq = Array.from(uniqMap.values());
+    // 1) Deduplicar por id e usar somente 'uniq'
+    const uniqMap = new Map();
+    for (const r of runs || []) uniqMap.set(r.id, r);
+    const uniq = Array.from(uniqMap.values());
 
-      window.__allRuns = uniq;
-      ns.executionsData = uniq.slice();
+    // 1.1) NORMALIZAR DATAS (garantir milissegundos e valor válido)
+    for (const r of uniq) {
+      // se vier em segundos (epoch < 1e12), converte p/ ms
+      if (typeof r.date === 'number' && r.date < 1e12) r.date = r.date * 1000;
+      // se vier string, tenta parse e normaliza p/ número ms
+      const t = (typeof r.date === 'number') ? r.date : new Date(r.date).getTime();
+      r.date = Number.isFinite(t) ? t : null;
+    } // A escala time do Chart.js exige datas parseáveis e consistentes. [3][4]
 
-      // 2) Base para cards/tabela/pizza
-      ns.filteredExecutions = ns.executionsData.slice();
-      updateStatistics();
-      initializeStatusChart();
-      populateExecutionTable();
+    // disponibiliza para inspeção no console
+    window.__allRuns = uniq;
 
-      // 3) Histórico por período
-      console.log('loadRuns: total execs=', ns.executionsData.length, 'period=', ns.historyPeriod);
-      const filtered = filterRunsByPeriod(ns.executionsData, ns.historyPeriod);
-      console.log('history filtered len=', filtered.length);
-      initializeHistoryChartFromRuns(filtered);
-    } catch (err) {
-      console.error('Falha ao carregar execuções:', err);
-    }
+    // 2) Base para cards/tabela/pizza
+    ns.executionsData = uniq.slice();
+    ns.filteredExecutions = ns.executionsData.slice();
+    updateStatistics();
+    initializeStatusChart();
+    populateExecutionTable();
+
+    // 3) Histórico por período
+    console.log('loadRuns: total execs=', ns.executionsData.length, 'period=', ns.historyPeriod);
+    const filtered = filterRunsByPeriod(ns.executionsData, ns.historyPeriod);
+    console.log('history filtered len=', filtered.length);
+    initializeHistoryChartFromRuns(filtered); // pontos no formato {x: Date, y: number} com parsing:false. [3][4]
+  } catch (err) {
+    console.error('Falha ao carregar execuções:', err);
   }
+}
 
-  // Exponha utilitários se necessário
-  root.__DASH_API__ = { loadRuns };
+// Exponha utilitários se necessário
+root.__DASH_API__ = { loadRuns }; // permite chamar window.__DASH_API__.loadRuns() após o carregamento. [5]
 })(window);
+
