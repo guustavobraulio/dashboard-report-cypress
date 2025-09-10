@@ -157,8 +157,8 @@ function updateStatistics() {
   const successRate = totalTests ? Math.round((totalPassed / totalTests) * 100) : 0;
   
   // 🔍 DEBUG: Log dados atuais
-  console.log('=== DEBUG METRICS ===');
-  console.log('Período atual:', ns.historyPeriod);
+  console.log('=== DEBUG TRENDS ===');
+  console.log('Período:', ns.historyPeriod);
   console.log('Execuções filtradas:', ns.filteredExecutions.length);
   console.log('Dados atuais:', { totalPassed, totalFailed, avgDuration, successRate });
   
@@ -178,13 +178,14 @@ function updateStatistics() {
   
   const trends = calculateTrends(currentData, previousData);
   
-  // 🔍 DEBUG: Log tendências calculadas
-  console.log('Tendências:', trends);
-  console.log('======================');
+  // 🔍 DEBUG: Log tendências
+  console.log('Tendências calculadas:', trends);
+  console.log('====================');
   
   // Função para formatar trend visual
   function formatTrend(trendData) {
     if (!trendData.change || trendData.trend === 'new') {
+      console.log('Trend não exibido:', trendData.trend, 'change:', trendData.change);
       return '';
     }
     
@@ -206,6 +207,7 @@ function updateStatistics() {
   if (ad) ad.innerHTML = `${avgDuration}s${formatTrend(trends.avgDuration)}`;
   if (sr) sr.innerHTML = `${successRate}%${formatTrend(trends.successRate)}`;
 }
+
 
   // ===========================
   // Tabela + Paginação
