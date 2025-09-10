@@ -156,8 +156,17 @@ function updateStatistics() {
     : 0;
   const successRate = totalTests ? Math.round((totalPassed / totalTests) * 100) : 0;
   
+  // 🔍 DEBUG: Log dados atuais
+  console.log('=== DEBUG METRICS ===');
+  console.log('Período atual:', ns.historyPeriod);
+  console.log('Execuções filtradas:', ns.filteredExecutions.length);
+  console.log('Dados atuais:', { totalPassed, totalFailed, avgDuration, successRate });
+  
   // Obter dados do período anterior
   const previousData = getPreviousPeriodData(ns.historyPeriod);
+  
+  // 🔍 DEBUG: Log dados anteriores
+  console.log('Dados anteriores:', previousData);
   
   // Calcular tendências
   const currentData = {
@@ -168,6 +177,10 @@ function updateStatistics() {
   };
   
   const trends = calculateTrends(currentData, previousData);
+  
+  // 🔍 DEBUG: Log tendências calculadas
+  console.log('Tendências:', trends);
+  console.log('======================');
   
   // Função para formatar trend visual
   function formatTrend(trendData) {
@@ -734,7 +747,7 @@ function updateStatistics() {
   function getPreviousPeriodData(currentPeriod) {
     const now = Date.now();
     let previousWindow;
-    
+
     switch (currentPeriod) {
       case '24h':
         previousWindow = { start: now - (48 * 60 * 60 * 1000), end: now - (24 * 60 * 60 * 1000) };
@@ -748,22 +761,28 @@ function updateStatistics() {
       default:
         return { passed: 0, failed: 0, avgDuration: 0, successRate: 0 };
     }
-    
+
+    // 🔍 DEBUG: Log janela de tempo anterior
+    console.log('Janela anterior:', new Date(previousWindow.start), 'até', new Date(previousWindow.end));
+
     const previousRuns = ns.executionsData.filter(r => {
       const runTime = new Date(r.date).getTime();
       return runTime >= previousWindow.start && runTime <= previousWindow.end;
     });
-    
+
+    // 🔍 DEBUG: Log execuções encontradas
+    console.log('Execuções no período anterior:', previousRuns.length);
+
     if (previousRuns.length === 0) {
       return { passed: 0, failed: 0, avgDuration: 0, successRate: 0 };
     }
-    
+
     const totalPassed = previousRuns.reduce((s, e) => s + (e.passedTests || 0), 0);
     const totalFailed = previousRuns.reduce((s, e) => s + (e.failedTests || 0), 0);
     const totalTests = totalPassed + totalFailed;
     const avgDuration = Math.round(previousRuns.reduce((s, e) => s + (e.duration || 0), 0) / previousRuns.length);
     const successRate = totalTests ? Math.round((totalPassed / totalTests) * 100) : 0;
-    
+
     return {
       passed: totalPassed,
       failed: totalFailed,
@@ -771,6 +790,7 @@ function updateStatistics() {
       successRate: successRate
     };
   }
+
 
   // ===========================
   // Renderização de Artefatos
