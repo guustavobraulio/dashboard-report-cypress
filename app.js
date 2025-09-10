@@ -146,24 +146,53 @@
   // ===========================
   // Cards/Estatísticas
   // ===========================
-  function updateStatistics() {
-    const totalPassed = ns.filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
-    const totalFailed = ns.filteredExecutions.reduce((s, e) => s + (e.failedTests || 0), 0);
-    const totalTests = totalPassed + totalFailed;
-    const avgDuration = ns.filteredExecutions.length
-      ? Math.round(ns.filteredExecutions.reduce((s, e) => s + (e.duration || 0), 0) / ns.filteredExecutions.length)
-      : 0;
-    const successRate = totalTests ? Math.round((totalPassed / totalTests) * 100) : 0;
-
-    const tp = document.getElementById("totalPassed");
-    const tf = document.getElementById("totalFailed");
-    const ad = document.getElementById("avgDuration");
-    const sr = document.getElementById("successRate");
-    if (tp) tp.textContent = totalPassed;
-    if (tf) tf.textContent = totalFailed;
-    if (ad) ad.textContent = `${avgDuration}s`;
-    if (sr) sr.textContent = `${successRate}%`;
+function updateStatistics() {
+  // Calcular dados atuais
+  const totalPassed = ns.filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
+  const totalFailed = ns.filteredExecutions.reduce((s, e) => s + (e.failedTests || 0), 0);
+  const totalTests = totalPassed + totalFailed;
+  const avgDuration = ns.filteredExecutions.length
+    ? Math.round(ns.filteredExecutions.reduce((s, e) => s + (e.duration || 0), 0) / ns.filteredExecutions.length)
+    : 0;
+  const successRate = totalTests ? Math.round((totalPassed / totalTests) * 100) : 0;
+  
+  // Obter dados do período anterior
+  const previousData = getPreviousPeriodData(ns.historyPeriod);
+  
+  // Calcular tendências
+  const currentData = {
+    passed: totalPassed,
+    failed: totalFailed,
+    avgDuration: avgDuration,
+    successRate: successRate
+  };
+  
+  const trends = calculateTrends(currentData, previousData);
+  
+  // Função para formatar trend visual
+  function formatTrend(trendData) {
+    if (!trendData.change || trendData.trend === 'new') {
+      return '';
+    }
+    
+    const arrow = trendData.trend === 'up' ? '↗️' : trendData.trend === 'down' ? '↘️' : '➡️';
+    const color = trendData.trend === 'up' ? '#16a34a' : trendData.trend === 'down' ? '#dc2626' : '#6b7280';
+    const sign = trendData.change > 0 ? '+' : '';
+    
+    return `<span class="trend-indicator" style="color: ${color}; font-size: 0.85em; margin-left: 8px;">${arrow} ${sign}${trendData.percent}%</span>`;
   }
+  
+  // Atualizar elementos com valores e trends
+  const tp = document.getElementById("totalPassed");
+  const tf = document.getElementById("totalFailed");
+  const ad = document.getElementById("avgDuration");
+  const sr = document.getElementById("successRate");
+  
+  if (tp) tp.innerHTML = `${totalPassed}${formatTrend(trends.passed)}`;
+  if (tf) tf.innerHTML = `${totalFailed}${formatTrend(trends.failed)}`;
+  if (ad) ad.innerHTML = `${avgDuration}s${formatTrend(trends.avgDuration)}`;
+  if (sr) sr.innerHTML = `${successRate}%${formatTrend(trends.successRate)}`;
+}
 
   // ===========================
   // Tabela + Paginação
@@ -434,7 +463,7 @@
   function openExecutionModal(id) {
     const e = ns.executionsData.find(x => x.id === id);
     if (!e) return;
-    const set = (id, val, prop='textContent') => {
+    const set = (id, val, prop = 'textContent') => {
       const el = document.getElementById(id);
       if (el) el[prop] = val;
     };
@@ -460,26 +489,22 @@
     const testsList = document.getElementById("modalTestsList");
     if (testsList) {
       testsList.innerHTML = (e.tests || []).map(t => `
-        <div class="test-item test-item--${t.status || "passed"}">
-          <div class="test-info">
-            <div class="test-name">${t.name}</div>
-            ${t.error ? `<div class="test-error">${t.error}</div>` : ""}
-          </div>
-          <div class="test-duration">${t.duration || 0}s</div>
-        </div>`).join("");
+      <div class="test-item test-item--${t.status || "passed"}">
+        <div class="test-info">
+          <div class="test-name">${t.name}</div>
+          ${t.error ? `<div class="test-error">${t.error}</div>` : ""}
+        </div>
+        <div class="test-duration">${t.duration || 0}s</div>
+      </div>`).join("");
     }
 
     const logsPre = document.getElementById("modalLogs");
     if (logsPre) logsPre.textContent = (e.logs || []).join("\n\n");
 
+    // ✅ NOVA IMPLEMENTAÇÃO DOS ARTEFATOS
     const artifactsWrap = document.getElementById("modalArtifacts");
     if (artifactsWrap) {
-      artifactsWrap.innerHTML = (e.artifacts || []).map(a => `
-        <div class="artifact-item">
-          <i class="fas fa-file-alt"></i>
-          <span>${a.name || "artifact"}</span>
-          ${a.url ? `<a class="btn btn--sm btn--outline" href="${a.url}" target="_blank" rel="noopener">Abrir</a>` : ""}
-        </div>`).join("");
+      artifactsWrap.innerHTML = renderArtifacts(e.artifacts);
     }
 
     const modal = document.getElementById("executionModal");
@@ -488,6 +513,7 @@
       modal.style.display = "flex";
     }
   }
+
 
   function closeModal() {
     const modal = document.getElementById("executionModal");
@@ -678,7 +704,181 @@
   }
 }
 
-// Exponha utilitários se necessário
-root.__DASH_API__ = { loadRuns }; // permite chamar window.__DASH_API__.loadRuns() após o carregamento. [5]
-})(window);
+  // ===========================
+  // Sistema de Tendências
+  // ===========================
+  function calculateTrends(currentData, previousData) {
+    const trends = {};
+    
+    for (const key in currentData) {
+      const current = currentData[key] || 0;
+      const previous = previousData[key] || 0;
+      
+      if (previous === 0) {
+        trends[key] = { value: current, change: null, trend: 'new' };
+      } else {
+        const diff = current - previous;
+        const percent = Math.round((diff / previous) * 100);
+        trends[key] = {
+          value: current,
+          change: diff,
+          percent: percent,
+          trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
+        };
+      }
+    }
+    
+    return trends;
+  }
 
+  function getPreviousPeriodData(currentPeriod) {
+    const now = Date.now();
+    let previousWindow;
+    
+    switch (currentPeriod) {
+      case '24h':
+        previousWindow = { start: now - (48 * 60 * 60 * 1000), end: now - (24 * 60 * 60 * 1000) };
+        break;
+      case '7d':
+        previousWindow = { start: now - (14 * 24 * 60 * 60 * 1000), end: now - (7 * 24 * 60 * 60 * 1000) };
+        break;
+      case '30d':
+        previousWindow = { start: now - (60 * 24 * 60 * 60 * 1000), end: now - (30 * 24 * 60 * 60 * 1000) };
+        break;
+      default:
+        return { passed: 0, failed: 0, avgDuration: 0, successRate: 0 };
+    }
+    
+    const previousRuns = ns.executionsData.filter(r => {
+      const runTime = new Date(r.date).getTime();
+      return runTime >= previousWindow.start && runTime <= previousWindow.end;
+    });
+    
+    if (previousRuns.length === 0) {
+      return { passed: 0, failed: 0, avgDuration: 0, successRate: 0 };
+    }
+    
+    const totalPassed = previousRuns.reduce((s, e) => s + (e.passedTests || 0), 0);
+    const totalFailed = previousRuns.reduce((s, e) => s + (e.failedTests || 0), 0);
+    const totalTests = totalPassed + totalFailed;
+    const avgDuration = Math.round(previousRuns.reduce((s, e) => s + (e.duration || 0), 0) / previousRuns.length);
+    const successRate = totalTests ? Math.round((totalPassed / totalTests) * 100) : 0;
+    
+    return {
+      passed: totalPassed,
+      failed: totalFailed,
+      avgDuration: avgDuration,
+      successRate: successRate
+    };
+  }
+
+  // ===========================
+  // Renderização de Artefatos
+  // ===========================
+  function renderArtifacts(artifacts) {
+    if (!artifacts || artifacts.length === 0) {
+      return `
+        <div class="no-artifacts">
+          <i class="fas fa-images"></i>
+          <p>Nenhum artefato disponível para esta execução</p>
+          <small>Screenshots e vídeos aparecerão aqui quando disponíveis</small>
+        </div>
+      `;
+    }
+    
+    return artifacts.map(a => {
+      const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(a.url || '');
+      const isVideo = /\.(mp4|webm|mov)$/i.test(a.url || '');
+      
+      if (isImage) {
+        return `
+          <div class="artifact-item">
+            <div class="artifact-preview">
+              <img src="${a.url}" alt="${a.name || 'Screenshot'}" class="artifact-thumb" onclick="openImageModal('${a.url}', '${a.name || 'Screenshot'}')">
+            </div>
+            <div class="artifact-info">
+              <h5>${a.name || 'Screenshot do Teste'}</h5>
+              <span class="artifact-type">Imagem • ${getFileSize(a.size)}</span>
+              <div style="margin-top: 0.5rem;">
+                <button class="btn btn--sm btn--outline" onclick="openImageModal('${a.url}', '${a.name || 'Screenshot'}')">
+                  <i class="fas fa-eye"></i> Visualizar
+                </button>
+                <a href="${a.url}" target="_blank" class="btn btn--sm btn--outline" style="margin-left: 0.5rem;">
+                  <i class="fas fa-download"></i> Download
+                </a>
+              </div>
+            </div>
+          </div>
+        `;
+      } else if (isVideo) {
+        return `
+          <div class="artifact-item">
+            <div class="artifact-preview">
+              <video controls class="artifact-video">
+                <source src="${a.url}" type="video/mp4">
+                Seu browser não suporta reprodução de vídeo.
+              </video>
+            </div>
+            <div class="artifact-info">
+              <h5>${a.name || 'Gravação do Teste'}</h5>
+              <span class="artifact-type">Vídeo • ${getFileSize(a.size)}</span>
+              <div style="margin-top: 0.5rem;">
+                <a href="${a.url}" target="_blank" class="btn btn--sm btn--outline">
+                  <i class="fas fa-download"></i> Download
+                </a>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        return `
+          <div class="artifact-item">
+            <div class="artifact-preview">
+              <i class="fas fa-file-alt" style="font-size: 3rem; color: #6b7280;"></i>
+            </div>
+            <div class="artifact-info">
+              <h5>${a.name || 'Arquivo'}</h5>
+              <span class="artifact-type">Documento • ${getFileSize(a.size)}</span>
+              <div style="margin-top: 0.5rem;">
+                <a href="${a.url}" target="_blank" class="btn btn--sm btn--outline">
+                  <i class="fas fa-external-link-alt"></i> Abrir
+                </a>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+    }).join('');
+  }
+
+  function getFileSize(bytes) {
+    if (!bytes) return 'Tamanho desconhecido';
+    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(1024));
+    return Math.round(bytes / Math.pow(1024, i) * 100) / 100 + ' ' + sizes[i];
+  }
+
+  function openImageModal(url, name) {
+    const modal = document.createElement('div');
+    modal.className = 'image-modal';
+    modal.innerHTML = `
+      <div class="image-modal-content">
+        <span class="image-modal-close" onclick="this.parentElement.parentElement.remove()">&times;</span>
+        <img src="${url}" alt="${name}" class="image-modal-img">
+        <div class="image-modal-caption">${name}</div>
+      </div>
+    `;
+    
+    // Fechar modal ao clicar no fundo
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        modal.remove();
+      }
+    });
+    
+    document.body.appendChild(modal);
+  }
+
+// Exponha utilitários se necessário
+root.__DASH_API__ = { loadRuns }; 
+})(window); 

@@ -1460,11 +1460,13 @@ select.form-control {
 
 .artifact-item {
   display: flex;
-  align-items: center;
-  gap: var(--space-12);
-  padding: var(--space-12);
-  background: var(--color-secondary);
-  border-radius: var(--radius-base);
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  background: white;
+  transition: box-shadow 0.2s ease;
 }
 
 .artifact-item i {
@@ -1476,6 +1478,113 @@ select.form-control {
 .artifact-item span {
   flex: 1;
   font-weight: var(--font-weight-medium);
+}
+
+.artifact-item:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.artifact-preview {
+  flex-shrink: 0;
+}
+
+.artifact-thumb {
+  width: 120px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 0.2s ease;
+}
+
+.artifact-thumb:hover {
+  transform: scale(1.05);
+}
+
+.artifact-video {
+  width: 200px;
+  height: 120px;
+  border-radius: 4px;
+}
+
+.artifact-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.artifact-info h5 {
+  margin: 0;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.artifact-type {
+  font-size: 0.75rem;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 2px 8px;
+  border-radius: 4px;
+  width: fit-content;
+}
+
+.no-artifacts {
+  text-align: center;
+  color: #6b7280;
+  padding: 2rem;
+}
+
+.no-artifacts i {
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+/* Modal para imagens */
+.image-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.image-modal-content {
+  position: relative;
+  max-width: 90%;
+  max-height: 90%;
+}
+
+.image-modal-img {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 8px;
+}
+
+.image-modal-close {
+  position: absolute;
+  top: -40px;
+  right: 0;
+  color: white;
+  font-size: 2rem;
+  cursor: pointer;
+  background: rgba(0,0,0,0.5);
+  padding: 5px 10px;
+  border-radius: 4px;
+}
+
+.image-modal-caption {
+  text-align: center;
+  color: white;
+  margin-top: 1rem;
+  font-weight: 500;
 }
 
 /* Loading Overlay */
@@ -1838,4 +1947,50 @@ body {
 /* Ajuste para o ícone do GitHub não quebrar o layout */
 .execution-table .github-icon {
   flex-shrink: 0;
+}
+
+/* ===========================
+   Cards com Hover e Shadows
+   =========================== */
+.metric-card {
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  border-radius: 8px;
+  background: white;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.metric-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+}
+
+.metric-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #16a34a, #059669);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.metric-card:hover::before {
+  opacity: 1;
+}
+
+/* Dashboard spacing geral */
+.dashboard-section {
+  margin-bottom: 2rem;
+}
+
+.metric-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 1.5rem;
+  margin-bottom: 2rem;
 }
