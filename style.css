@@ -2478,20 +2478,18 @@ body {
   }
 }
 
-.stat-content h3 + * {
-  display: none !important;
-}
+/* ===========================
+   FIX FINAL: Badges únicos e bem posicionados
+   =========================== */
 
+/* Esconder badges duplicados */
+.stat-content h3 + *,
 .stat-content .trend:not(.trend-indicator),
 .stat-content .badge:not(.trend-indicator) {
   display: none !important;
 }
 
-/* ===========================
-   FIX FINAL: Badges únicos e bem posicionados
-   =========================== */
-
-/* Forçar apenas os trend-indicator a aparecerem */
+/* Forçar apenas os trend-indicator a aparecerem corretamente */
 .stat-content .trend-indicator {
   font-size: 0.6rem !important;
   font-weight: 600 !important;
@@ -2506,7 +2504,7 @@ body {
   vertical-align: baseline !important;
 }
 
-/* Sobrescrever cores específicas */
+/* Cores específicas */
 .stat-content .trend-up {
   background: #dcfce7 !important;
   color: #166534 !important;
@@ -2556,4 +2554,3 @@ body {
     font-size: 2rem !important;
   }
 }
-
