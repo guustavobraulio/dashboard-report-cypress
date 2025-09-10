@@ -731,15 +731,29 @@ function updateStatistics() {
       const current = currentData[key] || 0;
       const previous = previousData[key] || 0;
       
-      // ✅ Baseline mínima para cálculos confiáveis
-      if (previous < 3) {
-        trends[key] = { value: current, change: null, trend: 'new' };
+      // ✅ CORREÇÃO: Baseline mais baixa e mais permissiva
+      if (previous === 0) {
+        // ✅ Usar valor mínimo de 1 para evitar divisão por zero
+        const assumedPrevious = 1;
+        const diff = current - assumedPrevious;
+        const percent = Math.round((diff / assumedPrevious) * 100);
+        
+        // ✅ Limitar percentuais para valores razoáveis
+        const cappedPercent = Math.min(Math.max(percent, -100), 300);
+        
+        trends[key] = {
+          value: current,
+          change: diff,
+          percent: cappedPercent,
+          trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
+        };
       } else {
+        // Cálculo normal quando há dados anteriores válidos
         const diff = current - previous;
         const percent = Math.round((diff / previous) * 100);
         
-        // ✅ Limitar percentuais para ranges realistas  
-        const cappedPercent = Math.min(Math.max(percent, -90), 200);
+        // ✅ Limitar percentuais para valores razoáveis
+        const cappedPercent = Math.min(Math.max(percent, -100), 300);
         
         trends[key] = {
           value: current,
