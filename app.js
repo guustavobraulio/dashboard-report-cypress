@@ -183,11 +183,18 @@
         <td>${e.passedTests}/${e.totalTests}</td>
         <td>${e.duration}s</td>
         <td>
-          <button class="action-btn action-btn--view" data-execution-id="${e.id}">
-            <i class="fas fa-eye"></i> Ver
-          </button>
-          ${e.githubUrl && e.githubUrl !== "#" ? `<a class="btn btn--sm btn--outline" href="${e.githubUrl}" target="_blank" rel="noopener">Ação</a>` : ""}
-        </td>
+  <button class="action-btn action-btn--view" data-execution-id="${e.id}">
+    <i class="fas fa-eye"></i> Ver
+  </button>
+  ${e.githubUrl && e.githubUrl !== "#" ? `
+    <a class="btn btn--sm btn--outline" href="${e.githubUrl}" target="_blank" rel="noopener">
+      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="github-icon" viewBox="0 0 16 16" style="margin-right: 4px; vertical-align: text-bottom;">
+        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8"/>
+      </svg>
+      Actions
+    </a>
+  ` : ""}
+</td>
       </tr>`).join("");
 
     document.querySelectorAll(".action-btn--view").forEach(btn => {
@@ -275,7 +282,6 @@
       .sort((a, b) => new Date(a.date) - new Date(b.date));
 
     if (runsOk.length === 0) {
-      // Se não há dados, mostrar gráfico vazio
       ns.historyChart = new Chart(ctx, {
         type: 'bar',
         data: { labels: [], datasets: [] },
@@ -284,44 +290,53 @@
       return;
     }
 
-    // 2) Consolidar por DIA (não mais por hora)
-    const byDay = new Map();
+    // 2) Consolidar por HORA
+    const byHour = new Map();
     for (const r of runsOk) {
       const d = new Date(r.date);
       if (!Number.isFinite(d.getTime())) continue;
 
-      // Criar chave do dia (YYYY-MM-DD)
-      const dayKey = d.toISOString().split('T')[0];
+      const hourKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}-${String(d.getHours()).padStart(2, '0')}`;
 
-      const cur = byDay.get(dayKey) || {
-        dayKey,
-        date: new Date(d.getFullYear(), d.getMonth(), d.getDate()),
+      const cur = byHour.get(hourKey) || {
+        hourKey,
+        date: new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours()),
         passed: 0,
         failed: 0
       };
       cur.passed += Number(r.passedTests || 0);
       cur.failed += Number(r.failedTests || 0);
-      byDay.set(dayKey, cur);
+      byHour.set(hourKey, cur);
     }
 
     // 3) Converter para array e ordenar
-    const dailyData = Array.from(byDay.values())
+    const hourlyData = Array.from(byHour.values())
       .sort((a, b) => a.date - b.date);
 
-    // 4) Gerar labels dinâmicos baseados no período
-    const now = new Date();
-    const labels = dailyData.map(d => {
-      const diffDays = Math.floor((now - d.date) / (24 * 60 * 60 * 1000));
-      if (diffDays === 0) return 'Hoje';
-      if (diffDays === 1) return 'Ontem';
-      return `há ${diffDays}d`;
+    // 4) ✅ USAR SUA FORMATAÇÃO EXISTENTE - adaptada para o gráfico
+    const dfBRChart = new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit'
     });
 
-    // 5) Preparar dados
-    const passedData = dailyData.map(d => d.passed);
-    const failedData = dailyData.map(d => d.failed);
+    function formatChartLabel(date) {
+      const parts = dfBRChart.formatToParts(date);
+      const day = parts.find(p => p.type === 'day').value;
+      const month = parts.find(p => p.type === 'month').value;
+      const hour = parts.find(p => p.type === 'hour').value;
 
-    // 6) Configurar gráfico
+      return `${day}/${month} às ${hour}h`;
+    }
+
+    // 5) ✅ LABELS USANDO FORMATAÇÃO BRASILEIRA
+    const labels = hourlyData.map(d => formatChartLabel(d.date));
+
+    // 6) Preparar dados
+    const passedData = hourlyData.map(d => d.passed);
+    const failedData = hourlyData.map(d => d.failed);
+
+    // 7) Configurar gráfico
     ns.historyChart = new Chart(ctx, {
       type: 'bar',
       data: {
@@ -362,8 +377,9 @@
             callbacks: {
               title: function (tooltipItems) {
                 const index = tooltipItems[0].dataIndex;
-                const dayData = dailyData[index];
-                return dayData.date.toLocaleDateString('pt-BR');
+                const hourData = hourlyData[index];
+                // ✅ USAR SUA FUNÇÃO formatDateTime EXISTENTE no tooltip
+                return formatDateTime(hourData.date);
               },
               label: function (context) {
                 return `${context.dataset.label}: ${context.parsed.y}`;
@@ -379,10 +395,14 @@
           x: {
             title: {
               display: true,
-              text: 'Período'
+              text: 'Data e Hora'
             },
             grid: {
               display: false
+            },
+            ticks: {
+              maxRotation: 45,
+              minRotation: 45
             }
           },
           y: {
@@ -405,6 +425,7 @@
       }
     });
   }
+
 
 
   // ===========================
@@ -546,25 +567,26 @@
   }
 
   function onHistoryPeriodClick(e) {
-  e.preventDefault();
-  const newPeriod = this.getAttribute('data-history-period');
-  if (!newPeriod || newPeriod === ns.historyPeriod) return;
-  
-  // Atualizar período ativo
-  ns.historyPeriod = newPeriod;
-  document.querySelectorAll('[data-history-period]').forEach(b => b.classList.remove('period-btn--active'));
-  this.classList.add('period-btn--active');
-  
-  const source = ns.executionsData?.length ? ns.executionsData : (window.__allRuns || []);
-  const filtered = filterRunsByPeriod(source, ns.historyPeriod);
-  ns.filteredExecutions = filtered.slice();
-  updateStatistics();
-  initializeStatusChart();
-  populateExecutionTable();
-  initializeHistoryChartFromRuns(filtered);
-  
-  console.log(`Período alterado para ${newPeriod}: ${filtered.length} execuções`);
-}
+    e.preventDefault();
+    const newPeriod = this.getAttribute('data-history-period');
+    if (!newPeriod || newPeriod === ns.historyPeriod) return;
+
+    // Atualizar período ativo
+    ns.historyPeriod = newPeriod;
+    document.querySelectorAll('[data-history-period]').forEach(b => b.classList.remove('period-btn--active'));
+    this.classList.add('period-btn--active');
+
+    // 🎯 SINCRONIZAÇÃO COMPLETA: Atualizar TUDO baseado no novo período
+    const source = ns.executionsData?.length ? ns.executionsData : (window.__allRuns || []);
+    const filtered = filterRunsByPeriod(source, ns.historyPeriod);
+    ns.filteredExecutions = filtered.slice();
+    updateStatistics();
+    initializeStatusChart();
+    populateExecutionTable();
+    initializeHistoryChartFromRuns(filtered);
+
+    console.log(`Período alterado para ${newPeriod}: ${filtered.length} execuções`);
+  }
 
   // Auto-refresh
   function updateAutoRefreshLabel() {
