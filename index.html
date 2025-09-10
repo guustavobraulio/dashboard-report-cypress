@@ -242,69 +242,14 @@
       <p>Executando pipeline...</p>
     </div>
   </div>
-  <script>
-    (function () {
-      var s = document.createElement('script');
-      s.src = '/chart.umd.min.js'; // se NÃO existir na raiz, o fallback CDN assume
-      s.defer = true;
-      s.onload = function(){ console.debug('Chart UMD local OK'); };
-      s.onerror = function(){
-        console.warn('Chart local 404, usando CDN');
-        var c = document.createElement('script');
-        c.src = 'https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js';
-        c.defer = true;
-        document.head.appendChild(c);
-      };
-      document.head.appendChild(s);
-    })();
-  </script>
+  <!-- Chart.js 4 - CDN direto -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
-  <!-- Adapter date-fns local + fallback CDN -->
-  <script>
-    (function () {
-      function loadAdapter(){
-        var a = document.createElement('script');
-        a.src = '/chartjs-adapter-date-fns.bundle.min.js'; // se não existir na raiz, fallback CDN assume
-        a.defer = true;
-        a.onload = function(){ console.debug('Adapter local OK'); };
-        a.onerror = function(){
-          console.warn('Adapter local 404, usando CDN');
-          var cdn = document.createElement('script');
-          cdn.src = 'https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js';
-          cdn.defer = true;
-          document.head.appendChild(cdn);
-        };
-        document.head.appendChild(a);
-      }
-      if (window.Chart) loadAdapter();
-      else {
-        var iv = setInterval(function(){
-          if (window.Chart) { clearInterval(iv); loadAdapter(); }
-        }, 50);
-      }
-    })();
-  </script>
+  <!-- Date-fns Adapter - CDN direto -->
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
-  <!-- Inicia seu app na raiz (app.js está na raiz do projeto) -->
-  <script>
-    (function startAppWhenReady(){
-      function boot(){
-        var s = document.createElement('script');
-        s.src = '/app.js'; // app.js está na raiz
-        
-        s.defer = true;
-        document.body.appendChild(s);
-      }
-      var tries = 0, iv = setInterval(function(){
-        tries++;
-        if (window.Chart) {
-          setTimeout(function(){ clearInterval(iv); boot(); }, 50);
-        }
-        if (tries > 200) { clearInterval(iv); boot(); }
-      }, 50);
-    })();
-  </script>
-  <script src="/app.js?v=20250910-1"></script>
+  <!-- Seu app principal -->
+  <script src="/app.js?v=20250910-2" defer></script>
 </body>
 
 </html>
