@@ -264,125 +264,148 @@
     });
   }
 
- function initializeHistoryChartFromRuns(runs) {
-  const ctx = document.getElementById('historyChart')?.getContext('2d');
-  if (!ctx) return;
-  if (ns.historyChart) ns.historyChart.destroy();
+  function initializeHistoryChartFromRuns(runs) {
+    const ctx = document.getElementById('historyChart')?.getContext('2d');
+    if (!ctx) return;
+    if (ns.historyChart) ns.historyChart.destroy();
 
-  // 1) Sanitizar, validar e ordenar
-  const runsOk = (runs || [])
-    .filter(r => Number.isFinite(new Date(r?.date).getTime()))
-    .sort((a, b) => new Date(a.date) - new Date(b.date));
+    // 1) Sanitizar, validar e ordenar
+    const runsOk = (runs || [])
+      .filter(r => Number.isFinite(new Date(r?.date).getTime()))
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-  // 2) Consolidar por hora
-  const byHour = new Map();
-  for (const r of runsOk) {
-    const d = new Date(r.date);
-    if (!Number.isFinite(d.getTime())) continue;
-    
-    // Extrair apenas a hora (0-23)
-    const hour = d.getHours();
-    
-    const cur = byHour.get(hour) || { hour, passed: 0, failed: 0 };
-    cur.passed += Number(r.passedTests || 0);
-    cur.failed += Number(r.failedTests || 0);
-    byHour.set(hour, cur);
-  }
+    if (runsOk.length === 0) {
+      // Se não há dados, mostrar gráfico vazio
+      ns.historyChart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: [], datasets: [] },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+      return;
+    }
 
-  // 3) Criar array completo 0-23h (mesmo sem dados)
-  const hourlyData = [];
-  for (let h = 0; h < 24; h++) {
-    const data = byHour.get(h) || { hour: h, passed: 0, failed: 0 };
-    hourlyData.push(data);
-  }
+    // 2) Consolidar por DIA (não mais por hora)
+    const byDay = new Map();
+    for (const r of runsOk) {
+      const d = new Date(r.date);
+      if (!Number.isFinite(d.getTime())) continue;
 
-  // 4) Preparar dados para Chart.js
-  const labels = hourlyData.map(d => `${d.hour}h`);
-  const passedData = hourlyData.map(d => d.passed);
-  const failedData = hourlyData.map(d => d.failed);
+      // Criar chave do dia (YYYY-MM-DD)
+      const dayKey = d.toISOString().split('T')[0];
 
-  // 5) Configurar gráfico stacked bar
-  ns.historyChart = new Chart(ctx, {
-    type: 'bar',
-    data: {
-      labels: labels,
-      datasets: [
-        {
-          label: 'Aprovados',
-          data: passedData,
-          backgroundColor: '#16a34a', // Verde sólido
-          borderColor: '#16a34a',
-          borderWidth: 0,
-          stack: 'stack1'
-        },
-        {
-          label: 'Falhados',
-          data: failedData,
-          backgroundColor: '#dc2626', // Vermelho sólido
-          borderColor: '#dc2626',
-          borderWidth: 0,
-          stack: 'stack1'
-        }
-      ]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: {
-          position: 'top',
-          labels: {
-            usePointStyle: true,
-            padding: 20
+      const cur = byDay.get(dayKey) || {
+        dayKey,
+        date: new Date(d.getFullYear(), d.getMonth(), d.getDate()),
+        passed: 0,
+        failed: 0
+      };
+      cur.passed += Number(r.passedTests || 0);
+      cur.failed += Number(r.failedTests || 0);
+      byDay.set(dayKey, cur);
+    }
+
+    // 3) Converter para array e ordenar
+    const dailyData = Array.from(byDay.values())
+      .sort((a, b) => a.date - b.date);
+
+    // 4) Gerar labels dinâmicos baseados no período
+    const now = new Date();
+    const labels = dailyData.map(d => {
+      const diffDays = Math.floor((now - d.date) / (24 * 60 * 60 * 1000));
+      if (diffDays === 0) return 'Hoje';
+      if (diffDays === 1) return 'Ontem';
+      return `há ${diffDays}d`;
+    });
+
+    // 5) Preparar dados
+    const passedData = dailyData.map(d => d.passed);
+    const failedData = dailyData.map(d => d.failed);
+
+    // 6) Configurar gráfico
+    ns.historyChart = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            label: 'Aprovados',
+            data: passedData,
+            backgroundColor: '#16a34a',
+            borderColor: '#16a34a',
+            borderWidth: 0,
+            stack: 'stack1'
+          },
+          {
+            label: 'Falhados',
+            data: failedData,
+            backgroundColor: '#dc2626',
+            borderColor: '#dc2626',
+            borderWidth: 0,
+            stack: 'stack1'
           }
-        },
-        tooltip: {
-          mode: 'index',
-          intersect: false,
-          callbacks: {
-            title: function(tooltipItems) {
-              return `Hora: ${tooltipItems[0].label}`;
-            },
-            label: function(context) {
-              return `${context.dataset.label}: ${context.parsed.y}`;
-            },
-            footer: function(tooltipItems) {
-              const total = tooltipItems.reduce((sum, item) => sum + item.parsed.y, 0);
-              return total > 0 ? `Total: ${total}` : '';
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'top',
+            labels: {
+              usePointStyle: true,
+              padding: 20
+            }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              title: function (tooltipItems) {
+                const index = tooltipItems[0].dataIndex;
+                const dayData = dailyData[index];
+                return dayData.date.toLocaleDateString('pt-BR');
+              },
+              label: function (context) {
+                return `${context.dataset.label}: ${context.parsed.y}`;
+              },
+              footer: function (tooltipItems) {
+                const total = tooltipItems.reduce((sum, item) => sum + item.parsed.y, 0);
+                return total > 0 ? `Total: ${total}` : '';
+              }
             }
           }
-        }
-      },
-      scales: {
-        x: {
-          title: {
-            display: true,
-            text: 'Hora do Dia'
+        },
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Período'
+            },
+            grid: {
+              display: false
+            }
           },
-          grid: {
-            display: false
+          y: {
+            stacked: true,
+            beginAtZero: true,
+            title: {
+              display: true,
+              text: 'Número de Testes'
+            },
+            ticks: {
+              precision: 0,
+              stepSize: 1
+            }
           }
         },
-        y: {
-          stacked: true,
-          beginAtZero: true,
-          title: {
-            display: true,
-            text: 'Número de Testes'
-          },
-          ticks: {
-            precision: 0,
-            stepSize: 1
-          }
+        interaction: {
+          mode: 'nearest',
+          intersect: false
         }
-      },
-      interaction: {
-        mode: 'nearest',
-        intersect: false
       }
-    }
-  });
-}
+    });
+  }
+
 
   // ===========================
   // Modal
@@ -523,16 +546,25 @@
   }
 
   function onHistoryPeriodClick(e) {
-    e.preventDefault();
-    const newPeriod = this.getAttribute('data-history-period');
-    if (!newPeriod || newPeriod === ns.historyPeriod) return;
-    ns.historyPeriod = newPeriod;
-    document.querySelectorAll('[data-history-period]').forEach(b => b.classList.remove('period-btn--active'));
-    this.classList.add('period-btn--active');
-    const source = ns.executionsData?.length ? ns.executionsData : (window.__allRuns || []);
-    const filtered = filterRunsByPeriod(source, ns.historyPeriod);
-    initializeHistoryChartFromRuns(filtered);
-  }
+  e.preventDefault();
+  const newPeriod = this.getAttribute('data-history-period');
+  if (!newPeriod || newPeriod === ns.historyPeriod) return;
+  
+  // Atualizar período ativo
+  ns.historyPeriod = newPeriod;
+  document.querySelectorAll('[data-history-period]').forEach(b => b.classList.remove('period-btn--active'));
+  this.classList.add('period-btn--active');
+  
+  const source = ns.executionsData?.length ? ns.executionsData : (window.__allRuns || []);
+  const filtered = filterRunsByPeriod(source, ns.historyPeriod);
+  ns.filteredExecutions = filtered.slice();
+  updateStatistics();
+  initializeStatusChart();
+  populateExecutionTable();
+  initializeHistoryChartFromRuns(filtered);
+  
+  console.log(`Período alterado para ${newPeriod}: ${filtered.length} execuções`);
+}
 
   // Auto-refresh
   function updateAutoRefreshLabel() {
