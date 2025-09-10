@@ -67,31 +67,43 @@
           <div class="stat-card">
             <div class="stat-icon stat-icon--success"><i class="fas fa-check-circle"></i></div>
             <div class="stat-content">
-              <h3 id="totalPassed">0</h3>
+              <div class="card-value">
+                <span id="totalPassed">0</span>
+                <span class="trend-indicator trend-up">📈 +300%</span>
+              </div>
               <p>Testes Aprovados</p>
             </div>
           </div>
-
+        
           <div class="stat-card">
             <div class="stat-icon stat-icon--error"><i class="fas fa-times-circle"></i></div>
             <div class="stat-content">
-              <h3 id="totalFailed">0</h3>
+              <div class="card-value">
+                <span id="totalFailed">0</span>
+                <span class="trend-indicator trend-up">📈 +300%</span>
+              </div>
               <p>Testes Falhados</p>
             </div>
           </div>
-
+        
           <div class="stat-card">
             <div class="stat-icon stat-icon--info"><i class="fas fa-clock"></i></div>
             <div class="stat-content">
-              <h3 id="avgDuration">0s</h3>
+              <div class="card-value">
+                <span id="avgDuration">0s</span>
+                <span class="trend-indicator trend-up">📈 +300%</span>
+              </div>
               <p>Duração Média</p>
             </div>
           </div>
-
+        
           <div class="stat-card">
             <div class="stat-icon stat-icon--warning"><i class="fas fa-percentage"></i></div>
             <div class="stat-content">
-              <h3 id="successRate">0%</h3>
+              <div class="card-value">
+                <span id="successRate">0%</span>
+                <span class="trend-indicator trend-up">📈 +300%</span>
+              </div>
               <p>Taxa de Sucesso</p>
             </div>
           </div>
@@ -326,24 +338,19 @@
               </tr>
             </thead>
             <tbody id="metrics-table-body">
-              <tr class="loading-row">
+              <tr class="loading-state">
                 <td colspan="5">
-                  <div class="loading-spinner">⏱️ Carregando métricas...</div>
+                  <div class="loading-message">
+                    <div class="spinner"></div>
+                    <span>🔄 Executando teste de performance, aguarde um instante...</span>
+                  </div>
                 </td>
               </tr>
             </tbody>
           </table>
         </div>
-
-        <div class="metrics-note">
-          <p>💡 Substitua estes dados por resultados reais do PageSpeed quando conectar sua API.</p>
-        </div>
       </div>
 
-      <!-- Footer -->
-      <div class="metrics-footer">
-        <p>🔗 Integre relatórios Lighthouse/PageSpeed para preencher estes números automaticamente.</p>
-      </div>
     </div>
   </div>
 </body>
