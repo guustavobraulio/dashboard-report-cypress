@@ -925,3 +925,152 @@ function updateStatistics() {
 // Exponha utilitários se necessário
 root.__DASH_API__ = { loadRuns }; 
 })(window); 
+
+// ===========================
+// PageSpeed Configuration
+// ===========================
+const PAGESPEED_CONFIG = {
+  apiKey: 'AIzaSyBi04YdfBrtcEETyp_29X01n7BwoYwykQE', // ✅ SUBSTITUA pela sua API Key real
+  stores: [
+    { id: 'store-a', url: 'https://www.victorhugo.com.br', name: 'Victor Hugo' },
+    { id: 'store-b', url: 'https://www.shopvinho.com.br', name: 'ShopVinho' },
+    { id: 'store-c', url: 'https://www.shopmulti.com.br', name: 'ShopMulti' }
+  ]
+};
+
+// ===========================
+// Modal Functions
+// ===========================
+function openMetricsPage() {
+  console.log('🚀 Abrindo página de métricas...');
+  const modal = document.getElementById('metricsModal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    loadDetailedMetrics();
+  } else {
+    console.error('Modal de métricas não encontrado!');
+  }
+}
+
+function closeMetricsPage() {
+  const modal = document.getElementById('metricsModal');
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+}
+
+// ===========================
+// PageSpeed API Functions
+// ===========================
+async function loadDetailedMetrics() {
+  console.log('🔄 Carregando métricas detalhadas...');
+  
+  const results = [];
+  
+  // Buscar dados de cada loja
+  for (const store of PAGESPEED_CONFIG.stores) {
+    console.log(`📊 Buscando métricas para: ${store.name}`);
+    const metrics = await fetchDetailedPageSpeed(store.url);
+    results.push({
+      name: store.name,
+      url: store.url,
+      ...metrics
+    });
+  }
+  
+  // Atualizar tabela e cards
+  updateMetricsTable(results);
+  updateSummaryCards(results);
+}
+
+async function fetchDetailedPageSpeed(url) {
+  const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${PAGESPEED_CONFIG.apiKey}&category=performance&category=accessibility&category=best-practices&category=seo`;
+  
+  try {
+    const response = await fetch(apiUrl);
+    if (!response.ok) {
+      throw new Error(`HTTP error: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    const categories = data.lighthouseResult?.categories || {};
+    
+    return {
+      performance: Math.round((categories.performance?.score || 0) * 100),
+      accessibility: Math.round((categories.accessibility?.score || 0) * 100),
+      bestPractices: Math.round((categories['best-practices']?.score || 0) * 100),
+      seo: Math.round((categories.seo?.score || 0) * 100)
+    };
+  } catch (error) {
+    console.error(`❌ Erro ao buscar métricas para ${url}:`, error);
+    return {
+      performance: '--',
+      accessibility: '--', 
+      bestPractices: '--',
+      seo: '--'
+    };
+  }
+}
+
+function updateMetricsTable(results) {
+  const tbody = document.getElementById('metrics-table-body');
+  if (!tbody) return;
+  
+  tbody.innerHTML = results.map(store => `
+    <tr>
+      <td><strong>${store.name}</strong></td>
+      <td><code>${store.url}</code></td>
+      <td><span class="score ${getScoreClass(store.performance)}">${store.performance}</span></td>
+      <td><span class="score ${getScoreClass(store.accessibility)}">${store.accessibility}</span></td>
+      <td><span class="score ${getScoreClass(store.seo)}">${store.seo}</span></td>
+    </tr>
+  `).join('');
+}
+
+function updateSummaryCards(results) {
+  const validResults = results.filter(r => parseInt(r.performance) > 0);
+  
+  if (validResults.length === 0) {
+    document.getElementById('avg-performance').textContent = '--';
+    document.getElementById('avg-accessibility').textContent = '--';
+    document.getElementById('avg-best-practices').textContent = '--';
+    document.getElementById('avg-seo').textContent = '--';
+    return;
+  }
+  
+  const avgPerformance = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.performance) || 0), 0) / validResults.length);
+  const avgAccessibility = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.accessibility) || 0), 0) / validResults.length);
+  const avgBestPractices = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.bestPractices) || 0), 0) / validResults.length);
+  const avgSeo = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.seo) || 0), 0) / validResults.length);
+  
+  document.getElementById('avg-performance').textContent = avgPerformance;
+  document.getElementById('avg-accessibility').textContent = avgAccessibility;
+  document.getElementById('avg-best-practices').textContent = avgBestPractices;
+  document.getElementById('avg-seo').textContent = avgSeo;
+}
+
+function getScoreClass(score) {
+  const num = parseInt(score);
+  if (num >= 90) return 'good';
+  if (num >= 50) return 'average';
+  return 'poor';
+}
+
+function refreshAllPageSpeed() {
+  loadDetailedMetrics();
+}
+
+// ===========================
+// Event Listeners
+// ===========================
+document.addEventListener('DOMContentLoaded', () => {
+  console.log('✅ PageSpeed metrics module loaded');
+  
+  // Fechar modal clicando fora
+  document.getElementById('metricsModal')?.addEventListener('click', (e) => {
+    if (e.target.id === 'metricsModal') {
+      closeMetricsPage();
+    }
+  });
+});
+

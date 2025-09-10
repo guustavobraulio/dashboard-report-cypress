@@ -26,10 +26,16 @@
       <div class="header-content">
         <div class="logo-section">
           <img src="https://www.socialsa.com/wp-content/uploads/2024/11/Logo-Colorida-2.webp"
-            alt="Social Digital Commerce" class="brand-logo" width="28" height="28" decoding="async" loading="eager" margin-left="13px" />
+            alt="Social Digital Commerce" class="brand-logo" width="28" height="28" decoding="async" loading="eager"
+            margin-left="13px" />
           <h1>Social Watch</h1>
         </div>
         <div class="header-actions">
+          <button class="btn btn--secondary" id="metricsBtn" onclick="openMetricsPage()">
+            <i class="fas fa-chart-line" style="padding-right:8px;"></i>
+            📊 Métricas
+          </button>
+
           <button class="btn btn--primary btn-pipeline" id="runPipelineBtn" aria-live="polite">
             <span class="btn-pipeline__content">
               <i class="fas fa-play" style="padding-right:10px;"></i>
@@ -246,10 +252,96 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 
   <!-- Date-fns Adapter - CDN direto -->
-  <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+  <script
+    src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns@3.0.0/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
 
   <!-- Seu app principal -->
-  <script src="/app.js?v=20250910-5" defer></script>
+  <script src="/app.js?v=20250910-pagespeed" defer></script>
+
+  <!-- ===========================
+     Modal de Métricas PageSpeed  
+     =========================== -->
+  <div id="metricsModal" class="metrics-modal hidden">
+    <div class="metrics-modal-content">
+      <!-- Header -->
+      <div class="metrics-header">
+        <div class="metrics-title">
+          <h1>Métricas de PageSpeed</h1>
+          <p>Resumo das lojas com foco em desempenho, acessibilidade e SEO.</p>
+        </div>
+        <button class="close-btn" onclick="closeMetricsPage()">
+          Voltar
+        </button>
+      </div>
+
+      <!-- Cards de Métricas Resumo -->
+      <div class="metrics-overview">
+        <div class="metric-card">
+          <div class="metric-value" id="avg-performance">--</div>
+          <div class="metric-total">/100</div>
+          <div class="metric-label">Performance</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-value" id="avg-accessibility">--</div>
+          <div class="metric-total">/100</div>
+          <div class="metric-label">Acessibilidade</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-value" id="avg-best-practices">--</div>
+          <div class="metric-total">/100</div>
+          <div class="metric-label">Boas Práticas</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-value" id="avg-seo">--</div>
+          <div class="metric-total">/100</div>
+          <div class="metric-label">SEO</div>
+        </div>
+      </div>
+
+      <!-- Tabela de Lojas -->
+      <div class="metrics-table-section">
+        <div class="table-header">
+          <h2>Lojas monitoradas</h2>
+          <button onclick="refreshAllPageSpeed()" class="btn-refresh">
+            🔄 Atualizar
+          </button>
+        </div>
+
+        <div class="table-container">
+          <table class="metrics-table">
+            <thead>
+              <tr>
+                <th>Loja</th>
+                <th>URL</th>
+                <th>Performance</th>
+                <th>Acessibilidade</th>
+                <th>SEO</th>
+              </tr>
+            </thead>
+            <tbody id="metrics-table-body">
+              <tr class="loading-row">
+                <td colspan="5">
+                  <div class="loading-spinner">⏱️ Carregando métricas...</div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="metrics-note">
+          <p>💡 Substitua estes dados por resultados reais do PageSpeed quando conectar sua API.</p>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <div class="metrics-footer">
+        <p>🔗 Integre relatórios Lighthouse/PageSpeed para preencher estes números automaticamente.</p>
+      </div>
+    </div>
+  </div>
 </body>
 
 </html>
