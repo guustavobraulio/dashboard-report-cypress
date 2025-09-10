@@ -724,48 +724,189 @@ function updateStatistics() {
   // ===========================
   // Sistema de Tendências
   // ===========================
-  function calculateTrends(currentData, previousData) {
-    const trends = {};
+  // Sua função calculateTrends (mantida igual)
+function calculateTrends(currentData, previousData) {
+  const trends = {};
+  
+  for (const key in currentData) {
+    const current = currentData[key] || 0;
+    const previous = previousData[key] || 0;
     
-    for (const key in currentData) {
-      const current = currentData[key] || 0;
-      const previous = previousData[key] || 0;
+    // ✅ CORREÇÃO: Baseline mais baixa e mais permissiva
+    if (previous === 0) {
+      // ✅ Usar valor mínimo de 1 para evitar divisão por zero
+      const assumedPrevious = 1;
+      const diff = current - assumedPrevious;
+      const percent = Math.round((diff / assumedPrevious) * 100);
       
-      // ✅ CORREÇÃO: Baseline mais baixa e mais permissiva
-      if (previous === 0) {
-        // ✅ Usar valor mínimo de 1 para evitar divisão por zero
-        const assumedPrevious = 1;
-        const diff = current - assumedPrevious;
-        const percent = Math.round((diff / assumedPrevious) * 100);
-        
-        // ✅ Limitar percentuais para valores razoáveis
-        const cappedPercent = Math.min(Math.max(percent, -100), 300);
-        
-        trends[key] = {
-          value: current,
-          change: diff,
-          percent: cappedPercent,
-          trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
-        };
-      } else {
-        // Cálculo normal quando há dados anteriores válidos
-        const diff = current - previous;
-        const percent = Math.round((diff / previous) * 100);
-        
-        // ✅ Limitar percentuais para valores razoáveis
-        const cappedPercent = Math.min(Math.max(percent, -100), 300);
-        
-        trends[key] = {
-          value: current,
-          change: diff,
-          percent: cappedPercent,
-          trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
-        };
+      // ✅ Limitar percentuais para valores razoáveis
+      const cappedPercent = Math.min(Math.max(percent, -100), 300);
+      
+      trends[key] = {
+        value: current,
+        change: diff,
+        percent: cappedPercent,
+        trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
+      };
+    } else {
+      // Cálculo normal quando há dados anteriores válidos
+      const diff = current - previous;
+      const percent = Math.round((diff / previous) * 100);
+      
+      // ✅ Limitar percentuais para valores razoáveis
+      const cappedPercent = Math.min(Math.max(percent, -100), 300);
+      
+      trends[key] = {
+        value: current,
+        change: diff,
+        percent: cappedPercent,
+        trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
+      };
+    }
+  }
+  
+  return trends;
+}
+
+  // ✨ NOVA FUNÇÃO: Para atualizar os badges no HTML
+  function updateTrendBadges(trends) {
+    // Atualizar badge dos Testes Aprovados
+    if (trends.totalPassed) {
+      const passedElement = document.querySelector('#totalPassed');
+      const passedBadge = passedElement.parentElement.querySelector('.trend-indicator');
+
+      if (passedBadge) {
+        const trend = trends.totalPassed;
+        if (trend.trend === 'up') {
+          passedBadge.textContent = `📈 +${trend.percent}%`;
+          passedBadge.className = 'trend-indicator trend-up';
+        } else if (trend.trend === 'down') {
+          passedBadge.textContent = `📉 ${trend.percent}%`;
+          passedBadge.className = 'trend-indicator trend-down';
+        } else {
+          passedBadge.textContent = `➡️ ${trend.percent}%`;
+          passedBadge.className = 'trend-indicator trend-neutral';
+        }
       }
     }
-    
-    return trends;
+
+    // Atualizar badge dos Testes Falhados
+    if (trends.totalFailed) {
+      const failedElement = document.querySelector('#totalFailed');
+      const failedBadge = failedElement.parentElement.querySelector('.trend-indicator');
+
+      if (failedBadge) {
+        const trend = trends.totalFailed;
+        if (trend.trend === 'up') {
+          failedBadge.textContent = `📈 +${trend.percent}%`;
+          failedBadge.className = 'trend-indicator trend-up';
+        } else if (trend.trend === 'down') {
+          failedBadge.textContent = `📉 ${trend.percent}%`;
+          failedBadge.className = 'trend-indicator trend-down';
+        } else {
+          failedBadge.textContent = `➡️ ${trend.percent}%`;
+          failedBadge.className = 'trend-indicator trend-neutral';
+        }
+      }
+    }
+
+    // Atualizar badge da Duração Média
+    if (trends.avgDuration) {
+      const durationElement = document.querySelector('#avgDuration');
+      const durationBadge = durationElement.parentElement.querySelector('.trend-indicator');
+
+      if (durationBadge) {
+        const trend = trends.avgDuration;
+        if (trend.trend === 'up') {
+          durationBadge.textContent = `📈 +${trend.percent}%`;
+          durationBadge.className = 'trend-indicator trend-up';
+        } else if (trend.trend === 'down') {
+          durationBadge.textContent = `📉 ${trend.percent}%`;
+          durationBadge.className = 'trend-indicator trend-down';
+        } else {
+          durationBadge.textContent = `➡️ ${trend.percent}%`;
+          durationBadge.className = 'trend-indicator trend-neutral';
+        }
+      }
+    }
+
+    // Atualizar badge da Taxa de Sucesso
+    if (trends.successRate) {
+      const rateElement = document.querySelector('#successRate');
+      const rateBadge = rateElement.parentElement.querySelector('.trend-indicator');
+
+      if (rateBadge) {
+        const trend = trends.successRate;
+        if (trend.trend === 'up') {
+          rateBadge.textContent = `📈 +${trend.percent}%`;
+          rateBadge.className = 'trend-indicator trend-up';
+        } else if (trend.trend === 'down') {
+          rateBadge.textContent = `📉 ${trend.percent}%`;
+          rateBadge.className = 'trend-indicator trend-down';
+        } else {
+          rateBadge.textContent = `➡️ ${trend.percent}%`;
+          rateBadge.className = 'trend-indicator trend-neutral';
+        }
+      }
+    }
   }
+
+  // ✨ COMO USAR: Exemplo de integração
+  function loadDashboardData() {
+    // Exemplo de dados atuais e anteriores
+    const currentData = {
+      totalPassed: 110,
+      totalFailed: 28,
+      avgDuration: 35,
+      successRate: 80
+    };
+
+    const previousData = {
+      totalPassed: 85,
+      totalFailed: 15,
+      avgDuration: 40,
+      successRate: 75
+    };
+
+    // 1. Calcular as tendências usando SUA função
+    const trends = calculateTrends(currentData, previousData);
+
+    // 2. Atualizar os badges no dashboard
+    updateTrendBadges(trends);
+
+    // 3. Atualizar os valores principais também
+    document.getElementById('totalPassed').textContent = currentData.totalPassed;
+    document.getElementById('totalFailed').textContent = currentData.totalFailed;
+    document.getElementById('avgDuration').textContent = currentData.avgDuration + 's';
+    document.getElementById('successRate').textContent = currentData.successRate + '%';
+  }
+
+  // ✨ Chamar quando carregar os dados
+  loadDashboardData();
+
+  async function loadRealData() {
+    try {
+      // 🔄 Buscar dados atuais e anteriores da API
+      const currentData = await fetch('/api/current-metrics').then(r => r.json());
+      const previousData = await fetch('/api/previous-metrics').then(r => r.json());
+
+      // 📊 Calcular tendências
+      const trends = calculateTrends(currentData, previousData);
+
+      // 🎯 Atualizar badges no dashboard
+      updateTrendBadges(trends);
+
+      // 📈 Atualizar valores principais também
+      document.getElementById('totalPassed').textContent = currentData.totalPassed;
+      document.getElementById('totalFailed').textContent = currentData.totalFailed;
+      document.getElementById('avgDuration').textContent = currentData.avgDuration + 's';
+      document.getElementById('successRate').textContent = currentData.successRate + '%';
+
+    } catch (error) {
+      console.error('Erro ao carregar dados:', error);
+    }
+  }
+
 
   function getPreviousPeriodData(currentPeriod) {
     const now = Date.now();
