@@ -368,7 +368,7 @@
             intersect: false,
             callbacks: {
               title(items) {
-                const f = items?.;
+                const f = items[0];
                 const t = f && (f.parsed?.x ?? f.raw?.x);
                 return t ? dfBRtzTooltip.format(new Date(t)) : '';
               },
