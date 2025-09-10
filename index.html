@@ -20,37 +20,41 @@
 </head>
 
 <body>
-  <!-- Header -->
-  <header class="header">
-    <div class="container">
-      <div class="header-content">
-        <div class="logo-section">
-          <img src="https://www.socialsa.com/wp-content/uploads/2024/11/Logo-Colorida-2.webp"
-            alt="Social Digital Commerce" class="brand-logo" width="28" height="28" decoding="async" loading="eager"
-            margin-left="13px" />
-          <h1>Social Watch</h1>
-        </div>
-        <div class="header-actions">
-          <button class="btn btn--secondary" id="metricsBtn" onclick="openMetricsPage()">
-            <i class="fas fa-chart-line" style="padding-right:8px;"></i>
-            📊 Métricas
-          </button>
-
-          <button class="btn btn--primary btn-pipeline" id="runPipelineBtn" aria-live="polite">
-            <span class="btn-pipeline__content">
-              <i class="fas fa-play" style="padding-right:10px;"></i>
-              Executar Pipeline
-              <span class="btn-spinner-slot" aria-hidden="true"></span>
-            </span>
-          </button>
-          <div class="auto-refresh">
-            <i class="fas fa-sync-alt" id="refreshIcon"></i>
-            <span>Auto-refresh: 30s</span>
-          </div>
+<header class="header">
+  <div class="container">
+    <div class="header-content">
+      <!-- Mantendo sua logo e nome -->
+      <div class="logo-section">
+        <img src="https://www.socialsa.com/wp-content/uploads/2024/11/Logo-Colorida-2.webp"
+          alt="Social Digital Commerce" class="brand-logo" width="28" height="28" decoding="async" loading="eager" />
+        <h1>Social Watch</h1>
+      </div>
+      
+      <!-- Botões atualizados com estilo minimalista -->
+      <div class="header-actions">
+        <button class="header-btn" id="metricsBtn" onclick="openMetricsPage()">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M3,3V21H21V19H5V3H3M9,17H7V10H9V17M13,17H11V7H13V17M17,17H15V13H17V17M19,17H17V4H15V2H19V17Z"/>
+          </svg>
+          <span>Métricas</span>
+        </button>
+        
+        <button class="header-btn btn-primary" id="runPipelineBtn" aria-live="polite">
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8,5.14V19.14L19,12.14L8,5.14Z"/>
+          </svg>
+          <span>Executar Pipeline</span>
+          <span class="btn-spinner-slot" aria-hidden="true"></span>
+        </button>
+        
+        <div class="auto-refresh">
+          <i class="fas fa-sync-alt" id="refreshIcon"></i>
+          <span>Auto-refresh: <span id="refreshTime">30s</span></span>
         </div>
       </div>
     </div>
-  </header>
+  </div>
+</header>
 
 
   <!-- Main Content -->
