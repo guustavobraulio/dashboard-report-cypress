@@ -884,19 +884,25 @@ function calculateTrends(currentData, previousData) {
   // ✨ Chamar quando carregar os dados
   loadDashboardData();
 
-  async function loadRealData() {
-    try {
-      // 🔄 Buscar dados atuais e anteriores da API
-      const currentData = await fetch('/api/current-metrics').then(r => r.json());
-      const previousData = await fetch('/api/previous-metrics').then(r => r.json());
+  const periods = {
+    "24h": "last24h",
+    "7d": "last7days",
+    "30d": "last30days"
+  };
 
-      // 📊 Calcular tendências
+  async function loadRealData(period = "last7days") {
+    try {
+      // 📊 Buscar dados do período específico
+      const currentData = await fetch(`/api/current-metrics?period=${period}`).then(r => r.json());
+      const previousData = await fetch(`/api/previous-metrics?period=${period}`).then(r => r.json());
+
+      // 🧮 Calcular tendências
       const trends = calculateTrends(currentData, previousData);
 
-      // 🎯 Atualizar badges no dashboard
+      // 🎯 Atualizar badges
       updateTrendBadges(trends);
 
-      // 📈 Atualizar valores principais também
+      // 📈 Atualizar valores principais
       document.getElementById('totalPassed').textContent = currentData.totalPassed;
       document.getElementById('totalFailed').textContent = currentData.totalFailed;
       document.getElementById('avgDuration').textContent = currentData.avgDuration + 's';
