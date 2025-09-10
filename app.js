@@ -927,18 +927,6 @@ root.__DASH_API__ = { loadRuns };
 })(window); 
 
 // ===========================
-// PageSpeed Configuration
-// ===========================
-const PAGESPEED_CONFIG = {
-  apiKey: 'AIzaSyBi04YdfBrtcEETyp_29X01n7BwoYwykQE', // ✅ SUBSTITUA pela sua API Key real
-  stores: [
-    { id: 'store-a', url: 'https://www.victorhugo.com.br', name: 'Victor Hugo' },
-    { id: 'store-b', url: 'https://www.shopvinho.com.br', name: 'ShopVinho' },
-    { id: 'store-c', url: 'https://www.shopmulti.com.br', name: 'ShopMulti' }
-  ]
-};
-
-// ===========================
 // Modal Functions
 // ===========================
 function openMetricsPage() {
@@ -964,11 +952,11 @@ function closeMetricsPage() {
 // ===========================
 async function loadDetailedMetrics() {
   console.log('🔄 Carregando métricas detalhadas...');
-  
+
   const results = [];
-  
-  // Buscar dados de cada loja
-  for (const store of PAGESPEED_CONFIG.stores) {
+
+  // Usar STORES_CONFIG em vez de PAGESPEED_CONFIG
+  for (const store of STORES_CONFIG) {
     console.log(`📊 Buscando métricas para: ${store.name}`);
     const metrics = await fetchDetailedPageSpeed(store.url);
     results.push({
@@ -977,22 +965,38 @@ async function loadDetailedMetrics() {
       ...metrics
     });
   }
-  
+
   // Atualizar tabela e cards
   updateMetricsTable(results);
   updateSummaryCards(results);
 }
 
+// ✅ NOVA FUNÇÃO SEGURA (chama page-speed.js)
 async function fetchDetailedPageSpeed(url) {
-  const apiUrl = `https://www.googleapis.com/pagespeedonline/v5/runPagespeed?url=${encodeURIComponent(url)}&key=${PAGESPEED_CONFIG.apiKey}&category=performance&category=accessibility&category=best-practices&category=seo`;
-  
   try {
-    const response = await fetch(apiUrl);
+    console.log(`📡 Chamando Netlify Function para: ${url}`);
+    
+    const response = await fetch('/api/page-speed', {  // ← Note o hífen
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ url: url })
+    });
+    
     if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status}`);
+      throw new Error(`HTTP error: ${response.status} - ${response.statusText}`);
     }
     
     const data = await response.json();
+    
+    if (data.error) {
+      throw new Error(data.error);
+    }
+    
+    console.log(`✅ Dados recebidos da Netlify Function:`, data);
+    
+    // Extrair métricas
     const categories = data.lighthouseResult?.categories || {};
     
     return {
@@ -1001,16 +1005,26 @@ async function fetchDetailedPageSpeed(url) {
       bestPractices: Math.round((categories['best-practices']?.score || 0) * 100),
       seo: Math.round((categories.seo?.score || 0) * 100)
     };
+    
   } catch (error) {
     console.error(`❌ Erro ao buscar métricas para ${url}:`, error);
     return {
       performance: '--',
-      accessibility: '--', 
-      bestPractices: '--',
+      accessibility: '--',
+      bestPractices: '--', 
       seo: '--'
     };
   }
 }
+
+// ✅ CONFIGURAÇÃO SIMPLIFICADA (sem API Key)
+// Defina as lojas a serem analisadas
+const STORES_CONFIG = [
+  { id: 'victor-hugo', url: 'https://www.victorhugo.com.br', name: 'Victor Hugo' },
+  { id: 'shopvinho', url: 'https://www.shopvinho.com.br', name: 'ShopVinho' },
+  { id: 'shopmulti', url: 'https://www.shopmulti.com.br', name: 'ShopMulti' }
+];
+
 
 function updateMetricsTable(results) {
   const tbody = document.getElementById('metrics-table-body');
