@@ -1814,3 +1814,28 @@ body {
 .detail-grid {
   min-width: 0;
 }
+
+/* ===========================
+   Botões com tamanho igual na tabela
+   =========================== */
+.execution-table td:last-child {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.execution-table .action-btn--view,
+.execution-table .btn--outline {
+  flex: 1;
+  min-width: 80px;
+  max-width: 100px;
+  text-align: center;
+  white-space: nowrap;
+  padding: 6px 8px;
+}
+
+/* Ajuste para o ícone do GitHub não quebrar o layout */
+.execution-table .github-icon {
+  flex-shrink: 0;
+}
