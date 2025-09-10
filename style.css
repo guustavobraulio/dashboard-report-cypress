@@ -2111,19 +2111,22 @@ body {
 }
 
 .trend-indicator {
-  font-size: 0.7rem !important;
+  font-size: 0.65rem !important;
   font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 12px;
-  display: inline-block;
+  padding: 2px 6px;
+  border-radius: 8px;
+  display: inline-block !important;
   line-height: 1.2;
-  margin-top: 2px;  /* Move para cima */
+  margin-left: 6px;
+  position: relative;
+  top: -8px;
   white-space: nowrap;
 }
 
+
 .trend-up {
-  background: #dcfce7;
-  color: #166534;
+  background: #dcfce7 !important;
+  color: #166534 !important;
 }
 
 .trend-neutral {
@@ -2133,15 +2136,16 @@ body {
 
 
 .trend-down {
-  background: #fecaca;
-  color: #991b1b;
+  background: #fee2e2 !important;
+  color: #991b1b !important;
 }
 
 .card-value {
-  font-size: 2.5rem;
-  font-weight: bold;
-  line-height: 1;
-  margin-bottom: 0.25rem;
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 0.5rem;
 }
 
 .card-label {
@@ -2470,4 +2474,13 @@ body {
   .metrics-table {
     min-width: 600px;
   }
+}
+
+.stat-content h3 + * {
+  display: none !important;
+}
+
+.stat-content .trend,
+.stat-content .badge:not(.trend-indicator) {
+  display: none !important;
 }
