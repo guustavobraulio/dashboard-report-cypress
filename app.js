@@ -11,10 +11,10 @@
 
   // namespace único para estado global
   const ns = (root.__DASH_STATE__ = root.__DASH_STATE__ || {});
-  ns.executionsData = ns.executionsData || [];        // cache de execuções normalizadas
-  ns.filteredExecutions = ns.filteredExecutions || []; // base para cards/tabela/pizza
-  ns.statusChart = ns.statusChart || null;            // instância do pie
-  ns.historyChart = ns.historyChart || null;          // instância do histórico
+  ns.executionsData = ns.executionsData || [];        
+  ns.filteredExecutions = ns.filteredExecutions || [];
+  ns.statusChart = ns.statusChart || null;            
+  ns.historyChart = ns.historyChart || null;          
   ns.currentPage = ns.currentPage || 1;
   ns.itemsPerPage = ns.itemsPerPage || 10;
   ns.historyPeriod = ns.historyPeriod || '24h';
@@ -182,20 +182,16 @@ function updateStatistics() {
   console.log('Tendências calculadas:', trends);
   console.log('====================');
   
-  // Função para formatar trend visual
-  // Função para formatar trend visual (VERSÃO CORRIGIDA)
+
   function formatTrend(trendData) {
-    // Se não há dados de trend válidos, não mostra nada
     if (!trendData || trendData.trend === undefined) {
       return '';
     }
     
-    // ✅ CORREÇÃO: Não mostrar nada para trends 'new' (sem emoji)
     if (trendData.trend === 'new' || (trendData.change === null)) {
       return ''; // Não mostra nem emoji nem indicador
     }
     
-    // Para trends calculados (up/down/stable) 
     const arrow = trendData.trend === 'up' ? '↗️' : trendData.trend === 'down' ? '↘️' : '➡️';
     const color = trendData.trend === 'up' ? '#16a34a' : trendData.trend === 'down' ? '#dc2626' : '#6b7280';
     const sign = trendData.change > 0 ? '+' : '';
@@ -203,7 +199,6 @@ function updateStatistics() {
     return `<span class="trend-indicator" style="color: ${color}; font-size: 0.85em; margin-left: 8px;">${arrow} ${sign}${trendData.percent}%</span>`;
   }
   
-  // Atualizar elementos com valores e trends
   const tp = document.getElementById("totalPassed");
   const tf = document.getElementById("totalFailed");
   const ad = document.getElementById("avgDuration");
@@ -730,40 +725,33 @@ function updateStatistics() {
   // Sistema de Tendências
   // ===========================
   function calculateTrends(currentData, previousData) {
-  const trends = {};
-  
-  for (const key in currentData) {
-    const current = currentData[key] || 0;
-    const previous = previousData[key] || 0;
+    const trends = {};
     
-    // ✅ MODIFICAÇÃO: Se previous é 0, usar um valor mínimo para cálculo
-    if (previous === 0) {
-      // Para períodos sem dados anteriores, assumir uma baseline pequena
-      const assumedPrevious = current > 0 ? Math.max(1, Math.round(current * 0.1)) : 1;
-      const diff = current - assumedPrevious;
-      const percent = Math.round((diff / assumedPrevious) * 100);
+    for (const key in currentData) {
+      const current = currentData[key] || 0;
+      const previous = previousData[key] || 0;
       
-      trends[key] = {
-        value: current,
-        change: diff,
-        percent: percent,
-        trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
-      };
-    } else {
-      // Cálculo normal quando há dados anteriores
-      const diff = current - previous;
-      const percent = Math.round((diff / previous) * 100);
-      trends[key] = {
-        value: current,
-        change: diff,
-        percent: percent,
-        trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
-      };
+      // ✅ Baseline mínima para cálculos confiáveis
+      if (previous < 3) {
+        trends[key] = { value: current, change: null, trend: 'new' };
+      } else {
+        const diff = current - previous;
+        const percent = Math.round((diff / previous) * 100);
+        
+        // ✅ Limitar percentuais para ranges realistas  
+        const cappedPercent = Math.min(Math.max(percent, -90), 200);
+        
+        trends[key] = {
+          value: current,
+          change: diff,
+          percent: cappedPercent,
+          trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
+        };
+      }
     }
+    
+    return trends;
   }
-  
-  return trends;
-}
 
   function getPreviousPeriodData(currentPeriod) {
     const now = Date.now();
