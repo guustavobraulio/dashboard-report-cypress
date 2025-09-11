@@ -11,17 +11,15 @@
 
   // namespace único para estado global
   const ns = (root.__DASH_STATE__ = root.__DASH_STATE__ || {});
-  ns.executionsData = ns.executionsData || [];
+  ns.executionsData = ns.executionsData || [];        
   ns.filteredExecutions = ns.filteredExecutions || [];
-  ns.statusChart = ns.statusChart || null;
-  ns.historyChart = ns.historyChart || null;
+  ns.statusChart = ns.statusChart || null;            
+  ns.historyChart = ns.historyChart || null;          
   ns.currentPage = ns.currentPage || 1;
   ns.itemsPerPage = ns.itemsPerPage || 10;
-  ns.historyPeriod = ns.historyPeriod || '7d';
+  ns.historyPeriod = ns.historyPeriod || '7d'; // ✅ MUDANÇA: 7d por padrão
   ns.autoRefreshSeconds = ns.autoRefreshSeconds || 30;
   ns.autoRefreshTimer = ns.autoRefreshTimer || null;
-  ns.countdownTimer = ns.countdownTimer || null; // ✅ NOVO
-  ns.remainingSeconds = ns.remainingSeconds || 30; // ✅ NOVO
 
   // ===========================
   // Utils
@@ -31,108 +29,43 @@
     hour: '2-digit', minute: '2-digit'
   });
 
-  function updateStatistics() {
-    console.log('📊 Atualizando estatísticas...');
-
-    // 1. Calcula as métricas do período atual a partir dos dados filtrados
-    const currentRuns = ns.filteredExecutions || [];
-    console.log('📈 Runs para calcular:', currentRuns.length);
-
-    const totalPassed = currentRuns.reduce((sum, run) => sum + (run.passedTests || 0), 0);
-    const totalFailed = currentRuns.reduce((sum, run) => sum + (run.failedTests || 0), 0);
-    const totalTests = totalPassed + totalFailed;
-    const avgDuration = currentRuns.length > 0 ? Math.round(currentRuns.reduce((sum, run) => sum + (run.duration || 0), 0) / currentRuns.length) : 0;
-    const successRate = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
-
-    console.log('📊 Métricas calculadas:', { totalPassed, totalFailed, avgDuration, successRate });
-
-    const currentData = {
-      totalPassed,
-      totalFailed,
-      avgDuration,
-      successRate
-    };
-
-    // 2. Atualiza os valores nos cards do HTML
-    const set = (id, val) => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.textContent = val;
-        console.log(`✅ Atualizado ${id} = ${val}`);
-      } else {
-        console.log(`❌ Elemento ${id} não encontrado`);
-      }
-    };
-
-    set('totalPassed', totalPassed);
-    set('totalFailed', totalFailed);
-    set('avgDuration', `${avgDuration}s`);
-    set('successRate', `${successRate}%`);
-
-    // 3. Calcula e exibe as tendências (só se existir dados)
-    if (currentRuns.length > 0) {
-      try {
-        const previousData = getPreviousPeriodData(ns.historyPeriod);
-        const trends = calculateTrends(currentData, previousData);
-        updateTrendBadges(trends);
-        console.log('📈 Trends atualizados:', trends);
-      } catch (e) {
-        console.log('⚠️ Erro ao calcular trends:', e.message);
-        // Remover badges de erro
-        document.querySelectorAll('.trend-indicator').forEach(el => {
-          el.textContent = '';
-          el.style.display = 'none';
-        });
-      }
-    } else {
-      console.log('📭 Nenhum dado para exibir trends');
-      // Esconder badges quando não há dados
-      document.querySelectorAll('.trend-indicator').forEach(el => {
-        el.textContent = '';
-        el.style.display = 'none';
-      });
-    }
-  }
-
   function formatDateTime(s) {
     const d = new Date(s);
     return dfBR.format(d).replace(/\s(\d{2}):/, ' $1:');
   }
 
-  // Estrutura do botão para conter label + ícone + slot de spinner
-  function ensureButtonStructure() {
-    const btn = document.getElementById("runPipelineBtn");
-    if (!btn) return;
-    if (!btn.querySelector(".btn-pipeline__content")) {
-      const current = btn.innerHTML;
-      btn.innerHTML = `
-        <span class="btn-pipeline__content">
-          ${current}
-          <span class="btn-spinner-slot" aria-hidden="true"></span>
-        </span>`;
-      btn.setAttribute("aria-live", "polite");
-    } else if (!btn.querySelector(".btn-spinner-slot")) {
-      btn.querySelector(".btn-pipeline__content")
-        .insertAdjacentHTML("beforeend", '<span class="btn-spinner-slot" aria-hidden="true"></span>');
-    }
-  }
-  function setButtonLabel(text) {
-    const btn = document.getElementById("runPipelineBtn");
-    if (!btn) return;
-    const content = btn.querySelector(".btn-pipeline__content");
-    if (!content) return;
-    const icon = content.querySelector("i")?.outerHTML || "";
-    const slot = content.querySelector(".btn-spinner-slot")?.outerHTML || '<span class="btn-spinner-slot" aria-hidden="true"></span>';
-    content.innerHTML = `${icon}${text}${slot}`;
-  }
-  function mostrarStatusNoBotao(statusText, variant = null) {
-    const btn = document.getElementById("runPipelineBtn");
-    if (!btn) return;
-    btn.classList.remove("is-in-progress", "is-success", "is-failure");
-    setButtonLabel(statusText);
-    if (variant === "in_progress") btn.classList.add("is-in-progress");
-    if (variant === "success") btn.classList.add("is-success");
-    if (variant === "failure") btn.classList.add("is-failure");
+  // ===========================
+  // Cards/Estatísticas (VERSÃO SIMPLES - SEM TRENDS)
+  // ===========================
+  function updateStatistics() {
+    console.log('📊 Atualizando estatísticas...');
+    
+    // Calcular dados atuais
+    const totalPassed = ns.filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
+    const totalFailed = ns.filteredExecutions.reduce((s, e) => s + (e.failedTests || 0), 0);
+    const totalTests = totalPassed + totalFailed;
+    const avgDuration = ns.filteredExecutions.length
+      ? Math.round(ns.filteredExecutions.reduce((s, e) => s + (e.duration || 0), 0) / ns.filteredExecutions.length)
+      : 0;
+    const successRate = totalTests ? Math.round((totalPassed / totalTests) * 100) : 0;
+    
+    console.log('📊 Métricas calculadas:', { totalPassed, totalFailed, avgDuration, successRate });
+    
+    // ✅ VERSÃO SIMPLES: Apenas atualizar valores (sem trends)
+    const tp = document.getElementById("totalPassed");
+    const tf = document.getElementById("totalFailed");
+    const ad = document.getElementById("avgDuration");
+    const sr = document.getElementById("successRate");
+    
+    if (tp) tp.textContent = totalPassed;
+    if (tf) tf.textContent = totalFailed;
+    if (ad) ad.textContent = `${avgDuration}s`;
+    if (sr) sr.textContent = `${successRate}%`;
+    
+    // Esconder badges de trend para evitar problemas
+    document.querySelectorAll('.trend-indicator').forEach(el => {
+      el.style.display = 'none';
+    });
   }
 
   // ===========================
@@ -171,91 +104,41 @@
     });
   }
 
-  // Disparo do pipeline
-  async function executarPipeline() {
-    const btn = document.getElementById("runPipelineBtn");
-    if (!btn) return;
-    ensureButtonStructure();
-    btn.disabled = true;
-    btn.classList.add("btn--loading");
-    mostrarStatusNoBotao("Iniciando...", "in_progress");
-    try {
-      const start = await fetch("/.netlify/functions/trigger-pipeline", { method: "POST" });
-      if (!start.ok) throw new Error(`Falha ao disparar: ${start.status}`);
-      let result = null;
-      do {
-        await new Promise(r => setTimeout(r, 5000));
-        const res = await fetch("/.netlify/functions/pipeline-status");
-        if (!res.ok) throw new Error(`Falha no status: ${res.status}`);
-        result = await res.json();
-        const label = result.status === "queued" ? "Na fila..."
-          : result.status === "in_progress" ? "Executando..."
-            : result.status === "completed" ? "Finalizando..." : "Processando...";
-        mostrarStatusNoBotao(label, "in_progress");
-      } while (result.status !== "completed");
-      if (result.conclusion === "success") mostrarStatusNoBotao("Concluída ✓", "success");
-      else mostrarStatusNoBotao("Falhou ✕", "failure");
-    } catch (e) {
-      console.error(e);
-      mostrarStatusNoBotao("Erro ao executar", "failure");
-    } finally {
-      setTimeout(() => {
-        btn.disabled = false;
-        btn.classList.remove("btn--loading", "is-in-progress", "is-success", "is-failure");
-        setButtonLabel("Executar Pipeline");
-        ensureButtonStructure();
-      }, 1800);
-    }
-  }
-
-
   // ===========================
   // Tabela + Paginação
   // ===========================
   function populateExecutionTable() {
     const tbody = document.getElementById("executionTableBody");
     if (!tbody) return;
-
     const start = (ns.currentPage - 1) * ns.itemsPerPage;
     const page = ns.filteredExecutions.slice(start, start + ns.itemsPerPage);
-
     tbody.innerHTML = page.map(e => `
       <tr>
-        <td>${e.id}</td>
+        <td><code>${e.id}</code></td>
         <td>${formatDateTime(e.date)}</td>
-        <td>${e.branch}</td>
-        <td>${e.environment}</td>
-        <td>
-          <span class="status status--${e.status === 'passed' ? 'success' : 'error'}">
-            ${e.status === 'passed' ? 'APROVADO' : 'FALHADO'}
-          </span>
-        </td>
-        <td>${e.totalTests}/${e.totalTests}</td>
+        <td><code>${e.branch}</code></td>
+        <td><span class="status status--info">${e.environment}</span></td>
+        <td><span class="status status--${e.status}">${e.status === "passed" ? "Aprovado" : "Falhado"}</span></td>
+        <td>${e.passedTests}/${e.totalTests}</td>
         <td>${e.duration}s</td>
         <td>
           <button class="action-btn action-btn--view" data-execution-id="${e.id}">
             <i class="fas fa-eye"></i> Ver
           </button>
-          <button class="action-btn action-btn--github" onclick="window.open('${e.githubUrl}', '_blank')" title="Ver no GitHub Actions">
-            <i class="fab fa-github"></i> Actions
-          </button>
+          ${e.githubUrl && e.githubUrl !== "#" ? `
+            <a class="btn btn--sm btn--outline" href="${e.githubUrl}" target="_blank" rel="noopener">
+              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="github-icon" viewBox="0 0 16 16" style="margin-right: 4px; vertical-align: text-bottom;">
+                <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8"/>
+              </svg>
+              Actions
+            </a>
+          ` : ""}
         </td>
-      </tr>
-    `).join('');
+      </tr>`).join("");
 
-    // Event listeners para botões Ver
     document.querySelectorAll(".action-btn--view").forEach(btn => {
-      btn.addEventListener("click", (e) => {
-        e.preventDefault();
-        const executionId = btn.getAttribute("data-execution-id");
-        console.log('📋 Abrindo modal para:', executionId);
-        openExecutionDetails(executionId);
-      });
+      btn.addEventListener("click", () => openExecutionModal(btn.getAttribute("data-execution-id")));
     });
-
-    setTimeout(() => {
-      setupModalEventListeners();
-    }, 100);
 
     updatePagination();
   }
@@ -304,53 +187,15 @@
   }
 
   // ===========================
-  // Estatísticas e Cards
-  // ===========================
-  function updateStatistics() {
-    // 1. Calcula as métricas do período atual a partir dos dados filtrados
-    const currentRuns = ns.filteredExecutions || [];
-    const totalPassed = currentRuns.reduce((sum, run) => sum + (run.passedTests || 0), 0);
-    const totalFailed = currentRuns.reduce((sum, run) => sum + (run.failedTests || 0), 0);
-    const totalTests = totalPassed + totalFailed;
-    const avgDuration = currentRuns.length > 0 ? Math.round(currentRuns.reduce((sum, run) => sum + (run.duration || 0), 0) / currentRuns.length) : 0;
-    const successRate = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
-
-    const currentData = {
-      totalPassed,
-      totalFailed,
-      avgDuration,
-      successRate
-    };
-
-    // 2. Atualiza os valores nos cards do HTML
-    const set = (id, val) => {
-      const el = document.getElementById(id);
-      if (el) el.textContent = val;
-    };
-
-    set('totalPassed', totalPassed);
-    set('totalFailed', totalFailed);
-    set('avgDuration', `${avgDuration}s`);
-    set('successRate', `${successRate}%`);
-
-    // 3. Calcula e exibe as tendências comparando com o período anterior
-    const previousData = getPreviousPeriodData(ns.historyPeriod);
-    const trends = calculateTrends(currentData, previousData);
-    updateTrendBadges(trends);
-  }
-
-  // ===========================
-  // Gráficos Funcionais
+  // Gráficos
   // ===========================
   function initializeStatusChart() {
     const ctx = document.getElementById("statusChart")?.getContext("2d");
     if (!ctx) return;
-
     const totalPassed = ns.filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
     const totalFailed = ns.filteredExecutions.reduce((s, e) => s + (e.failedTests || 0), 0);
 
     if (ns.statusChart) ns.statusChart.destroy();
-
     ns.statusChart = new Chart(ctx, {
       type: "pie",
       data: {
@@ -358,35 +203,76 @@
         datasets: [{
           data: [totalPassed, totalFailed],
           backgroundColor: ["#16a34a", "#dc2626"],
-          borderColor: ["#16a34a", "#dc2626"],
-          borderWidth: 1
+          borderColor: ["#16a34a", "#dc2626"]
         }]
       },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'bottom'
-          }
-        }
-      }
+      options: { responsive: true, maintainAspectRatio: false }
     });
   }
 
-  function initializeHistoryChart() {
+  function initializeHistoryChartFromRuns(runs) {
     const ctx = document.getElementById('historyChart')?.getContext('2d');
     if (!ctx) return;
-
     if (ns.historyChart) ns.historyChart.destroy();
 
-    // Agrupar dados por data/hora
-    const groupedData = groupExecutionsByHour(ns.filteredExecutions);
+    // 1) Sanitizar, validar e ordenar
+    const runsOk = (runs || [])
+      .filter(r => Number.isFinite(new Date(r?.date).getTime()))
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
 
-    const labels = groupedData.map(d => formatDateTime(d.date));
-    const passedData = groupedData.map(d => d.passed);
-    const failedData = groupedData.map(d => d.failed);
+    if (runsOk.length === 0) {
+      ns.historyChart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels: [], datasets: [] },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+      return;
+    }
 
+    // 2) Consolidar por HORA
+    const byHour = new Map();
+    for (const r of runsOk) {
+      const d = new Date(r.date);
+      if (!Number.isFinite(d.getTime())) continue;
+
+      const hourKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}-${String(d.getHours()).padStart(2, '0')}`;
+
+      const cur = byHour.get(hourKey) || {
+        hourKey,
+        date: new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours()),
+        passed: 0,
+        failed: 0
+      };
+      cur.passed += Number(r.passedTests || 0);
+      cur.failed += Number(r.failedTests || 0);
+      byHour.set(hourKey, cur);
+    }
+
+    // 3) Converter para array e ordenar
+    const hourlyData = Array.from(byHour.values())
+      .sort((a, b) => a.date - b.date);
+
+    // 4) Formatação brasileira para labels
+    const dfBRChart = new Intl.DateTimeFormat('pt-BR', {
+      day: '2-digit',
+      month: '2-digit',
+      hour: '2-digit'
+    });
+
+    function formatChartLabel(date) {
+      const parts = dfBRChart.formatToParts(date);
+      const day = parts.find(p => p.type === 'day').value;
+      const month = parts.find(p => p.type === 'month').value;
+      const hour = parts.find(p => p.type === 'hour').value;
+
+      return `${day}/${month} às ${hour}h`;
+    }
+
+    const labels = hourlyData.map(d => formatChartLabel(d.date));
+    const passedData = hourlyData.map(d => d.passed);
+    const failedData = hourlyData.map(d => d.failed);
+
+    // 7) Configurar gráfico
     ns.historyChart = new Chart(ctx, {
       type: 'bar',
       data: {
@@ -415,7 +301,29 @@
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            position: 'top'
+            position: 'top',
+            labels: {
+              usePointStyle: true,
+              padding: 20
+            }
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false,
+            callbacks: {
+              title: function (tooltipItems) {
+                const index = tooltipItems[0].dataIndex;
+                const hourData = hourlyData[index];
+                return formatDateTime(hourData.date);
+              },
+              label: function (context) {
+                return `${context.dataset.label}: ${context.parsed.y}`;
+              },
+              footer: function (tooltipItems) {
+                const total = tooltipItems.reduce((sum, item) => sum + item.parsed.y, 0);
+                return total > 0 ? `Total: ${total}` : '';
+              }
+            }
           }
         },
         scales: {
@@ -423,6 +331,13 @@
             title: {
               display: true,
               text: 'Data e Hora'
+            },
+            grid: {
+              display: false
+            },
+            ticks: {
+              maxRotation: 45,
+              minRotation: 45
             }
           },
           y: {
@@ -431,39 +346,20 @@
             title: {
               display: true,
               text: 'Número de Testes'
+            },
+            ticks: {
+              precision: 0,
+              stepSize: 1
             }
           }
+        },
+        interaction: {
+          mode: 'nearest',
+          intersect: false
         }
       }
     });
   }
-
-  function groupExecutionsByHour(executions) {
-    const groups = new Map();
-
-    for (const exec of executions) {
-      if (!exec.date) continue;
-
-      const date = new Date(exec.date);
-      const hourKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}-${String(date.getHours()).padStart(2, '0')}`;
-
-      if (!groups.has(hourKey)) {
-        groups.set(hourKey, {
-          date: new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()),
-          passed: 0,
-          failed: 0
-        });
-      }
-
-      const group = groups.get(hourKey);
-      group.passed += exec.passedTests || 0;
-      group.failed += exec.failedTests || 0;
-    }
-
-    return Array.from(groups.values()).sort((a, b) => a.date - b.date);
-  }
-
-
 
   // ===========================
   // Modal
@@ -509,7 +405,6 @@
     const logsPre = document.getElementById("modalLogs");
     if (logsPre) logsPre.textContent = (e.logs || []).join("\n\n");
 
-    // ✅ NOVA IMPLEMENTAÇÃO DOS ARTEFATOS
     const artifactsWrap = document.getElementById("modalArtifacts");
     if (artifactsWrap) {
       artifactsWrap.innerHTML = renderArtifacts(e.artifacts);
@@ -521,7 +416,6 @@
       modal.style.display = "flex";
     }
   }
-
 
   function closeModal() {
     const modal = document.getElementById("executionModal");
@@ -574,98 +468,39 @@
   }
 
   // ===========================
-  // Filtros de Período
+  // Histórico - filtro de período
   // ===========================
-  function filterRunsByPeriod(runs, period = '24h') {
+  function filterRunsByPeriod(runs, period = ns.historyPeriod) {
     const now = Date.now();
-    let windowMs = 24 * 60 * 60 * 1000; // 24h padrão
-
+    let windowMs = 24 * 60 * 60 * 1000;
     if (period === '7d') windowMs = 7 * 24 * 60 * 60 * 1000;
     if (period === '30d') windowMs = 30 * 24 * 60 * 60 * 1000;
-
     const start = now - windowMs;
-
+    const toMs = d => typeof d === 'number' ? d : new Date(d).getTime();
     return runs.filter(r => {
-      const runTime = typeof r.date === 'number' ? r.date : new Date(r.date).getTime();
-      return Number.isFinite(runTime) && runTime >= start && runTime <= now;
+      const t = toMs(r.date);
+      return Number.isFinite(t) && t >= start && t <= now;
     });
   }
 
   function setupPeriodButtons() {
-    console.log('🔘 Configurando botões de período...');
-
     const buttons = document.querySelectorAll('[data-history-period]');
-    console.log('📊 Botões encontrados:', buttons.length);
-
-    buttons.forEach(button => {
-      button.addEventListener('click', (e) => {
-        e.preventDefault();
-
-        const newPeriod = button.getAttribute('data-history-period');
-        console.log('🔄 Mudando para período:', newPeriod);
-
-        // Atualizar período ativo no namespace
-        ns.historyPeriod = newPeriod;
-
-        // Atualizar visual dos botões (remover active de todos)
-        buttons.forEach(btn => btn.classList.remove('period-btn--active'));
-        // Adicionar active apenas no clicado
-        button.classList.add('period-btn--active');
-
-        // 🎯 RECARREGAR DADOS COM NOVO FILTRO
-        refreshDataWithPeriod(newPeriod);
-      });
+    buttons.forEach(btn => btn.addEventListener('click', onHistoryPeriodClick));
+    const container = document.querySelector('#historySection') || document;
+    container.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-history-period]');
+      if (!btn) return;
+      onHistoryPeriodClick.call(btn, e);
     });
 
+    // ✅ ATIVAR 7d POR PADRÃO
     setTimeout(() => {
-      const defaultBtn = document.querySelector('[data-history-period="7d"]'); // ✅ MUDANÇA
-      if (defaultBtn && !defaultBtn.classList.contains('period-btn--active')) {
+      const defaultBtn = document.querySelector('[data-history-period="7d"]');
+      if (defaultBtn) {
         buttons.forEach(btn => btn.classList.remove('period-btn--active'));
         defaultBtn.classList.add('period-btn--active');
-        console.log('✅ Botão 7d ativado por padrão');
       }
     }, 100);
-  }
-
-  function refreshDataWithPeriod(period) {
-    console.log('🔄 Atualizando dados para período:', period);
-
-    if (!ns.executionsData || ns.executionsData.length === 0) {
-      console.log('⚠️ Nenhum dado base disponível, pulando atualização');
-      return;
-    }
-
-    // Filtrar dados pelo período
-    const filtered = filterRunsByPeriod(ns.executionsData, period);
-    console.log(`📊 Período ${period}: ${filtered.length}/${ns.executionsData.length} execuções`);
-
-    // Atualizar dados filtrados
-    ns.filteredExecutions = filtered.slice();
-
-    // Resetar página para primeira
-    ns.currentPage = 1;
-
-    // Atualizar toda a interface (incluindo gráficos)
-    updateStatistics();
-    initializeStatusChart();
-    initializeHistoryChart(); // ✅ IMPORTANTE: incluir gráfico de histórico
-    populateExecutionTable();
-  }
-
-  // ===========================
-  // Função de Inicialização Interna
-  // ===========================
-  function initializeApp() {
-    console.log('⚙️ Inicializando componentes internos...');
-
-    // Configurar botões de período
-    setupPeriodButtons();
-    setupHeaderEventListeners();
-    // Iniciar auto-refresh
-    startAutoRefresh();
-
-    // Outras inicializações podem ir aqui
-    console.log('✅ Componentes inicializados');
   }
 
   function onHistoryPeriodClick(e) {
@@ -678,7 +513,7 @@
     document.querySelectorAll('[data-history-period]').forEach(b => b.classList.remove('period-btn--active'));
     this.classList.add('period-btn--active');
 
-    // 🎯 SINCRONIZAÇÃO COMPLETA: Atualizar TUDO baseado no novo período
+    // Atualizar dados baseado no período
     const source = ns.executionsData?.length ? ns.executionsData : (window.__allRuns || []);
     const filtered = filterRunsByPeriod(source, ns.historyPeriod);
     ns.filteredExecutions = filtered.slice();
@@ -690,7 +525,9 @@
     console.log(`Período alterado para ${newPeriod}: ${filtered.length} execuções`);
   }
 
-  // Auto-refresh
+  // ===========================
+  // Auto-refresh FUNCIONAL
+  // ===========================
   function updateAutoRefreshLabel() {
     const label = document.querySelector('.auto-refresh span');
     if (label) label.textContent = `Auto-refresh: ${ns.autoRefreshSeconds}s`;
@@ -719,228 +556,6 @@
   }
 
   // ===========================
-  // Orquestração de carregamento (ATUALIZADA)
-  // ===========================
-  async function loadRuns() {
-    try {
-      console.log('🚀 Iniciando loadRuns...');
-      const runs = await fetchRuns();
-
-      // 1) Deduplicar por id e usar somente 'uniq'
-      const uniqMap = new Map();
-      for (const r of runs || []) uniqMap.set(r.id, r);
-      const uniq = Array.from(uniqMap.values());
-
-      // 1.1) NORMALIZAR DATAS (garantir milissegundos e valor válido)
-      for (const r of uniq) {
-        if (typeof r.date === 'number' && r.date < 1e12) r.date = r.date * 1000;
-        const t = (typeof r.date === 'number') ? r.date : new Date(r.date).getTime();
-        r.date = Number.isFinite(t) ? t : null;
-      }
-
-      // disponibiliza para inspeção no console
-      window.__allRuns = uniq;
-
-      // 2) Armazenar dados base (TODOS os dados)
-      ns.executionsData = uniq.slice();
-
-      // 3) Aplicar filtro de período atual (padrão 7d agora)
-      const filtered = filterRunsByPeriod(ns.executionsData, ns.historyPeriod);
-      ns.filteredExecutions = filtered.slice();
-
-      console.log(`📊 Total: ${ns.executionsData.length}, Filtrado (${ns.historyPeriod}): ${ns.filteredExecutions.length}`);
-
-      // 4) ✅ ATUALIZAR INTERFACE COMPLETA (incluindo gráfico)
-      updateStatistics();
-      initializeStatusChart();
-      initializeHistoryChart(); // ✅ ADICIONAR ESTA LINHA
-      populateExecutionTable();
-
-      // 5) Inicializar componentes após carregar dados
-      initializeApp();
-
-    } catch (err) {
-      console.error('❌ Falha ao carregar execuções:', err);
-    }
-  }
-
-  // ===========================
-  // Sistema de Tendências
-  // ===========================
-  // Sua função calculateTrends (mantida igual)
-  function calculateTrends(currentData, previousData) {
-    const trends = {};
-
-    for (const key in currentData) {
-      const current = currentData[key] || 0;
-      const previous = previousData[key] || 0;
-
-      // ✅ CORREÇÃO: Baseline mais baixa e mais permissiva
-      if (previous === 0) {
-        // ✅ Usar valor mínimo de 1 para evitar divisão por zero
-        const assumedPrevious = 1;
-        const diff = current - assumedPrevious;
-        const percent = Math.round((diff / assumedPrevious) * 100);
-
-        // ✅ Limitar percentuais para valores razoáveis
-        const cappedPercent = Math.min(Math.max(percent, -100), 300);
-
-        trends[key] = {
-          value: current,
-          change: diff,
-          percent: cappedPercent,
-          trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
-        };
-      } else {
-        // Cálculo normal quando há dados anteriores válidos
-        const diff = current - previous;
-        const percent = Math.round((diff / previous) * 100);
-
-        // ✅ Limitar percentuais para valores razoáveis
-        const cappedPercent = Math.min(Math.max(percent, -100), 300);
-
-        trends[key] = {
-          value: current,
-          change: diff,
-          percent: cappedPercent,
-          trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
-        };
-      }
-    }
-
-    return trends;
-  }
-
-  // ✨ NOVA FUNÇÃO: Para atualizar os badges no HTML
-  function updateTrendBadges(trends) {
-    // Atualizar badge dos Testes Aprovados
-    if (trends.totalPassed) {
-      const passedElement = document.querySelector('#totalPassed');
-      const passedBadge = passedElement.parentElement.querySelector('.trend-indicator');
-
-      if (passedBadge) {
-        const trend = trends.totalPassed;
-        if (trend.trend === 'up') {
-          passedBadge.textContent = `📈 +${trend.percent}%`;
-          passedBadge.className = 'trend-indicator trend-up';
-        } else if (trend.trend === 'down') {
-          passedBadge.textContent = `📉 ${trend.percent}%`;
-          passedBadge.className = 'trend-indicator trend-down';
-        } else {
-          passedBadge.textContent = `➡️ ${trend.percent}%`;
-          passedBadge.className = 'trend-indicator trend-neutral';
-        }
-      }
-    }
-
-    // Atualizar badge dos Testes Falhados
-    if (trends.totalFailed) {
-      const failedElement = document.querySelector('#totalFailed');
-      const failedBadge = failedElement.parentElement.querySelector('.trend-indicator');
-
-      if (failedBadge) {
-        const trend = trends.totalFailed;
-        if (trend.trend === 'up') {
-          failedBadge.textContent = `📈 +${trend.percent}%`;
-          failedBadge.className = 'trend-indicator trend-up';
-        } else if (trend.trend === 'down') {
-          failedBadge.textContent = `📉 ${trend.percent}%`;
-          failedBadge.className = 'trend-indicator trend-down';
-        } else {
-          failedBadge.textContent = `➡️ ${trend.percent}%`;
-          failedBadge.className = 'trend-indicator trend-neutral';
-        }
-      }
-    }
-
-    // Atualizar badge da Duração Média
-    if (trends.avgDuration) {
-      const durationElement = document.querySelector('#avgDuration');
-      const durationBadge = durationElement.parentElement.querySelector('.trend-indicator');
-
-      if (durationBadge) {
-        const trend = trends.avgDuration;
-        if (trend.trend === 'up') {
-          durationBadge.textContent = `📈 +${trend.percent}%`;
-          durationBadge.className = 'trend-indicator trend-up';
-        } else if (trend.trend === 'down') {
-          durationBadge.textContent = `📉 ${trend.percent}%`;
-          durationBadge.className = 'trend-indicator trend-down';
-        } else {
-          durationBadge.textContent = `➡️ ${trend.percent}%`;
-          durationBadge.className = 'trend-indicator trend-neutral';
-        }
-      }
-    }
-
-    // Atualizar badge da Taxa de Sucesso
-    if (trends.successRate) {
-      const rateElement = document.querySelector('#successRate');
-      const rateBadge = rateElement.parentElement.querySelector('.trend-indicator');
-
-      if (rateBadge) {
-        const trend = trends.successRate;
-        if (trend.trend === 'up') {
-          rateBadge.textContent = `📈 +${trend.percent}%`;
-          rateBadge.className = 'trend-indicator trend-up';
-        } else if (trend.trend === 'down') {
-          rateBadge.textContent = `📉 ${trend.percent}%`;
-          rateBadge.className = 'trend-indicator trend-down';
-        } else {
-          rateBadge.textContent = `➡️ ${trend.percent}%`;
-          rateBadge.className = 'trend-indicator trend-neutral';
-        }
-      }
-    }
-  }
-
-  function getPreviousPeriodData(currentPeriod) {
-    const now = Date.now();
-    let previousWindow;
-
-    switch (currentPeriod) {
-      case '24h':
-        previousWindow = { start: now - (48 * 60 * 60 * 1000), end: now - (24 * 60 * 60 * 1000) };
-        break;
-      case '7d':
-        previousWindow = { start: now - (14 * 24 * 60 * 60 * 1000), end: now - (7 * 24 * 60 * 60 * 1000) };
-        break;
-      case '30d':
-        previousWindow = { start: now - (60 * 24 * 60 * 60 * 1000), end: now - (30 * 24 * 60 * 60 * 1000) };
-        break;
-      default:
-        return { totalPassed: 0, totalFailed: 0, avgDuration: 0, successRate: 0 };
-    }
-
-    console.log('Janela anterior:', new Date(previousWindow.start), 'até', new Date(previousWindow.end));
-
-    const previousRuns = ns.executionsData.filter(r => {
-      const runTime = new Date(r.date).getTime();
-      return runTime >= previousWindow.start && runTime <= previousWindow.end;
-    });
-
-    console.log('Execuções no período anterior:', previousRuns.length);
-
-    if (previousRuns.length === 0) {
-      return { totalPassed: 0, totalFailed: 0, avgDuration: 0, successRate: 0 };
-    }
-
-    const totalPassed = previousRuns.reduce((s, e) => s + (e.passedTests || 0), 0);
-    const totalFailed = previousRuns.reduce((s, e) => s + (e.failedTests || 0), 0);
-    const totalTests = totalPassed + totalFailed;
-    const avgDuration = Math.round(previousRuns.reduce((s, e) => s + (e.duration || 0), 0) / previousRuns.length);
-    const successRate = totalTests ? Math.round((totalPassed / totalTests) * 100) : 0;
-
-    return {
-      totalPassed: totalPassed,
-      totalFailed: totalFailed,
-      avgDuration: avgDuration,
-      successRate: successRate
-    };
-  }
-
-
-  // ===========================
   // Renderização de Artefatos
   // ===========================
   function renderArtifacts(artifacts) {
@@ -953,11 +568,11 @@
         </div>
       `;
     }
-
+    
     return artifacts.map(a => {
       const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(a.url || '');
       const isVideo = /\.(mp4|webm|mov)$/i.test(a.url || '');
-
+      
       if (isImage) {
         return `
           <div class="artifact-item">
@@ -1036,534 +651,76 @@
         <div class="image-modal-caption">${name}</div>
       </div>
     `;
-
+    
     // Fechar modal ao clicar no fundo
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.remove();
       }
     });
-
+    
     document.body.appendChild(modal);
   }
 
-  function startAutoRefresh() {
-    console.log('🔄 Iniciando auto-refresh...');
-    
-    if (ns.autoRefreshTimer) {
-      clearInterval(ns.autoRefreshTimer);
-    }
-    
-    if (ns.countdownTimer) {
-      clearInterval(ns.countdownTimer);
-    }
+  // ===========================
+  // Bootstrap/Inicialização
+  // ===========================
+  document.addEventListener("DOMContentLoaded", () => {
+    setupPeriodButtons();
+    setupEventListeners();
 
-    // Inicializar contador
-    ns.remainingSeconds = ns.autoRefreshSeconds;
+    loadRuns()
+      .catch(console.error)
+      .finally(() => { startAutoRefreshCountdown(); });
+  });
 
-    // Timer para o countdown (atualiza a cada segundo)
-    ns.countdownTimer = setInterval(() => {
-      ns.remainingSeconds--;
-      updateAutoRefreshDisplay();
+  // ===========================
+  // Orquestração de carregamento
+  // ===========================
+  async function loadRuns() {
+    try {
+      const runs = await fetchRuns();
 
-      // Quando chegar a zero, executar refresh
-      if (ns.remainingSeconds <= 0) {
-        executeRefresh();
-        ns.remainingSeconds = ns.autoRefreshSeconds; // Reset
+      // 1) Deduplicar por id e usar somente 'uniq'
+      const uniqMap = new Map();
+      for (const r of runs || []) uniqMap.set(r.id, r);
+      const uniq = Array.from(uniqMap.values());
+
+      // 1.1) NORMALIZAR DATAS (garantir milissegundos e valor válido)
+      for (const r of uniq) {
+        if (typeof r.date === 'number' && r.date < 1e12) r.date = r.date * 1000;
+        const t = (typeof r.date === 'number') ? r.date : new Date(r.date).getTime();
+        r.date = Number.isFinite(t) ? t : null;
       }
-    }, 1000);
 
-    // Atualizar display inicial
-    updateAutoRefreshDisplay();
-  }
+      // disponibiliza para inspeção no console
+      window.__allRuns = uniq;
 
-  async function executeRefresh() {
-    console.log('🔄 Auto-refresh executado');
-    try {
-      await loadRuns();
-      console.log('✅ Dados atualizados via auto-refresh');
-    } catch (error) {
-      console.error('❌ Erro no auto-refresh:', error);
+      // 2) Base para cards/tabela/pizza
+      ns.executionsData = uniq.slice();
+      ns.filteredExecutions = filterRunsByPeriod(ns.executionsData, ns.historyPeriod); // ✅ APLICAR FILTRO
+      
+      updateStatistics();
+      initializeStatusChart();
+      populateExecutionTable();
+
+      // 3) Histórico por período
+      console.log('loadRuns: total execs=', ns.executionsData.length, 'period=', ns.historyPeriod);
+      console.log('filtered len=', ns.filteredExecutions.length);
+      initializeHistoryChartFromRuns(ns.filteredExecutions);
+    } catch (err) {
+      console.error('Falha ao carregar execuções:', err);
     }
   }
 
-  function updateAutoRefreshDisplay() {
-    const refreshEl = document.querySelector('.auto-refresh span');
-    if (refreshEl) {
-      refreshEl.textContent = `Auto-refresh: ${ns.remainingSeconds || ns.autoRefreshSeconds}s`;
-    }
-  }
-
-  function stopAutoRefresh() {
-    if (ns.autoRefreshTimer) {
-      clearInterval(ns.autoRefreshTimer);
-      ns.autoRefreshTimer = null;
-    }
-    if (ns.countdownTimer) {
-      clearInterval(ns.countdownTimer);
-      ns.countdownTimer = null;
-    }
-  }
-
-  // Executar Pipeline
-  async function executarPipeline() {
-    console.log('🚀 Executando pipeline...');
-
-    const btn = document.getElementById("runPipelineBtn") || document.querySelector('.header-btn[onclick*="Pipeline"]');
-    if (!btn) return;
-
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Executando...';
-
-    try {
-      // Simular execução do pipeline
-      await new Promise(resolve => setTimeout(resolve, 3000));
-
-      btn.innerHTML = '<i class="fas fa-check"></i> Concluído!';
-      btn.style.backgroundColor = '#16a34a';
-
-      // Recarregar dados após pipeline
-      setTimeout(async () => {
-        await loadRuns();
-        resetPipelineButton(btn);
-      }, 2000);
-
-    } catch (error) {
-      console.error('❌ Erro no pipeline:', error);
-      btn.innerHTML = '<i class="fas fa-times"></i> Erro';
-      btn.style.backgroundColor = '#dc2626';
-
-      setTimeout(() => resetPipelineButton(btn), 3000);
-    }
-  }
-
-  function resetPipelineButton(btn) {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-play"></i> Executar Pipeline';
-    btn.style.backgroundColor = '';
-  }
-
-
-
-  function setupHeaderEventListeners() {
-    console.log('⚙️ Configurando eventos do header...');
-
-    // Botão Métricas
-    const metricsBtn = document.querySelector('.header-btn[onclick*="Métricas"], .header-btn[data-action="metrics"]');
-    if (metricsBtn) {
-      metricsBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        openMetricsModal();
-      });
-    }
-
-    // Botão Executar Pipeline
-    const pipelineBtn = document.querySelector('.header-btn[onclick*="Pipeline"], .header-btn[data-action="pipeline"], #runPipelineBtn');
-    if (pipelineBtn) {
-      pipelineBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        executarPipeline();
-      });
-    }
-
-    console.log('✅ Eventos do header configurados');
-  }
-
-  // ===========================
-  // Sistema de Tabs
-  // ===========================
-  function switchTab(tabName) {
-    console.log('🔄 Mudando para tab:', tabName);
-
-    // Remover classe ativa de todos os botões
-    document.querySelectorAll('.tab-button').forEach(btn => {
-      btn.classList.remove('tab-button--active');
-    });
-
-    // Esconder todos os painéis
-    document.querySelectorAll('.tab-panel').forEach(panel => {
-      panel.classList.remove('tab-panel--active');
-    });
-
-    // Ativar botão clicado
-    const activeButton = document.querySelector(`[data-tab="${tabName}"]`);
-    if (activeButton) {
-      activeButton.classList.add('tab-button--active');
-    }
-
-    // Mostrar painel correspondente
-    const activePanel = document.getElementById(`${tabName}Panel`);
-    if (activePanel) {
-      activePanel.classList.add('tab-panel--active');
-    }
-  }
-
-  function setupModalEventListeners() {
-    console.log('⚙️ Configurando eventos do modal...');
-
-    // Botão de fechar (X)
-    const closeBtn = document.getElementById('closeModal');
-    if (closeBtn) {
-      closeBtn.addEventListener('click', closeModal);
-    }
-
-    // Fechar ao clicar no backdrop
-    const backdrop = document.querySelector('#executionModal .modal-backdrop');
-    if (backdrop) {
-      backdrop.addEventListener('click', closeModal);
-    }
-
-    // Configurar tabs
-    document.querySelectorAll('.tab-button').forEach(button => {
-      button.addEventListener('click', (e) => {
-        e.preventDefault();
-        const tabName = button.getAttribute('data-tab');
-        if (tabName) {
-          switchTab(tabName);
-        }
-      });
-    });
-
-    console.log('✅ Eventos do modal configurados');
-  }
-
-  // Exponha utilitários se necessário
-  root.__DASH_API__ = { loadRuns };
-})(window);
+  // Exponha a API
+  root.__DASH_API__ = { loadRuns }; 
+})(window); 
 
 // ===========================
-// Modal Functions
+// ✅ BOTÃO MÉTRICAS SIMPLES (sem modal complexo)
 // ===========================
 function openMetricsPage() {
-  console.log('🚀 Abrindo página de métricas...');
-  const modal = document.getElementById('metricsModal');
-  if (modal) {
-    modal.classList.remove('hidden');
-    loadDetailedMetrics();
-  } else {
-    console.error('Modal de métricas não encontrado!');
-  }
+  console.log('📊 Funcionalidade de Métricas será implementada futuramente');
+  alert('Métricas detalhadas em desenvolvimento!\n\nEm breve você poderá visualizar:\n• PageSpeed por loja\n• Métricas de performance\n• Relatórios detalhados');
 }
-
-function closeMetricsPage() {
-  const modal = document.getElementById('metricsModal');
-  if (modal) {
-    modal.classList.add('hidden');
-  }
-}
-
-// ===========================
-// PageSpeed API Functions
-// ===========================
-async function loadDetailedMetrics() {
-  console.log('🔄 Carregando métricas detalhadas...');
-
-  const results = [];
-
-  // Usar STORES_CONFIG em vez de PAGESPEED_CONFIG
-  for (const store of STORES_CONFIG) {
-    console.log(`📊 Buscando métricas para: ${store.name}`);
-    const metrics = await fetchDetailedPageSpeed(store.url);
-    results.push({
-      name: store.name,
-      url: store.url,
-      ...metrics
-    });
-  }
-
-  // Atualizar tabela e cards
-  updateMetricsTable(results);
-  updateSummaryCards(results);
-}
-
-// ✅ NOVA FUNÇÃO SEGURA (chama page-speed.js)
-async function fetchDetailedPageSpeed(url) {
-  try {
-    console.log(`📡 Chamando Netlify Function para: ${url}`);
-
-    const response = await fetch('/api/page-speed', {  // ← Note o hífen
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ url: url })
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status} - ${response.statusText}`);
-    }
-
-    const data = await response.json();
-
-    if (data.error) {
-      throw new Error(data.error);
-    }
-
-    console.log(`✅ Dados recebidos da Netlify Function:`, data);
-
-    // Extrair métricas
-    const categories = data.lighthouseResult?.categories || {};
-
-    return {
-      performance: Math.round((categories.performance?.score || 0) * 100),
-      accessibility: Math.round((categories.accessibility?.score || 0) * 100),
-      bestPractices: Math.round((categories['best-practices']?.score || 0) * 100),
-      seo: Math.round((categories.seo?.score || 0) * 100)
-    };
-
-  } catch (error) {
-    console.error(`❌ Erro ao buscar métricas para ${url}:`, error);
-    return {
-      performance: '--',
-      accessibility: '--',
-      bestPractices: '--',
-      seo: '--'
-    };
-  }
-}
-
-// ✅ CONFIGURAÇÃO SIMPLIFICADA (sem API Key)
-// Defina as lojas a serem analisadas
-const STORES_CONFIG = [
-  { id: 'victor-hugo', url: 'https://www.victorhugo.com.br', name: 'Victor Hugo' },
-  { id: 'shopvinho', url: 'https://www.shopvinho.com.br', name: 'ShopVinho' },
-  { id: 'shopmulti', url: 'https://www.shopmulti.com.br', name: 'ShopMulti' }
-];
-
-
-function updateMetricsTable(results) {
-  const tbody = document.getElementById('metrics-table-body');
-  if (!tbody) return;
-
-  tbody.innerHTML = results.map(store => `
-    <tr>
-      <td><strong>${store.name}</strong></td>
-      <td><code>${store.url}</code></td>
-      <td><span class="score ${getScoreClass(store.performance)}">${store.performance}</span></td>
-      <td><span class="score ${getScoreClass(store.accessibility)}">${store.accessibility}</span></td>
-      <td><span class="score ${getScoreClass(store.seo)}">${store.seo}</span></td>
-    </tr>
-  `).join('');
-}
-
-function updateSummaryCards(results) {
-  const validResults = results.filter(r => parseInt(r.performance) > 0);
-
-  if (validResults.length === 0) {
-    document.getElementById('avg-performance').textContent = '--';
-    document.getElementById('avg-accessibility').textContent = '--';
-    document.getElementById('avg-best-practices').textContent = '--';
-    document.getElementById('avg-seo').textContent = '--';
-    return;
-  }
-
-  const avgPerformance = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.performance) || 0), 0) / validResults.length);
-  const avgAccessibility = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.accessibility) || 0), 0) / validResults.length);
-  const avgBestPractices = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.bestPractices) || 0), 0) / validResults.length);
-  const avgSeo = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.seo) || 0), 0) / validResults.length);
-
-  document.getElementById('avg-performance').textContent = avgPerformance;
-  document.getElementById('avg-accessibility').textContent = avgAccessibility;
-  document.getElementById('avg-best-practices').textContent = avgBestPractices;
-  document.getElementById('avg-seo').textContent = avgSeo;
-}
-
-function getScoreClass(score) {
-  const num = parseInt(score);
-  if (num >= 90) return 'good';
-  if (num >= 50) return 'average';
-  return 'poor';
-}
-
-function refreshAllPageSpeed() {
-  loadDetailedMetrics();
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-  console.log('🚀 Inicializando dashboard...');
-
-  // Aguardar um pouco para garantir que o DOM esteja totalmente carregado
-  await new Promise(resolve => setTimeout(resolve, 100));
-
-  try {
-    // Verificar se a API está disponível
-    if (window.__DASH_API__ && window.__DASH_API__.loadRuns) {
-      console.log('📡 Carregando dados iniciais...');
-      await window.__DASH_API__.loadRuns();
-      console.log('✅ Dashboard inicializado com sucesso');
-    } else {
-      console.error('❌ API não está disponível');
-    }
-
-  } catch (error) {
-    console.error('❌ Erro na inicialização:', error);
-  }
-});
-
-// ===========================
-// Funcionalidades do Header
-// ===========================
-
-// Modal de Métricas
-function openMetricsModal() {
-  console.log('📊 Abrindo modal de métricas...');
-  // Placeholder - implemente conforme sua necessidade
-  alert('Modal de Métricas será implementado aqui!');
-}
-
-// ===========================
-// Função Global para Modal (FORA da IIFE)
-// ===========================
-function openExecutionDetails(executionId) {
-  console.log('📋 Abrindo detalhes para:', executionId);
-  
-  // Buscar dados da execução no namespace global
-  const executions = window.__DASH_STATE__?.filteredExecutions || [];
-  const execution = executions.find(e => e.id === executionId);
-  
-  if (!execution) {
-    console.error('❌ Execução não encontrada:', executionId);
-    return;
-  }
-  
-  console.log('✅ Execução encontrada:', execution);
-  
-  // Buscar o modal
-  const modal = document.getElementById('executionModal');
-  if (!modal) {
-    console.error('❌ Modal #executionModal não encontrado no HTML');
-    console.log('🔍 Modais disponíveis:', Array.from(document.querySelectorAll('[id*="modal"], [id*="Modal"]')).map(m => m.id));
-    return;
-  }
-  
-  // Preencher dados básicos diretamente
-  fillBasicModalData(execution);
-  
-  // Mostrar modal
-  modal.classList.remove('hidden');
-  modal.style.display = 'flex'; // Força exibição
-  console.log('✅ Modal deve estar visível agora');
-  
-  // Ativar primeira tab
-  setTimeout(() => {
-    activateFirstTab();
-  }, 100);
-}
-
-function fillBasicModalData(execution) {
-  // Preencher título do modal
-  const modalTitle = document.querySelector('#executionModal .modal-header h2');
-  if (modalTitle) {
-    modalTitle.textContent = `Detalhes da Execução - ${execution.id}`;
-  }
-  
-  // Função auxiliar para preencher campos
-  const setField = (selector, value) => {
-    const element = document.querySelector(selector);
-    if (element) {
-      element.textContent = value || 'N/A';
-      console.log(`✅ Campo ${selector} preenchido:`, value);
-    } else {
-      console.warn(`⚠️ Campo ${selector} não encontrado`);
-    }
-  };
-  
-  // Preencher campos básicos (use seletores mais específicos se necessário)
-  setField('#executionModal #modalExecutionId', execution.id);
-  setField('#executionModal #modalDate', formatDateTime(execution.date));
-  setField('#executionModal #modalBranch', execution.branch);
-  setField('#executionModal #modalEnvironment', execution.environment);
-  setField('#executionModal #modalAuthor', execution.author);
-  setField('#executionModal #modalCommit', execution.commit);
-  setField('#executionModal #modalDuration', `${execution.duration}s`);
-  setField('#executionModal #modalStatus', execution.status === 'passed' ? 'APROVADO' : 'FALHADO');
-  
-  // GitHub link
-  const githubLink = document.querySelector('#executionModal #modalGithubLink');
-  if (githubLink && execution.githubUrl) {
-    githubLink.href = execution.githubUrl;
-  }
-  
-  console.log('✅ Dados básicos do modal preenchidos');
-}
-
-function activateFirstTab() {
-  // Remover active de todas as tabs
-  document.querySelectorAll('.tab-button').forEach(btn => {
-    btn.classList.remove('tab-button--active');
-  });
-  document.querySelectorAll('.tab-panel').forEach(panel => {
-    panel.classList.remove('tab-panel--active');
-  });
-  
-  // Ativar primeira tab
-  const firstTabBtn = document.querySelector('.tab-button[data-tab]');
-  const firstTabPanel = document.querySelector('.tab-panel');
-  
-  if (firstTabBtn && firstTabPanel) {
-    firstTabBtn.classList.add('tab-button--active');
-    firstTabPanel.classList.add('tab-panel--active');
-    console.log('✅ Primeira tab ativada');
-  }
-}
-
-// Função auxiliar de formatação de data
-function formatDateTime(dateInput) {
-  if (!dateInput) return 'Data não disponível';
-  try {
-    const date = new Date(dateInput);
-    return date.toLocaleString('pt-BR');
-  } catch (e) {
-    return 'Data inválida';
-  }
-}
-
-function populateModalData(execution) {
-  // Preencher título
-  const modalTitle = document.querySelector('#executionModal .modal-header h2');
-  if (modalTitle) {
-    modalTitle.textContent = `Detalhes da Execução - ${execution.id}`;
-  }
-  
-  // Preencher dados gerais
-  const setModalData = (id, value) => {
-    const el = document.getElementById(id);
-    if (el) el.textContent = value;
-  };
-  
-  setModalData('modalExecutionId', execution.id);
-  setModalData('modalDate', formatDateTime(execution.date));
-  setModalData('modalBranch', execution.branch);
-  setModalData('modalEnvironment', execution.environment);
-  setModalData('modalAuthor', execution.author || 'N/A');
-  setModalData('modalCommit', execution.commit || 'N/A');
-  setModalData('modalDuration', `${execution.duration}s`);
-  setModalData('modalStatus', execution.status === 'passed' ? 'APROVADO' : 'FALHADO');
-  
-  // GitHub link
-  const githubLink = document.getElementById('modalGithubLink');
-  if (githubLink && execution.githubUrl) {
-    githubLink.href = execution.githubUrl;
-  }
-  
-  // Logs (se existirem)
-  const logsContainer = document.getElementById('modalLogs');
-  if (logsContainer) {
-    logsContainer.textContent = execution.logs?.join('\n') || 'Nenhum log disponível';
-  }
-  
-  console.log('✅ Dados do modal preenchidos');
-}
-
-// Função utilitária para formatação de data (FORA da IIFE)
-function formatDateTime(dateInput) {
-  if (!dateInput) return 'Data não disponível';
-  const date = new Date(dateInput);
-  return date.toLocaleString('pt-BR');
-}
-
-
-
-
-
-
