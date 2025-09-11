@@ -866,12 +866,17 @@ function refreshAllPageSpeed() {
 // Event Listeners Globais
 // ===========================
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('✅ PageSpeed metrics module loaded');
-  
-  // Fechar modal clicando fora
-  document.getElementById('metricsModal')?.addEventListener('click', (e) => {
-    if (e.target.id === 'metricsModal') {
-      closeMetricsPage();
+  setTimeout(() => {
+    const btn = document.getElementById('runPipelineBtn');
+    if (btn) {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        console.log('🚀 Pipeline clicado!');
+        alert('Pipeline será executado!\n\nFuncionalidade em implementação.');
+      });
+      console.log('✅ Pipeline button listener added');
+    } else {
+      console.log('❌ Pipeline button not found');
     }
-  });
+  }, 2000);
 });
