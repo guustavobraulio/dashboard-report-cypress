@@ -1065,12 +1065,12 @@ select.form-control {
   border: 1px solid var(--color-card-border);
   border-radius: var(--radius-lg);
   padding: var(--space-20);
-  display: flex !important;
+  display: flex !important; /* HORIZONTAL - ícone + conteúdo */
   align-items: center !important;
   gap: var(--space-16);
   box-shadow: var(--shadow-sm);
   transition: transform var(--duration-fast) var(--ease-standard);
-  min-height: 120px; 
+  min-height: 120px;
 }
 
 .stat-card:hover {
@@ -2095,6 +2095,8 @@ body {
 }
 
 .card-value span:first-child {
+  display: inline !important; 
+  font-size: 2.75rem !important;
   font-size: 2.5rem;
   font-weight: 700;
   color: #1f2937;
@@ -2103,7 +2105,7 @@ body {
 
 .card-value span:first-child,
 .stat-content h3 {
-  font-size: 2.75rem !important; /* Maior que antes */
+  font-size: 2.75rem !important; 
   font-weight: 700 !important;
   color: var(--color-text) !important;
   line-height: 1 !important;
@@ -2122,7 +2124,7 @@ body {
   line-height: 1.1;
   margin-left: 6px;
   position: relative;
-  top: -10px;  /* Move bem para cima */
+  top: -10px;  
   white-space: nowrap;
   vertical-align: baseline;
 }
@@ -2520,13 +2522,14 @@ body {
 
 /* Estrutura do valor + badge - MELHORADA */
 .stat-content .card-value {
-  display: flex !important;
+  display: block !important; 
   flex-direction: column !important; 
   align-items: center !important;
   justify-content: center !important;
   gap: var(--space-2) !important;
   margin-bottom: var(--space-8) !important;
   position: relative !important;
+  text-align: center !important;
 }
 
 /* Garantir que apenas UM badge apareça por card */
@@ -2539,11 +2542,12 @@ body {
   font-weight: 600 !important;
   padding: 2px 8px !important;
   border-radius: 12px !important;
-  margin-top: var(--space-4) !important; /* Espaço abaixo do número */
-  margin-left: 0 !important; /* Remove margem lateral */
-  position: static !important; /* Remove posicionamento absoluto */
+  position: static !important; 
   top: auto !important;
   white-space: nowrap !important;
+  display: block !important; /* NOVA LINHA */
+  margin: var(--space-4) auto 0 auto !important; /* CENTRALIZADO */
+  width: fit-content !important;
 }
 
 /* Responsividade para telas menores - MELHORADA */
@@ -2593,8 +2597,9 @@ body {
 /* Evita que o texto principal se mova com o badge */
 .stat-content h3,
 .card-value span:first-child {
-  display: inline-block !important;
+  display: inline !important; 
   vertical-align: baseline !important;
+  font-size: 2.75rem !important;
 }
 
 /* Fix para cards que podem ter layout quebrado */
@@ -2610,7 +2615,7 @@ body {
   align-items: center !important;
   text-align: center !important;
   flex: 1 !important;
-  gap: var(--space-4) !important;
+  gap: var(--space-8) !important;
 }
 
 
