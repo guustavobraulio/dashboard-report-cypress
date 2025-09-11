@@ -2,7 +2,6 @@
   /* Primitive Color Tokens (base neutra mantém legibilidade) */
   --color-white: rgba(255, 255, 255, 1);
   --color-black: rgba(0, 0, 0, 1);
-  --color-cream-50: #ffffff(252, 252, 249, 1);
   --color-cream-100: rgba(255, 255, 253, 1);
   --color-gray-200: rgba(245, 245, 245, 1);
   --color-gray-300: rgba(167, 169, 169, 1);
@@ -12,20 +11,6 @@
   --color-charcoal-700: rgba(31, 33, 33, 1);
   --color-charcoal-800: rgba(38, 40, 40, 1);
   --color-slate-900: rgba(19, 52, 59, 1);
-
-  /* Teal da marca — ajustes inspirados na logo Social */
-  --color-teal-300: #ed5968;
-  ;
-  /* luz */
-  --color-teal-400: #ffff(25, 150, 156, 1);
-  /* médio-claro */
-  --color-teal-500: #ff5b6b(18, 142, 147, 1);
-  /* principal */
-  --color-teal-600: #e65161;
-  /* hover */
-  --color-teal-700: #cc4752(12, 104, 107, 1);
-  /* active */
-
   /* Alertas/acentos (mantidos, mas podem ser ajustados) */
   --color-red-400: rgba(255, 84, 89, 1);
   --color-red-500: rgba(192, 21, 47, 1);
@@ -75,9 +60,6 @@
   --color-card-border: rgba(var(--color-brown-600-rgb), 0.12);
   --color-card-border-inner: rgba(var(--color-brown-600-rgb), 0.12);
   --color-error: var(--color-red-500);
-  --color-success: #ff5b6b;
-  --color-success: 255, 91, 107;
-  --color-focus-ring: rgba(255, 91, 107, 0.40);
   --color-warning: var(--color-orange-500);
   --color-info: var(--color-slate-500);
 
@@ -511,14 +493,6 @@ pre code {
   cursor: not-allowed;
 }
 
-
-.btn--loading+.status-pipeline {
-  opacity: 0.6;
-  position: relative;
-  color: #1FB8CD;
-  font-weight: 500;
-}
-
 .btn--loading::after {
   content: '';
   position: absolute;
@@ -926,14 +900,6 @@ select.form-control {
   background: rgba(255, 255, 255, 0.2);
   border-color: rgba(255, 255, 255, 0.3);
   box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
-}
-
-
-
-.header-actions {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
 }
 
 .header .logo-section h1 {
@@ -1929,18 +1895,6 @@ select.form-control {
   background: var(--color-error);
 }
 
-.btn-pipeline.is-in-progress {
-  background: var(--color-primary-hover);
-}
-
-.btn-pipeline.is-success {
-  background: var(--color-success);
-}
-
-.btn-pipeline.is-failure {
-  background: var(--color-error);
-}
-
 .btn--loading::after,
 .btn--loading::before {
   content: none !important;
@@ -1948,13 +1902,6 @@ select.form-control {
 
 .btn--loading {
   background-image: none !important;
-}
-
-/* Animação já existente */
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
 }
 
 .loading-message {
@@ -1989,13 +1936,6 @@ body {
 *::before,
 *::after {
   box-sizing: border-box;
-}
-
-
-.container,
-.main-content,
-.dashboard-content {
-  max-width: 100%;
 }
 
 /* Botões largos não devem forçar overflow */
@@ -2093,11 +2033,6 @@ body {
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
-
-.card-value span:first-child {
-  font-size: 2.75rem !important;
-}
-
 .card-value span:first-child,
 .stat-content h3 {
   font-size: 2.75rem !important; 
@@ -2108,24 +2043,6 @@ body {
   display: inline !important;
   text-align: center !important;
 }
-
-
-
-
-.trend-indicator {
-  font-size: 0.6rem !important;
-  font-weight: 600;
-  padding: 2px 6px;
-  border-radius: 8px;
-  display: inline-block !important;
-  line-height: 1.1;
-  margin-left: 6px;
-  position: relative;
-  top: -10px;  
-  white-space: nowrap;
-  vertical-align: baseline;
-}
-
 
 .trend-up {
   background: #dcfce7 !important;

@@ -227,6 +227,42 @@
   }
 
   // ===========================
+  // Estatísticas e Cards
+  // ===========================
+  function updateStatistics() {
+    // 1. Calcula as métricas do período atual a partir dos dados filtrados
+    const currentRuns = ns.filteredExecutions || [];
+    const totalPassed = currentRuns.reduce((sum, run) => sum + (run.passedTests || 0), 0);
+    const totalFailed = currentRuns.reduce((sum, run) => sum + (run.failedTests || 0), 0);
+    const totalTests = totalPassed + totalFailed;
+    const avgDuration = currentRuns.length > 0 ? Math.round(currentRuns.reduce((sum, run) => sum + (run.duration || 0), 0) / currentRuns.length) : 0;
+    const successRate = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
+
+    const currentData = {
+      totalPassed,
+      totalFailed,
+      avgDuration,
+      successRate
+    };
+
+    // 2. Atualiza os valores nos cards do HTML
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+
+    set('totalPassed', totalPassed);
+    set('totalFailed', totalFailed);
+    set('avgDuration', `${avgDuration}s`);
+    set('successRate', `${successRate}%`);
+
+    // 3. Calcula e exibe as tendências comparando com o período anterior
+    const previousData = getPreviousPeriodData(ns.historyPeriod);
+    const trends = calculateTrends(currentData, previousData);
+    updateTrendBadges(trends);
+  }
+
+  // ===========================
   // Gráficos
   // ===========================
   function initializeStatusChart() {
