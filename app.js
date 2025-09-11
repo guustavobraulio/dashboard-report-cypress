@@ -1227,11 +1227,35 @@ function refreshAllPageSpeed() {
 document.addEventListener('DOMContentLoaded', () => {
   console.log('✅ PageSpeed metrics module loaded');
   
-  // Fechar modal clicando fora
-  document.getElementById('metricsModal')?.addEventListener('click', (e) => {
-    if (e.target.id === 'metricsModal') {
-      closeMetricsPage();
-    }
+  // ✅ Código existente para modal
+  const modal = document.getElementById('metricsModal');
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) {
+        closeMetricsPage();
+      }
+    });
+  }
+
+  // ✨ NOVO: Código dos filtros de período
+  const periods = {"24h": "last24h", "7d": "last7days", "30d": "last30days"};
+  const filterButtons = document.querySelectorAll('.period-btn');
+  
+  filterButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Pegar período do botão clicado
+      const period = btn.dataset.historyPeriod;
+      
+      // Carregar dados desse período
+      loadRealData(periods[period]);
+      
+      // Atualizar botão ativo
+      filterButtons.forEach(b => b.classList.remove('period-btn--active'));
+      btn.classList.add('period-btn--active');
+    });
   });
+
+  // ✨ Carregar dados iniciais (7d por padrão)
+  loadRealData("last7days");
 });
 
