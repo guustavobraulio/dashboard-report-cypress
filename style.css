@@ -2109,44 +2109,7 @@ body {
   text-align: center !important;
 }
 
-.stat-card:last-child .card-value span:first-child {
-  font-size: 2.2rem !important;  /* 87% fica menor */
-}
 
-#successRate,
-[id*="success"] span:first-child,
-[class*="success"] .card-value span:first-child {
-  position: relative;
-}
-
-#successRate::before,
-[id*="success"] span:first-child::before {
-  content: attr(data-number);
-  font-size: 2.75rem !important;
-  font-weight: 700 !important;
-}
-
-#successRate::after,
-[id*="success"] span:first-child::after {
-  content: '%';
-  font-size: 1.8rem !important;
-  font-weight: 600 !important;
-  vertical-align: top !important;
-  margin-left: 2px !important;
-}
-
-/* Números normais grandes */
-.card-value span:first-child:not([id*="success"]):not(:contains('%')),
-.stat-content h3:not([id*="success"]) {
-  font-size: 2.75rem !important;
-}
-
-/* APENAS o símbolo % menor */
-.card-value span:first-child[id*="success"],
-#successRate,
-.card-value span[id*="Rate"] {
-  font-size: 1.8rem !important;    /* ✅ MUDANÇA 2 - % MENOR */
-}
 
 
 .trend-indicator {
@@ -2559,11 +2522,6 @@ body {
   display: block !important; 
   margin-bottom: var(--space-8) !important;
   text-align: center !important;
-}
-
-/* Garantir que apenas UM badge apareça por card */
-.stat-content .trend-indicator:not(:first-of-type) {
-  display: none !important;
 }
 
 .stat-content .trend-indicator {
