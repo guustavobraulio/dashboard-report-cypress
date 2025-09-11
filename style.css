@@ -1831,10 +1831,6 @@ select.form-control {
     max-width: 100%;
   }
 
-  .period-filters {
-    row-gap: var(--space-4);
-  }
-
   .modal-content {
     width: 95%;
     margin: var(--space-16);
@@ -2628,4 +2624,76 @@ body {
 .stat-icon + .stat-content {
   flex: 1 !important;
   min-width: 0 !important; /* Permite text-overflow funcionar */
+}
+
+/* ===========================
+   FIX BOTÕES DE PERÍODO - Evitar quebra de layout
+   =========================== */
+
+/* Container dos botões de período - flexbox mais robusto */
+.period-filters {
+  display: flex !important;
+  gap: var(--space-4) !important;
+  flex-wrap: nowrap !important;
+  align-items: center !important;
+  overflow-x: auto !important; /* Permite scroll horizontal em telas pequenas */
+  -webkit-overflow-scrolling: touch !important;
+  padding-bottom: 2px !important; /* Espaço para focus */
+}
+
+/* Botões com tamanho fixo para evitar quebra */
+.period-btn {
+  flex-shrink: 0 !important; /* Não permite encolher */
+  min-width: 60px !important; /* Largura mínima */
+  max-width: 80px !important; /* Largura máxima */
+  padding: var(--space-6) var(--space-12) !important;
+  border: 1px solid var(--color-border) !important;
+  background: var(--color-surface) !important;
+  color: var(--color-text-secondary) !important;
+  border-radius: var(--radius-sm) !important;
+  cursor: pointer !important;
+  transition: all var(--duration-fast) var(--ease-standard) !important;
+  font-size: var(--font-size-sm) !important;
+  font-weight: var(--font-weight-medium) !important;
+  white-space: nowrap !important;
+  text-align: center !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Estado ativo - apenas UM por vez */
+.period-btn--active {
+  background: var(--color-primary) !important;
+  color: #ffffff !important;
+  border-color: var(--color-primary) !important;
+  font-weight: var(--font-weight-semibold) !important;
+}
+
+/* Hover para botões inativos */
+.period-btn:not(.period-btn--active):hover {
+  background: var(--color-secondary-hover) !important;
+  color: var(--color-text) !important;
+}
+
+/* Responsivo */
+@media (max-width: 768px) {
+  .period-filters {
+    gap: var(--space-2) !important;
+  }
+  
+  .period-btn {
+    min-width: 50px !important;
+    max-width: 70px !important;
+    padding: var(--space-4) var(--space-8) !important;
+    font-size: var(--font-size-xs) !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .period-btn {
+    min-width: 45px !important;
+    max-width: 60px !important;
+    padding: var(--space-4) var(--space-6) !important;
+  }
 }

@@ -187,7 +187,20 @@
       const color = trendData.trend === 'up' ? '#16a34a' : trendData.trend === 'down' ? '#dc2626' : '#6b7280';
       const sign = trendData.change > 0 ? '+' : '';
 
-      return `<span class="trend-indicator" style="color: ${color}; font-size: 0.85em; margin-left: 8px;">${arrow} ${sign}${trendData.percent}%</span>`;
+      // ✅ MELHORAR: Formatação mais inteligente para percentuais grandes
+      let displayPercent = Math.abs(trendData.percent);
+      let displayText;
+
+      // Formatação baseada no tamanho do percentual
+      if (displayPercent >= 1000) {
+        displayText = `${sign}${Math.round(displayPercent / 100)}x`;
+      } else if (displayPercent >= 100) {
+        displayText = `${sign}${Math.round(displayPercent)}%`;
+      } else {
+        displayText = `${sign}${displayPercent}%`;
+      }
+
+      return `<span class="trend-indicator" style="color: ${color}; font-size: 0.7rem; margin-left: 6px;">${arrow} ${displayText}</span>`;
     }
 
     // ✅ DEFINIR elementos ANTES de usar
@@ -590,23 +603,40 @@
       return Number.isFinite(t) && t >= start && t <= now;
     });
   }
-
   function setupPeriodButtons() {
     const buttons = document.querySelectorAll('[data-history-period]');
-    buttons.forEach(btn => btn.addEventListener('click', onHistoryPeriodClick));
-    const container = document.querySelector('#historySection') || document;
-    container.addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-history-period]');
-      if (!btn) return;
-      onHistoryPeriodClick.call(btn, e);
+
+    buttons.forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+
+        // REMOVE active de TODOS os botões primeiro
+        buttons.forEach(btn => btn.classList.remove('period-btn--active'));
+
+        // ADICIONA active apenas no botão clicado
+        button.classList.add('period-btn--active');
+
+        // Continua com a lógica existente
+        onHistoryPeriodClick.call(button, e);
+      });
     });
-    setTimeout(() => {
-      const defaultBtn = document.querySelector(`[data-history-period="${ns.historyPeriod}"]`);
-      if (defaultBtn) {
-        defaultBtn.classList.add('period-btn--active');
-      }
-    }, 100);
-  }
+
+  const container = document.querySelector('#historySection') || document;
+  container.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-history-period]');
+    if (!btn) return;
+    onHistoryPeriodClick.call(btn, e);
+  });
+
+  // Garantir que apenas 24h esteja ativo no início
+  setTimeout(() => {
+    buttons.forEach(btn => btn.classList.remove('period-btn--active'));
+    const defaultBtn = document.querySelector('[data-history-period="24h"]');
+    if (defaultBtn) {
+      defaultBtn.classList.add('period-btn--active');
+    }
+  }, 100);
+}
 
   function onHistoryPeriodClick(e) {
     e.preventDefault();
