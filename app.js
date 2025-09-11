@@ -11,10 +11,10 @@
 
   // namespace único para estado global
   const ns = (root.__DASH_STATE__ = root.__DASH_STATE__ || {});
-  ns.executionsData = ns.executionsData || [];
+  ns.executionsData = ns.executionsData || [];        
   ns.filteredExecutions = ns.filteredExecutions || [];
-  ns.statusChart = ns.statusChart || null;
-  ns.historyChart = ns.historyChart || null;
+  ns.statusChart = ns.statusChart || null;            
+  ns.historyChart = ns.historyChart || null;          
   ns.currentPage = ns.currentPage || 1;
   ns.itemsPerPage = ns.itemsPerPage || 10;
   ns.historyPeriod = ns.historyPeriod || '7d'; // ✅ MUDANÇA: 7d por padrão
@@ -37,180 +37,36 @@
   // ===========================
   // Cards/Estatísticas (VERSÃO SIMPLES - SEM TRENDS)
   // ===========================
-  // ===========================
-  // Cards/Estatísticas (COM TRENDS FUNCIONANDO)
-  // ===========================
   function updateStatistics() {
     console.log('📊 Atualizando estatísticas...');
-
-    // 1. Calcula as métricas do período atual a partir dos dados filtrados
-    const currentRuns = ns.filteredExecutions || [];
-    console.log('📈 Runs para calcular:', currentRuns.length);
-
-    const totalPassed = currentRuns.reduce((sum, run) => sum + (run.passedTests || 0), 0);
-    const totalFailed = currentRuns.reduce((sum, run) => sum + (run.failedTests || 0), 0);
+    
+    // Calcular dados atuais
+    const totalPassed = ns.filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
+    const totalFailed = ns.filteredExecutions.reduce((s, e) => s + (e.failedTests || 0), 0);
     const totalTests = totalPassed + totalFailed;
-    const avgDuration = currentRuns.length > 0 ? Math.round(currentRuns.reduce((sum, run) => sum + (run.duration || 0), 0) / currentRuns.length) : 0;
-    const successRate = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
-
-    console.log('📊 Métricas calculadas:', { totalPassed, totalFailed, avgDuration, successRate });
-
-    const currentData = { totalPassed, totalFailed, avgDuration, successRate };
-
-    // 2. Atualiza os valores nos cards do HTML
-    const set = (id, val) => {
-      const el = document.getElementById(id);
-      if (el) {
-        el.textContent = val;
-        console.log(`✅ Atualizado ${id} = ${val}`);
-      } else {
-        console.log(`❌ Elemento ${id} não encontrado`);
-      }
-    };
-
-    set('totalPassed', totalPassed);
-    set('totalFailed', totalFailed);
-    set('avgDuration', `${avgDuration}s`);
-    set('successRate', `${successRate}%`);
-
-    // 3. Calcula e exibe as tendências (só se existir dados)
-    if (currentRuns.length > 0) {
-      try {
-        const previousData = getPreviousPeriodData(ns.historyPeriod);
-        const trends = calculateTrends(currentData, previousData);
-        updateTrendBadges(trends);
-        console.log('📈 Trends atualizados:', trends);
-      } catch (e) {
-        console.log('⚠️ Erro ao calcular trends:', e.message);
-        // Remover badges de erro
-        document.querySelectorAll('.trend-indicator').forEach(el => {
-          el.textContent = '';
-          el.style.display = 'none';
-        });
-      }
-    } else {
-      console.log('📭 Nenhum dado para exibir trends');
-      // Esconder badges quando não há dados
-      document.querySelectorAll('.trend-indicator').forEach(el => {
-        el.textContent = '';
-        el.style.display = 'none';
-      });
-    }
-  }
-
-  // ✅ FUNÇÕES DE TRENDS (adicionar no final da IIFE, antes de root.__DASH_API__)
-  function calculateTrends(currentData, previousData) {
-    const trends = {};
-
-    for (const key in currentData) {
-      const current = currentData[key] || 0;
-      const previous = previousData[key] || 0;
-
-      // ✅ CORREÇÃO: Baseline mais baixa e mais permissiva
-      if (previous === 0) {
-        // ✅ Usar valor mínimo de 1 para evitar divisão por zero
-        const assumedPrevious = Math.max(1, current * 0.1); // 10% do valor atual como baseline
-        const diff = current - assumedPrevious;
-        const percent = Math.round((diff / assumedPrevious) * 100);
-
-        // ✅ Limitar percentuais para valores razoáveis
-        const cappedPercent = Math.min(Math.max(percent, -100), 100); // ✅ MUDANÇA: limite 100% em vez de 300%
-
-        trends[key] = {
-          value: current,
-          change: diff,
-          percent: cappedPercent,
-          trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
-        };
-      } else {
-        // Cálculo normal quando há dados anteriores válidos
-        const diff = current - previous;
-        const percent = Math.round((diff / previous) * 100);
-
-        // ✅ Limitar percentuais para valores razoáveis
-        const cappedPercent = Math.min(Math.max(percent, -100), 100); // ✅ MUDANÇA: limite 100%
-
-        trends[key] = {
-          value: current,
-          change: diff,
-          percent: cappedPercent,
-          trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
-        };
-      }
-    }
-
-    return trends;
-  }
-
-  function getPreviousPeriodData(currentPeriod) {
-    const now = Date.now();
-    let previousWindow;
-
-    switch (currentPeriod) {
-      case '24h':
-        previousWindow = { start: now - (48 * 60 * 60 * 1000), end: now - (24 * 60 * 60 * 1000) };
-        break;
-      case '7d':
-        previousWindow = { start: now - (14 * 24 * 60 * 60 * 1000), end: now - (7 * 24 * 60 * 60 * 1000) };
-        break;
-      case '30d':
-        previousWindow = { start: now - (60 * 24 * 60 * 60 * 1000), end: now - (30 * 24 * 60 * 60 * 1000) };
-        break;
-      default:
-        return { totalPassed: 0, totalFailed: 0, avgDuration: 0, successRate: 0 };
-    }
-
-    const previousRuns = ns.executionsData.filter(r => {
-      const runTime = new Date(r.date).getTime();
-      return runTime >= previousWindow.start && runTime <= previousWindow.end;
-    });
-
-    if (previousRuns.length === 0) {
-      return { totalPassed: 0, totalFailed: 0, avgDuration: 0, successRate: 0 };
-    }
-
-    const totalPassed = previousRuns.reduce((s, e) => s + (e.passedTests || 0), 0);
-    const totalFailed = previousRuns.reduce((s, e) => s + (e.failedTests || 0), 0);
-    const totalTests = totalPassed + totalFailed;
-    const avgDuration = Math.round(previousRuns.reduce((s, e) => s + (e.duration || 0), 0) / previousRuns.length);
+    const avgDuration = ns.filteredExecutions.length
+      ? Math.round(ns.filteredExecutions.reduce((s, e) => s + (e.duration || 0), 0) / ns.filteredExecutions.length)
+      : 0;
     const successRate = totalTests ? Math.round((totalPassed / totalTests) * 100) : 0;
-
-    return {
-      totalPassed: totalPassed,
-      totalFailed: totalFailed,
-      avgDuration: avgDuration,
-      successRate: successRate
-    };
-  }
-
-  function formatTrend(trendData) {
-    if (!trendData || trendData.trend === undefined) {
-      return '';
-    }
-
-    if (trendData.trend === 'new' || (trendData.change === null)) {
-      return ''; // Não mostra nem emoji nem indicador
-    }
-
-    const arrow = trendData.trend === 'up' ? '↗️' : trendData.trend === 'down' ? '↘️' : '➡️';
-    const color = trendData.trend === 'up' ? '#16a34a' : trendData.trend === 'down' ? '#dc2626' : '#6b7280';
-    const sign = trendData.change > 0 ? '+' : '';
-
-    return `<span class="trend-indicator" style="color: ${color}; font-size: 0.85em; margin-left: 8px;">${arrow} ${sign}${trendData.percent}%</span>`;
-  }
-
-  function updateTrendBadges(trends) {
+    
+    console.log('📊 Métricas calculadas:', { totalPassed, totalFailed, avgDuration, successRate });
+    
+    // ✅ VERSÃO SIMPLES: Apenas atualizar valores (sem trends)
     const tp = document.getElementById("totalPassed");
     const tf = document.getElementById("totalFailed");
     const ad = document.getElementById("avgDuration");
     const sr = document.getElementById("successRate");
-
-    if (tp && trends.totalPassed) tp.innerHTML = `${trends.totalPassed.value}${formatTrend(trends.totalPassed)}`;
-    if (tf && trends.totalFailed) tf.innerHTML = `${trends.totalFailed.value}${formatTrend(trends.totalFailed)}`;
-    if (ad && trends.avgDuration) ad.innerHTML = `${trends.avgDuration.value}s${formatTrend(trends.avgDuration)}`;
-    if (sr && trends.successRate) sr.innerHTML = `${trends.successRate.value}%${formatTrend(trends.successRate)}`;
+    
+    if (tp) tp.textContent = totalPassed;
+    if (tf) tf.textContent = totalFailed;
+    if (ad) ad.textContent = `${avgDuration}s`;
+    if (sr) sr.textContent = `${successRate}%`;
+    
+    // Esconder badges de trend para evitar problemas
+    document.querySelectorAll('.trend-indicator').forEach(el => {
+      el.style.display = 'none';
+    });
   }
-
 
   // ===========================
   // Backend (Functions)
@@ -712,11 +568,11 @@
         </div>
       `;
     }
-
+    
     return artifacts.map(a => {
       const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(a.url || '');
       const isVideo = /\.(mp4|webm|mov)$/i.test(a.url || '');
-
+      
       if (isImage) {
         return `
           <div class="artifact-item">
@@ -795,14 +651,14 @@
         <div class="image-modal-caption">${name}</div>
       </div>
     `;
-
+    
     // Fechar modal ao clicar no fundo
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.remove();
       }
     });
-
+    
     document.body.appendChild(modal);
   }
 
@@ -812,37 +668,10 @@
   document.addEventListener("DOMContentLoaded", () => {
     setupPeriodButtons();
     setupEventListeners();
-    ensureButtonStructure();
 
     loadRuns()
       .catch(console.error)
       .finally(() => { startAutoRefreshCountdown(); });
-
-    // ✅ CORREÇÃO: Event listener do pipeline com delay
-    setTimeout(() => {
-      const btn = document.getElementById("runPipelineBtn");
-      if (btn) {
-        // Remover listeners existentes para evitar duplicação
-        btn.replaceWith(btn.cloneNode(true)); // Reset do botão
-        const newBtn = document.getElementById("runPipelineBtn");
-
-        // Adicionar listener
-        newBtn.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('🚀 Botão pipeline clicado!');
-          executarPipeline();
-        });
-        console.log('✅ Event listener do pipeline configurado');
-      } else {
-        console.error('❌ Botão runPipelineBtn não encontrado');
-      }
-    }, 1000); // ✅ Delay maior para garantir que o DOM está pronto
-
-    if (ns.autoRefreshTimer) {
-      ns.autoRefreshSeconds = 30;
-      updateAutoRefreshLabel();
-    }
   });
 
   // ===========================
@@ -852,25 +681,30 @@
     try {
       const runs = await fetchRuns();
 
+      // 1) Deduplicar por id e usar somente 'uniq'
       const uniqMap = new Map();
       for (const r of runs || []) uniqMap.set(r.id, r);
       const uniq = Array.from(uniqMap.values());
 
+      // 1.1) NORMALIZAR DATAS (garantir milissegundos e valor válido)
       for (const r of uniq) {
         if (typeof r.date === 'number' && r.date < 1e12) r.date = r.date * 1000;
         const t = (typeof r.date === 'number') ? r.date : new Date(r.date).getTime();
         r.date = Number.isFinite(t) ? t : null;
       }
 
+      // disponibiliza para inspeção no console
       window.__allRuns = uniq;
 
+      // 2) Base para cards/tabela/pizza
       ns.executionsData = uniq.slice();
-      ns.filteredExecutions = filterRunsByPeriod(ns.executionsData, ns.historyPeriod);
-
+      ns.filteredExecutions = filterRunsByPeriod(ns.executionsData, ns.historyPeriod); // ✅ APLICAR FILTRO
+      
       updateStatistics();
       initializeStatusChart();
       populateExecutionTable();
 
+      // 3) Histórico por período
       console.log('loadRuns: total execs=', ns.executionsData.length, 'period=', ns.historyPeriod);
       console.log('filtered len=', ns.filteredExecutions.length);
       initializeHistoryChartFromRuns(ns.filteredExecutions);
@@ -879,10 +713,9 @@
     }
   }
 
-  // ✅ EXPONHA A API (deve estar no final)
-  root.__DASH_API__ = { loadRuns };
-
-})(window);
+  // Exponha a API
+  root.__DASH_API__ = { loadRuns }; 
+})(window); 
 
 // ===========================
 // Modal Functions (GLOBAIS)
@@ -932,7 +765,7 @@ async function loadDetailedMetrics() {
 async function fetchDetailedPageSpeed(url) {
   try {
     console.log(`📡 Chamando Netlify Function para: ${url}`);
-
+    
     const response = await fetch('/api/page-speed', {
       method: 'POST',
       headers: {
@@ -940,35 +773,35 @@ async function fetchDetailedPageSpeed(url) {
       },
       body: JSON.stringify({ url: url })
     });
-
+    
     if (!response.ok) {
       throw new Error(`HTTP error: ${response.status} - ${response.statusText}`);
     }
-
+    
     const data = await response.json();
-
+    
     if (data.error) {
       throw new Error(data.error);
     }
-
+    
     console.log(`✅ Dados recebidos da Netlify Function:`, data);
-
+    
     // Extrair métricas
     const categories = data.lighthouseResult?.categories || {};
-
+    
     return {
       performance: Math.round((categories.performance?.score || 0) * 100),
       accessibility: Math.round((categories.accessibility?.score || 0) * 100),
       bestPractices: Math.round((categories['best-practices']?.score || 0) * 100),
       seo: Math.round((categories.seo?.score || 0) * 100)
     };
-
+    
   } catch (error) {
     console.error(`❌ Erro ao buscar métricas para ${url}:`, error);
     return {
       performance: '--',
       accessibility: '--',
-      bestPractices: '--',
+      bestPractices: '--', 
       seo: '--'
     };
   }
@@ -984,7 +817,7 @@ const STORES_CONFIG = [
 function updateMetricsTable(results) {
   const tbody = document.getElementById('metrics-table-body');
   if (!tbody) return;
-
+  
   tbody.innerHTML = results.map(store => `
     <tr>
       <td><strong>${store.name}</strong></td>
@@ -998,7 +831,7 @@ function updateMetricsTable(results) {
 
 function updateSummaryCards(results) {
   const validResults = results.filter(r => parseInt(r.performance) > 0);
-
+  
   if (validResults.length === 0) {
     document.getElementById('avg-performance').textContent = '--';
     document.getElementById('avg-accessibility').textContent = '--';
@@ -1006,12 +839,12 @@ function updateSummaryCards(results) {
     document.getElementById('avg-seo').textContent = '--';
     return;
   }
-
+  
   const avgPerformance = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.performance) || 0), 0) / validResults.length);
   const avgAccessibility = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.accessibility) || 0), 0) / validResults.length);
   const avgBestPractices = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.bestPractices) || 0), 0) / validResults.length);
   const avgSeo = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.seo) || 0), 0) / validResults.length);
-
+  
   document.getElementById('avg-performance').textContent = avgPerformance;
   document.getElementById('avg-accessibility').textContent = avgAccessibility;
   document.getElementById('avg-best-practices').textContent = avgBestPractices;
@@ -1034,7 +867,7 @@ function refreshAllPageSpeed() {
 // ===========================
 document.addEventListener('DOMContentLoaded', () => {
   console.log('✅ PageSpeed metrics module loaded');
-
+  
   // Fechar modal clicando fora
   document.getElementById('metricsModal')?.addEventListener('click', (e) => {
     if (e.target.id === 'metricsModal') {
