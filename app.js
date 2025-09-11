@@ -615,53 +615,97 @@
   }
 
   // ===========================
-  // Histórico - filtro de período
+  // Filtros de Período
   // ===========================
-  function filterRunsByPeriod(runs, period = ns.historyPeriod) {
+  function filterRunsByPeriod(runs, period = '24h') {
     const now = Date.now();
-    let windowMs = 24 * 60 * 60 * 1000;
+    let windowMs = 24 * 60 * 60 * 1000; // 24h padrão
+
     if (period === '7d') windowMs = 7 * 24 * 60 * 60 * 1000;
     if (period === '30d') windowMs = 30 * 24 * 60 * 60 * 1000;
+
     const start = now - windowMs;
-    const toMs = d => typeof d === 'number' ? d : new Date(d).getTime();
+
     return runs.filter(r => {
-      const t = toMs(r.date);
-      return Number.isFinite(t) && t >= start && t <= now;
+      const runTime = typeof r.date === 'number' ? r.date : new Date(r.date).getTime();
+      return Number.isFinite(runTime) && runTime >= start && runTime <= now;
     });
   }
+
   function setupPeriodButtons() {
+    console.log('🔘 Configurando botões de período...');
+
     const buttons = document.querySelectorAll('[data-history-period]');
+    console.log('📊 Botões encontrados:', buttons.length);
 
     buttons.forEach(button => {
       button.addEventListener('click', (e) => {
         e.preventDefault();
 
-        // REMOVE active de TODOS os botões primeiro
-        buttons.forEach(btn => btn.classList.remove('period-btn--active'));
+        const newPeriod = button.getAttribute('data-history-period');
+        console.log('🔄 Mudando para período:', newPeriod);
 
-        // ADICIONA active apenas no botão clicado
+        // Atualizar período ativo no namespace
+        ns.historyPeriod = newPeriod;
+
+        // Atualizar visual dos botões (remover active de todos)
+        buttons.forEach(btn => btn.classList.remove('period-btn--active'));
+        // Adicionar active apenas no clicado
         button.classList.add('period-btn--active');
 
-        // Continua com a lógica existente
-        onHistoryPeriodClick.call(button, e);
+        // 🎯 RECARREGAR DADOS COM NOVO FILTRO
+        refreshDataWithPeriod(newPeriod);
       });
     });
 
-    const container = document.querySelector('#historySection') || document;
-    container.addEventListener('click', (e) => {
-      const btn = e.target.closest('[data-history-period]');
-      if (!btn) return;
-      onHistoryPeriodClick.call(btn, e);
-    });
-
-    // Garantir que apenas 24h esteja ativo no início
+    // Garantir que o botão 24h seja ativo por padrão
     setTimeout(() => {
-      buttons.forEach(btn => btn.classList.remove('period-btn--active'));
       const defaultBtn = document.querySelector('[data-history-period="24h"]');
-      if (defaultBtn) {
+      if (defaultBtn && !defaultBtn.classList.contains('period-btn--active')) {
+        buttons.forEach(btn => btn.classList.remove('period-btn--active'));
         defaultBtn.classList.add('period-btn--active');
       }
     }, 100);
+  }
+
+  function refreshDataWithPeriod(period) {
+    console.log('🔄 Atualizando dados para período:', period);
+
+    if (!ns.executionsData || ns.executionsData.length === 0) {
+      console.log('⚠️ Nenhum dado base disponível, pulando atualização');
+      return;
+    }
+
+    // Filtrar dados pelo período
+    const filtered = filterRunsByPeriod(ns.executionsData, period);
+    console.log(`📊 Período ${period}: ${filtered.length}/${ns.executionsData.length} execuções`);
+
+    // Atualizar dados filtrados
+    ns.filteredExecutions = filtered.slice();
+
+    // Resetar página para primeira
+    ns.currentPage = 1;
+
+    // Atualizar toda a interface
+    updateStatistics();
+    initializeStatusChart();
+    populateExecutionTable();
+
+    // Placeholder para gráfico de histórico
+    console.log('📈 Gráfico de histórico seria atualizado aqui');
+  }
+
+  // ===========================
+  // Função de Inicialização Interna
+  // ===========================
+  function initializeApp() {
+    console.log('⚙️ Inicializando componentes internos...');
+
+    // Configurar botões de período
+    setupPeriodButtons();
+
+    // Outras inicializações podem ir aqui
+    console.log('✅ Componentes inicializados');
   }
 
   function onHistoryPeriodClick(e) {
@@ -715,10 +759,11 @@
   }
 
   // ===========================
-  // Orquestração de carregamento
+  // Orquestração de carregamento (ATUALIZADA)
   // ===========================
   async function loadRuns() {
     try {
+      console.log('🚀 Iniciando loadRuns...');
       const runs = await fetchRuns();
 
       // 1) Deduplicar por id e usar somente 'uniq'
@@ -736,28 +781,25 @@
       // disponibiliza para inspeção no console
       window.__allRuns = uniq;
 
-      // 2) Base para cards/tabela/pizza
+      // 2) Armazenar dados base (TODOS os dados)
       ns.executionsData = uniq.slice();
-      ns.filteredExecutions = ns.executionsData.slice();
+
+      // 3) Aplicar filtro de período atual (padrão 24h)
+      const filtered = filterRunsByPeriod(ns.executionsData, ns.historyPeriod);
+      ns.filteredExecutions = filtered.slice();
+
+      console.log(`📊 Total: ${ns.executionsData.length}, Filtrado (${ns.historyPeriod}): ${ns.filteredExecutions.length}`);
+
+      // 4) Atualizar interface
       updateStatistics();
       initializeStatusChart();
       populateExecutionTable();
 
-      // 3) Histórico por período
-      console.log('loadRuns: total execs=', ns.executionsData.length, 'period=', ns.historyPeriod);
-      const filtered = filterRunsByPeriod(ns.executionsData, ns.historyPeriod);
-      console.log('history filtered len=', filtered.length);
-      initializeHistoryChartFromRuns(filtered);
-
-      // ✅ ADICIONE ESTA LINHA: Forçar atualização das estatísticas após carregamento
-      setTimeout(() => {
-        updateStatistics();
-        console.log('🔄 Trends atualizados após carregamento inicial');
-      }, 500);
-
+      // 5) ✨ INICIALIZAR COMPONENTES APÓS CARREGAR DADOS
+      initializeApp();
 
     } catch (err) {
-      console.error('Falha ao carregar execuções:', err);
+      console.error('❌ Falha ao carregar execuções:', err);
     }
   }
 
@@ -1196,43 +1238,22 @@ function refreshAllPageSpeed() {
   loadDetailedMetrics();
 }
 
-// ===========================
-// Event Listeners
-// ===========================
 document.addEventListener('DOMContentLoaded', async () => {
   console.log('🚀 Inicializando dashboard...');
-  
+
   // Aguardar um pouco para garantir que o DOM esteja totalmente carregado
   await new Promise(resolve => setTimeout(resolve, 100));
-  
+
   try {
     // Verificar se a API está disponível
     if (window.__DASH_API__ && window.__DASH_API__.loadRuns) {
       console.log('📡 Carregando dados iniciais...');
       await window.__DASH_API__.loadRuns();
-      console.log('✅ Dados carregados com sucesso');
+      console.log('✅ Dashboard inicializado com sucesso');
     } else {
       console.error('❌ API não está disponível');
     }
-    
-    // Configurar event listeners
-    const setupEventListeners = window.setupEventListeners;
-    if (typeof setupEventListeners === 'function') {
-      setupEventListeners();
-    }
-    
-    // Configurar botões de período
-    const setupPeriodButtons = window.setupPeriodButtons;
-    if (typeof setupPeriodButtons === 'function') {
-      setupPeriodButtons();
-    }
-    
-    // Iniciar auto-refresh
-    const startAutoRefreshCountdown = window.startAutoRefreshCountdown;
-    if (typeof startAutoRefreshCountdown === 'function') {
-      startAutoRefreshCountdown();
-    }
-    
+
   } catch (error) {
     console.error('❌ Erro na inicialização:', error);
   }
