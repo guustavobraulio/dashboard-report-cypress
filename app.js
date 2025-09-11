@@ -1015,17 +1015,52 @@ function refreshAllPageSpeed() {
 // Event Listeners Globais
 // ===========================
 document.addEventListener('DOMContentLoaded', () => {
-  setTimeout(() => {
-    const btn = document.getElementById('runPipelineBtn');
-    if (btn) {
-      btn.addEventListener('click', (e) => {
-        e.preventDefault();
-        console.log('🚀 Pipeline clicado!');
-        alert('Pipeline será executado!\n\nFuncionalidade em implementação.');
+  // Setup das tabs do modal
+  function setupModalTabs() {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+    
+    tabButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        if (button.disabled) return;
+        
+        // Remover active de todas
+        tabButtons.forEach(btn => btn.classList.remove('tab-button--active'));
+        tabPanels.forEach(panel => panel.classList.remove('tab-panel--active'));
+        
+        // Ativar clicada
+        button.classList.add('tab-button--active');
+        
+        const targetTab = button.getAttribute('data-tab');
+        const targetPanel = document.getElementById(`${targetTab}-tab`);
+        if (targetPanel) {
+          targetPanel.classList.add('tab-panel--active');
+        }
+        
+        console.log(`✅ Tab ativada: ${targetTab}`);
       });
-      console.log('✅ Pipeline button listener added');
-    } else {
-      console.log('❌ Pipeline button not found');
-    }
-  }, 2000);
+    });
+    
+    console.log('✅ Modal tabs configuradas:', tabButtons.length);
+  }
+  
+  // Executar setup após delay
+  setTimeout(setupModalTabs, 1000);
+  
+  // Re-executar quando modal abrir
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+        const modal = mutation.target;
+        if (modal.style.display === 'flex') {
+          setTimeout(setupModalTabs, 100);
+        }
+      }
+    });
+  });
+  
+  const modal = document.getElementById('executionModal');
+  if (modal) {
+    observer.observe(modal, { attributes: true });
+  }
 });

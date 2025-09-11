@@ -2425,42 +2425,6 @@ body {
    SOLUÇÃO FINAL: Trends badges otimizados
    =========================== */
 
-/* Estilo principal para badges de trend - MELHORADO */
-.trend-indicator {
-  display: inline-block !important;
-  font-size: 0.7rem !important; /* Diminuído para evitar overflow */
-  font-weight: 600 !important;
-  white-space: nowrap !important;
-  margin-left: 6px !important;
-  padding: 2px 6px !important;
-  border-radius: 12px !important;
-  background: rgba(255, 255, 255, 0.1) !important;
-  backdrop-filter: blur(4px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.2) !important;
-  line-height: 1.2 !important;
-  vertical-align: middle !important;
-  max-width: 80px !important; /* Limita largura máxima */
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  position: relative !important;
-  top: -8px !important; /* Ajustado para melhor posicionamento */
-}
-
-/* Cores específicas para cada trend - MELHORADAS */
-.trend-indicator[style*="#16a34a"] {
-  background: rgba(22, 163, 74, 0.15) !important;
-  border-color: rgba(22, 163, 74, 0.3) !important;
-}
-
-.trend-indicator[style*="#dc2626"] {
-  background: rgba(220, 38, 38, 0.15) !important;
-  border-color: rgba(220, 38, 38, 0.3) !important;
-}
-
-.trend-indicator[style*="#6b7280"] {
-  background: rgba(107, 114, 128, 0.15) !important;
-  border-color: rgba(107, 114, 128, 0.3) !important;
-}
 
 /* Container dos cards para evitar overflow - NOVO */
 .stats-card,
@@ -2484,19 +2448,6 @@ body {
   display: block !important; 
   margin-bottom: var(--space-8) !important;
   text-align: center !important;
-}
-
-.stat-content .trend-indicator {
-  font-size: 0.7rem !important;
-  font-weight: 600 !important;
-  padding: 2px 8px !important;
-  border-radius: 12px !important;
-  position: static !important; 
-  top: auto !important;
-  white-space: nowrap !important;
-  display: block !important;
-  margin: 8px auto 0 auto !important; 
-  width: fit-content !important;
 }
 
 /* Responsividade para telas menores - MELHORADA */
@@ -2524,23 +2475,15 @@ body {
   }
 }
 
-/* Classes auxiliares para formatação - NOVAS */
-.trend-up {
-  background: #dcfce7 !important;
-  color: #166534 !important;
-  border-color: #bbf7d0 !important;
-}
-
-.trend-down {
-  background: #fee2e2 !important;
-  color: #991b1b !important;
-  border-color: #fecaca !important;
-}
-
-.trend-neutral {
-  background: #f1f5f9 !important;
-  color: #475569 !important;
-  border-color: #e2e8f0 !important;
+.trend-indicator {
+  font-size: 0.75rem;
+  margin-left: 8px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  white-space: nowrap;
+  display: inline-block;
+  vertical-align: middle;
 }
 
 /* Evita que o texto principal se mova com o badge */
