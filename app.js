@@ -687,7 +687,6 @@
       }
     }, 1000);
   }
-
   // ===========================
   // Bootstrap
   // ===========================
@@ -701,11 +700,16 @@
       .finally(() => {
         startAutoRefreshCountdown();
 
-        // ✅ ADICIONE APENAS ESTA LINHA AQUI:
+        // ✅ Código existente
         setTimeout(() => {
           if (ns.filteredExecutions && ns.filteredExecutions.length > 0) {
             updateStatistics();
             console.log('🔄 Forçou atualização das estatísticas após carregamento');
+
+            // 👉 ADICIONE AQUI - Logo após updateStatistics()
+            setTimeout(() => {
+              fixPercentageSymbol();
+            }, 100);
           }
         }, 1500);
       });
@@ -718,6 +722,36 @@
       updateAutoRefreshLabel();
     }
   });
+
+  // 👉 ADICIONE ESTA FUNÇÃO SEPARADA (fora do DOMContentLoaded)
+  function fixPercentageSymbol() {
+    // Encontrar especificamente a Taxa de Sucesso
+    const successRateElement = document.getElementById('successRate');
+
+    if (successRateElement && successRateElement.textContent.includes('%')) {
+      const currentText = successRateElement.textContent;
+      const numberPart = currentText.replace('%', '').trim();
+
+      // Substituir com tamanhos diferentes
+      successRateElement.innerHTML = `
+      <span style="font-size: 2.75rem; font-weight: 700; line-height: 1;">${numberPart}</span><span style="font-size: 1.8rem; font-weight: 600; vertical-align: top; margin-left: 2px;">%</span>
+    `;
+
+      console.log('✅ Símbolo % ajustado para tamanho menor');
+    }
+
+    // Para outros elementos com % se houver
+    document.querySelectorAll('.card-value span:first-child').forEach(element => {
+      if (element.textContent.includes('%') && element.id !== 'successRate') {
+        const text = element.textContent;
+        const numberPart = text.replace('%', '').trim();
+
+        element.innerHTML = `
+        <span style="font-size: 2.75rem; font-weight: 700;">${numberPart}</span><span style="font-size: 1.8rem; font-weight: 600; vertical-align: top; margin-left: 2px;">%</span>
+      `;
+      }
+    });
+  }
 
   // ===========================
   // Orquestração de carregamento

@@ -2109,8 +2109,8 @@ body {
   text-align: center !important;
 }
 
-.card-value span:first-child:contains('%') {
-  font-size: 1.8rem !important;
+.stat-card:last-child .card-value span:first-child {
+  font-size: 2.2rem !important;  /* 87% fica menor */
 }
 
 #successRate,
