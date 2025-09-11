@@ -1280,12 +1280,13 @@ select.form-control {
   position: fixed;
   top: 0;
   left: 0;
-  width: 100%;
-  height: 100%;
+  width: 100vw;
+  height: 100vh;
   z-index: 1000;
   display: flex;
   align-items: center;
   justify-content: center;
+  padding: 1rem;
 }
 
 .modal.hidden {
@@ -1302,22 +1303,19 @@ select.form-control {
 }
 
 .modal-content {
-  border: 1px solid var(--color-card-border);
-  box-shadow: var(--shadow-lg);
-  width: 90%;
-  position: relative;
-  z-index: 1001;
   background: white !important;
   border-radius: 8px !important;
-  max-width: 90% !important;
-  max-height: 90% !important;
-  overflow-y: auto !important;
+  width: 100% !important;
+  max-width: min(95vw, 1200px) !important;
+  max-height: min(90vh, 800px) !important;
+  overflow: hidden !important;
+  box-shadow: var(--shadow-lg);
+  display: flex !important;
+  flex-direction: column !important;
 }
 
 .modal-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+  flex-shrink: 0 !important;
   padding: var(--space-20);
   border-bottom: 1px solid var(--color-card-border-inner);
 }
@@ -1344,12 +1342,13 @@ select.form-control {
 }
 
 .modal-body {
-  max-height: calc(90vh - 100px);
-  overflow-y: auto;
+  flex: 1 !important;
+  overflow-y: auto !important;
+  min-height: 0 !important;
 }
 
-/* Modal Tabs */
 .modal-tabs {
+  flex-shrink: 0 !important;
   display: flex;
   border-bottom: 1px solid var(--color-card-border-inner);
 }
@@ -1377,8 +1376,8 @@ select.form-control {
 }
 
 .tab-panel {
-  display: none;
   padding: var(--space-20);
+  height: 100% !important;
 }
 
 .tab-panel--active {
