@@ -164,17 +164,15 @@
     console.log('Dados anteriores:', previousData);
 
     const currentData = {
-      totalPassed: totalPassed,    // ← Mudou para "totalPassed"
-      totalFailed: totalFailed,    // ← Mudou para "totalFailed"
+      totalPassed: totalPassed,    // ← MUDOU!
+      totalFailed: totalFailed,    // ← MUDOU!
       avgDuration: avgDuration,
       successRate: successRate
     };
 
-    const trends = calculateTrends(currentData, previousData);
-
-    // ✅ CORREÇÃO: Usar as chaves corretas
-    if (tp) tp.innerHTML = `${totalPassed}${formatTrend(trends.totalPassed)}`;  // ← CORRIGIDO!
-    if (tf) tf.innerHTML = `${totalFailed}${formatTrend(trends.totalFailed)}`;  // ← CORRIGIDO!
+    // ✅ CORREÇÃO:
+    if (tp) tp.innerHTML = `${totalPassed}${formatTrend(trends.totalPassed)}`;  // ← MUDOU!
+    if (tf) tf.innerHTML = `${totalFailed}${formatTrend(trends.totalFailed)}`;  // ← MUDOU!
     if (ad) ad.innerHTML = `${avgDuration}s${formatTrend(trends.avgDuration)}`;
     if (sr) sr.innerHTML = `${successRate}%${formatTrend(trends.successRate)}`;
     console.log('Tendências calculadas:', trends);
@@ -667,7 +665,17 @@
 
     loadRuns()
       .catch(console.error)
-      .finally(() => { startAutoRefreshCountdown(); });
+      .finally(() => {
+        startAutoRefreshCountdown();
+
+        // ✅ ADICIONE APENAS ESTA LINHA AQUI:
+        setTimeout(() => {
+          if (ns.filteredExecutions && ns.filteredExecutions.length > 0) {
+            updateStatistics();
+            console.log('🔄 Forçou atualização das estatísticas após carregamento');
+          }
+        }, 1500);
+      });
 
     const btn = document.getElementById("runPipelineBtn");
     btn?.addEventListener("click", executarPipeline);
@@ -936,8 +944,8 @@ function calculateTrends(currentData, previousData) {
 
         // ✅ CORREÇÃO: Retorno final
         return {
-          totalPassed: totalPassed,    // ← Era "passed"
-          totalFailed: totalFailed,    // ← Era "failed"
+          totalPassed: totalPassed,    // ← MUDOU!
+          totalFailed: totalFailed,    // ← MUDOU!
           avgDuration: avgDuration,
           successRate: successRate
         };
@@ -1236,9 +1244,9 @@ function refreshAllPageSpeed() {
 // Event Listeners
 // ===========================
 document.addEventListener('DOMContentLoaded', () => {
-  console.log('✅ PageSpeed metrics module loaded');
-
-  // ✅ Código existente para modal
+  console.log('✅ Dashboard module loaded');
+  
+  // ✅ Código existente para modal de métricas
   const modal = document.getElementById('metricsModal');
   if (modal) {
     modal.addEventListener('click', (e) => {
@@ -1247,34 +1255,6 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-
-  // ✨ NOVO: Código dos filtros de período
-  const periods = { "24h": "last24h", "7d": "last7days", "30d": "last30days" };
-  const filterButtons = document.querySelectorAll('.period-btn');
-
-  filterButtons.forEach(btn => {
-    btn.addEventListener('click', () => {
-      // Pegar período do botão clicado
-      const period = btn.dataset.historyPeriod;
-
-      // Carregar dados desse período
-      loadRealData(periods[period]);
-
-      // Atualizar botão ativo
-      filterButtons.forEach(b => b.classList.remove('period-btn--active'));
-      btn.classList.add('period-btn--active');
-    });
-  });
-
-  // ✨ Carregar dados iniciais (7d por padrão)
-  loadRealData("last7days");
-
-  // ✅ CORREÇÃO: Forçar atualização das estatísticas após carregamento
-  setTimeout(() => {
-    if (ns.filteredExecutions && ns.filteredExecutions.length > 0) {
-      updateStatistics();
-      console.log('🔄 Forçou atualização das estatísticas após carregamento');
-    }
-  }, 1000);
 });
+
 
