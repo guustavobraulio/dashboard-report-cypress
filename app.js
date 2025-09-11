@@ -29,13 +29,13 @@
     hour: '2-digit', minute: '2-digit'
   });
 
-   function updateStatistics() {
+  function updateStatistics() {
     console.log('📊 Atualizando estatísticas...');
-    
+
     // 1. Calcula as métricas do período atual a partir dos dados filtrados
     const currentRuns = ns.filteredExecutions || [];
     console.log('📈 Runs para calcular:', currentRuns.length);
-    
+
     const totalPassed = currentRuns.reduce((sum, run) => sum + (run.passedTests || 0), 0);
     const totalFailed = currentRuns.reduce((sum, run) => sum + (run.failedTests || 0), 0);
     const totalTests = totalPassed + totalFailed;
@@ -326,15 +326,17 @@
   }
 
   // ===========================
-  // Gráficos
+  // Gráficos Funcionais
   // ===========================
   function initializeStatusChart() {
     const ctx = document.getElementById("statusChart")?.getContext("2d");
     if (!ctx) return;
+
     const totalPassed = ns.filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
     const totalFailed = ns.filteredExecutions.reduce((s, e) => s + (e.failedTests || 0), 0);
 
     if (ns.statusChart) ns.statusChart.destroy();
+
     ns.statusChart = new Chart(ctx, {
       type: "pie",
       data: {
@@ -342,79 +344,35 @@
         datasets: [{
           data: [totalPassed, totalFailed],
           backgroundColor: ["#16a34a", "#dc2626"],
-          borderColor: ["#16a34a", "#dc2626"]
+          borderColor: ["#16a34a", "#dc2626"],
+          borderWidth: 1
         }]
       },
-      options: { responsive: true, maintainAspectRatio: false }
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: {
+            position: 'bottom'
+          }
+        }
+      }
     });
   }
 
-  function initializeHistoryChartFromRuns(runs) {
+  function initializeHistoryChart() {
     const ctx = document.getElementById('historyChart')?.getContext('2d');
     if (!ctx) return;
+
     if (ns.historyChart) ns.historyChart.destroy();
 
-    // 1) Sanitizar, validar e ordenar
-    const runsOk = (runs || [])
-      .filter(r => Number.isFinite(new Date(r?.date).getTime()))
-      .sort((a, b) => new Date(a.date) - new Date(b.date));
+    // Agrupar dados por data/hora
+    const groupedData = groupExecutionsByHour(ns.filteredExecutions);
 
-    if (runsOk.length === 0) {
-      ns.historyChart = new Chart(ctx, {
-        type: 'bar',
-        data: { labels: [], datasets: [] },
-        options: { responsive: true, maintainAspectRatio: false }
-      });
-      return;
-    }
+    const labels = groupedData.map(d => formatDateTime(d.date));
+    const passedData = groupedData.map(d => d.passed);
+    const failedData = groupedData.map(d => d.failed);
 
-    // 2) Consolidar por HORA
-    const byHour = new Map();
-    for (const r of runsOk) {
-      const d = new Date(r.date);
-      if (!Number.isFinite(d.getTime())) continue;
-
-      const hourKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}-${String(d.getHours()).padStart(2, '0')}`;
-
-      const cur = byHour.get(hourKey) || {
-        hourKey,
-        date: new Date(d.getFullYear(), d.getMonth(), d.getDate(), d.getHours()),
-        passed: 0,
-        failed: 0
-      };
-      cur.passed += Number(r.passedTests || 0);
-      cur.failed += Number(r.failedTests || 0);
-      byHour.set(hourKey, cur);
-    }
-
-    // 3) Converter para array e ordenar
-    const hourlyData = Array.from(byHour.values())
-      .sort((a, b) => a.date - b.date);
-
-    // 4) ✅ USAR SUA FORMATAÇÃO EXISTENTE - adaptada para o gráfico
-    const dfBRChart = new Intl.DateTimeFormat('pt-BR', {
-      day: '2-digit',
-      month: '2-digit',
-      hour: '2-digit'
-    });
-
-    function formatChartLabel(date) {
-      const parts = dfBRChart.formatToParts(date);
-      const day = parts.find(p => p.type === 'day').value;
-      const month = parts.find(p => p.type === 'month').value;
-      const hour = parts.find(p => p.type === 'hour').value;
-
-      return `${day}/${month} às ${hour}h`;
-    }
-
-    // 5) ✅ LABELS USANDO FORMATAÇÃO BRASILEIRA
-    const labels = hourlyData.map(d => formatChartLabel(d.date));
-
-    // 6) Preparar dados
-    const passedData = hourlyData.map(d => d.passed);
-    const failedData = hourlyData.map(d => d.failed);
-
-    // 7) Configurar gráfico
     ns.historyChart = new Chart(ctx, {
       type: 'bar',
       data: {
@@ -443,30 +401,7 @@
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            position: 'top',
-            labels: {
-              usePointStyle: true,
-              padding: 20
-            }
-          },
-          tooltip: {
-            mode: 'index',
-            intersect: false,
-            callbacks: {
-              title: function (tooltipItems) {
-                const index = tooltipItems[0].dataIndex;
-                const hourData = hourlyData[index];
-                // ✅ USAR SUA FUNÇÃO formatDateTime EXISTENTE no tooltip
-                return formatDateTime(hourData.date);
-              },
-              label: function (context) {
-                return `${context.dataset.label}: ${context.parsed.y}`;
-              },
-              footer: function (tooltipItems) {
-                const total = tooltipItems.reduce((sum, item) => sum + item.parsed.y, 0);
-                return total > 0 ? `Total: ${total}` : '';
-              }
-            }
+            position: 'top'
           }
         },
         scales: {
@@ -474,13 +409,6 @@
             title: {
               display: true,
               text: 'Data e Hora'
-            },
-            grid: {
-              display: false
-            },
-            ticks: {
-              maxRotation: 45,
-              minRotation: 45
             }
           },
           y: {
@@ -489,19 +417,36 @@
             title: {
               display: true,
               text: 'Número de Testes'
-            },
-            ticks: {
-              precision: 0,
-              stepSize: 1
             }
           }
-        },
-        interaction: {
-          mode: 'nearest',
-          intersect: false
         }
       }
     });
+  }
+
+  function groupExecutionsByHour(executions) {
+    const groups = new Map();
+
+    for (const exec of executions) {
+      if (!exec.date) continue;
+
+      const date = new Date(exec.date);
+      const hourKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}-${String(date.getHours()).padStart(2, '0')}`;
+
+      if (!groups.has(hourKey)) {
+        groups.set(hourKey, {
+          date: new Date(date.getFullYear(), date.getMonth(), date.getDate(), date.getHours()),
+          passed: 0,
+          failed: 0
+        });
+      }
+
+      const group = groups.get(hourKey);
+      group.passed += exec.passedTests || 0;
+      group.failed += exec.failedTests || 0;
+    }
+
+    return Array.from(groups.values()).sort((a, b) => a.date - b.date);
   }
 
 
@@ -689,10 +634,8 @@
     // Atualizar toda a interface
     updateStatistics();
     initializeStatusChart();
+    initializeHistoryChart(); // ✅ Agora funcional
     populateExecutionTable();
-
-    // Placeholder para gráfico de histórico
-    console.log('📈 Gráfico de histórico seria atualizado aqui');
   }
 
   // ===========================
@@ -703,6 +646,9 @@
 
     // Configurar botões de período
     setupPeriodButtons();
+    setupHeaderEventListeners();
+    // Iniciar auto-refresh
+    startAutoRefresh();
 
     // Outras inicializações podem ir aqui
     console.log('✅ Componentes inicializados');
@@ -1258,5 +1204,102 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.error('❌ Erro na inicialização:', error);
   }
 });
+
+  // ===========================
+  // Funcionalidades do Header
+  // ===========================
+  
+  // Modal de Métricas
+  function openMetricsModal() {
+    console.log('📊 Abrindo modal de métricas...');
+    // Placeholder - implemente conforme sua necessidade
+    alert('Modal de Métricas será implementado aqui!');
+  }
+
+  // Executar Pipeline
+  async function executarPipeline() {
+    console.log('🚀 Executando pipeline...');
+    
+    const btn = document.getElementById("runPipelineBtn") || document.querySelector('.header-btn[onclick*="Pipeline"]');
+    if (!btn) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Executando...';
+    
+    try {
+      // Simular execução do pipeline
+      await new Promise(resolve => setTimeout(resolve, 3000));
+      
+      btn.innerHTML = '<i class="fas fa-check"></i> Concluído!';
+      btn.style.backgroundColor = '#16a34a';
+      
+      // Recarregar dados após pipeline
+      setTimeout(async () => {
+        await loadRuns();
+        resetPipelineButton(btn);
+      }, 2000);
+      
+    } catch (error) {
+      console.error('❌ Erro no pipeline:', error);
+      btn.innerHTML = '<i class="fas fa-times"></i> Erro';
+      btn.style.backgroundColor = '#dc2626';
+      
+      setTimeout(() => resetPipelineButton(btn), 3000);
+    }
+  }
+
+  function resetPipelineButton(btn) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-play"></i> Executar Pipeline';
+    btn.style.backgroundColor = '';
+  }
+
+  // Auto-refresh
+  function startAutoRefresh() {
+    console.log('🔄 Iniciando auto-refresh...');
+    
+    if (ns.autoRefreshTimer) {
+      clearInterval(ns.autoRefreshTimer);
+    }
+    
+    ns.autoRefreshTimer = setInterval(async () => {
+      console.log('🔄 Auto-refresh executado');
+      await loadRuns();
+      updateAutoRefreshDisplay();
+    }, ns.autoRefreshSeconds * 1000);
+    
+    updateAutoRefreshDisplay();
+  }
+
+  function updateAutoRefreshDisplay() {
+    const refreshEl = document.querySelector('.auto-refresh span');
+    if (refreshEl) {
+      refreshEl.textContent = `Auto-refresh: ${ns.autoRefreshSeconds}s`;
+    }
+  }
+
+  function setupHeaderEventListeners() {
+    console.log('⚙️ Configurando eventos do header...');
+    
+    // Botão Métricas
+    const metricsBtn = document.querySelector('.header-btn[onclick*="Métricas"], .header-btn[data-action="metrics"]');
+    if (metricsBtn) {
+      metricsBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openMetricsModal();
+      });
+    }
+
+    // Botão Executar Pipeline
+    const pipelineBtn = document.querySelector('.header-btn[onclick*="Pipeline"], .header-btn[data-action="pipeline"], #runPipelineBtn');
+    if (pipelineBtn) {
+      pipelineBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        executarPipeline();
+      });
+    }
+
+    console.log('✅ Eventos do header configurados');
+  }
 
 
