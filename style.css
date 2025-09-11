@@ -1065,11 +1065,12 @@ select.form-control {
   border: 1px solid var(--color-card-border);
   border-radius: var(--radius-lg);
   padding: var(--space-20);
-  display: flex;
-  align-items: center;
+  display: flex !important;
+  align-items: center !important;
   gap: var(--space-16);
   box-shadow: var(--shadow-sm);
   transition: transform var(--duration-fast) var(--ease-standard);
+  min-height: 120px; 
 }
 
 .stat-card:hover {
@@ -1113,40 +1114,19 @@ select.form-control {
   margin: var(--space-4) 0 0 0;
 }
 
-.stat-content .card-value {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+.stat-content p,
+.card-label {
+  font-size: var(--font-size-sm) !important;
+  color: var(--color-text-secondary) !important;
+  margin: var(--space-4) 0 0 0 !important;
+  text-align: center !important;
+  font-weight: var(--font-weight-medium) !important;
+  line-height: 1.2 !important;
 }
 
 /* History Chart Section */
 .history-chart-section {
   width: 100%;
-}
-
-.period-filters {
-  display: flex;
-  gap: var(--space-4);
-}
-
-.period-btn {
-  padding: var(--space-6) var(--space-12);
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-secondary);
-  border-radius: var(--radius-sm);
-  cursor: pointer;
-  transition: all var(--duration-fast) var(--ease-standard);
-  font-size: var(--font-size-sm);
-  font-weight: var(--font-weight-medium);
-}
-
-.period-btn--active {
-  background: var(--color-primary);
-  color: #ffffff;
-  border-color: var(--color-primary);
 }
 
 /* Content Grid */
@@ -2121,6 +2101,17 @@ body {
   line-height: 1;
 }
 
+.card-value span:first-child,
+.stat-content h3 {
+  font-size: 2.75rem !important; /* Maior que antes */
+  font-weight: 700 !important;
+  color: var(--color-text) !important;
+  line-height: 1 !important;
+  margin: 0 !important;
+  display: block !important;
+  text-align: center !important;
+}
+
 
 .trend-indicator {
   font-size: 0.6rem !important;
@@ -2469,26 +2460,6 @@ body {
   }
 }
 
-@media (max-width: 768px) {
-  .metrics-overview {
-    grid-template-columns: 1fr;
-    gap: 1rem;
-  }
-  
-  .metrics-modal-content {
-    width: 95%;
-    padding: 1.5rem;
-  }
-  
-  .table-container {
-    overflow-x: auto;
-  }
-  
-  .metrics-table {
-    min-width: 600px;
-  }
-}
-
 /* ===========================
    SOLUÇÃO FINAL: Trends badges otimizados
    =========================== */
@@ -2550,17 +2521,29 @@ body {
 /* Estrutura do valor + badge - MELHORADA */
 .stat-content .card-value {
   display: flex !important;
-  align-items: baseline !important;
+  flex-direction: column !important; 
+  align-items: center !important;
   justify-content: center !important;
-  gap: 0 !important;
-  margin-bottom: 0.5rem !important;
-  min-height: 3rem !important; /* Espaço para badge */
+  gap: var(--space-2) !important;
+  margin-bottom: var(--space-8) !important;
   position: relative !important;
 }
 
 /* Garantir que apenas UM badge apareça por card */
 .stat-content .trend-indicator:not(:first-of-type) {
   display: none !important;
+}
+
+.stat-content .trend-indicator {
+  font-size: 0.7rem !important;
+  font-weight: 600 !important;
+  padding: 2px 8px !important;
+  border-radius: 12px !important;
+  margin-top: var(--space-4) !important; /* Espaço abaixo do número */
+  margin-left: 0 !important; /* Remove margem lateral */
+  position: static !important; /* Remove posicionamento absoluto */
+  top: auto !important;
+  white-space: nowrap !important;
 }
 
 /* Responsividade para telas menores - MELHORADA */
@@ -2621,10 +2604,15 @@ body {
   gap: var(--space-16) !important;
 }
 
-.stat-icon + .stat-content {
+.stat-content {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  text-align: center !important;
   flex: 1 !important;
-  min-width: 0 !important; /* Permite text-overflow funcionar */
+  gap: var(--space-4) !important;
 }
+
 
 /* ===========================
    FIX BOTÕES DE PERÍODO - Evitar quebra de layout
@@ -2634,23 +2622,23 @@ body {
 .period-filters {
   display: flex !important;
   gap: var(--space-4) !important;
-  flex-wrap: nowrap !important;
+  flex-wrap: wrap !important; /* PERMITE QUEBRA DE LINHA */
   align-items: center !important;
-  overflow-x: auto !important; /* Permite scroll horizontal em telas pequenas */
-  -webkit-overflow-scrolling: touch !important;
-  padding-bottom: 2px !important; /* Espaço para focus */
+  justify-content: center !important; /* CENTRALIZA OS BOTÕES */
+  width: 100% !important;
+  margin-bottom: var(--space-16) !important;
 }
 
 /* Botões com tamanho fixo para evitar quebra */
 .period-btn {
-  flex-shrink: 0 !important; /* Não permite encolher */
-  min-width: 60px !important; /* Largura mínima */
-  max-width: 80px !important; /* Largura máxima */
-  padding: var(--space-6) var(--space-12) !important;
+  flex: 0 0 auto !important; /* Não cresce, não encolhe, tamanho auto */
+  min-width: 60px !important;
+  max-width: 120px !important; /* Aumentado para acomodar "30d" */
+  padding: var(--space-8) var(--space-16) !important;
   border: 1px solid var(--color-border) !important;
   background: var(--color-surface) !important;
   color: var(--color-text-secondary) !important;
-  border-radius: var(--radius-sm) !important;
+  border-radius: var(--radius-base) !important;
   cursor: pointer !important;
   transition: all var(--duration-fast) var(--ease-standard) !important;
   font-size: var(--font-size-sm) !important;
@@ -2661,6 +2649,7 @@ body {
   align-items: center !important;
   justify-content: center !important;
 }
+
 
 /* Estado ativo - apenas UM por vez */
 .period-btn--active {
@@ -2674,20 +2663,24 @@ body {
 .period-btn:not(.period-btn--active):hover {
   background: var(--color-secondary-hover) !important;
   color: var(--color-text) !important;
+  transform: translateY(-1px) !important;
 }
 
 /* Responsivo */
 @media (max-width: 768px) {
   .period-filters {
     gap: var(--space-2) !important;
+    justify-content: stretch !important;
   }
-  
-  .period-btn {
-    min-width: 50px !important;
-    max-width: 70px !important;
-    padding: var(--space-4) var(--space-8) !important;
-    font-size: var(--font-size-xs) !important;
-  }
+
+.period-btn {
+  flex: 1 1 calc(33.333% - var(--space-2)) !important;
+  /* 3 botões por linha */
+  min-width: 0 !important;
+  max-width: none !important;
+  padding: var(--space-6) var(--space-8) !important;
+  font-size: var(--font-size-xs) !important;
+}
 }
 
 @media (max-width: 480px) {
