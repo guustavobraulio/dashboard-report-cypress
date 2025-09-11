@@ -11,10 +11,10 @@
 
   // namespace único para estado global
   const ns = (root.__DASH_STATE__ = root.__DASH_STATE__ || {});
-  ns.executionsData = ns.executionsData || [];        
+  ns.executionsData = ns.executionsData || [];
   ns.filteredExecutions = ns.filteredExecutions || [];
-  ns.statusChart = ns.statusChart || null;            
-  ns.historyChart = ns.historyChart || null;          
+  ns.statusChart = ns.statusChart || null;
+  ns.historyChart = ns.historyChart || null;
   ns.currentPage = ns.currentPage || 1;
   ns.itemsPerPage = ns.itemsPerPage || 10;
   ns.historyPeriod = ns.historyPeriod || '24h';
@@ -28,6 +28,69 @@
     day: '2-digit', month: 'short', year: '2-digit',
     hour: '2-digit', minute: '2-digit'
   });
+
+   function updateStatistics() {
+    console.log('📊 Atualizando estatísticas...');
+    
+    // 1. Calcula as métricas do período atual a partir dos dados filtrados
+    const currentRuns = ns.filteredExecutions || [];
+    console.log('📈 Runs para calcular:', currentRuns.length);
+    
+    const totalPassed = currentRuns.reduce((sum, run) => sum + (run.passedTests || 0), 0);
+    const totalFailed = currentRuns.reduce((sum, run) => sum + (run.failedTests || 0), 0);
+    const totalTests = totalPassed + totalFailed;
+    const avgDuration = currentRuns.length > 0 ? Math.round(currentRuns.reduce((sum, run) => sum + (run.duration || 0), 0) / currentRuns.length) : 0;
+    const successRate = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
+
+    console.log('📊 Métricas calculadas:', { totalPassed, totalFailed, avgDuration, successRate });
+
+    const currentData = {
+      totalPassed,
+      totalFailed,
+      avgDuration,
+      successRate
+    };
+
+    // 2. Atualiza os valores nos cards do HTML
+    const set = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.textContent = val;
+        console.log(`✅ Atualizado ${id} = ${val}`);
+      } else {
+        console.log(`❌ Elemento ${id} não encontrado`);
+      }
+    };
+
+    set('totalPassed', totalPassed);
+    set('totalFailed', totalFailed);
+    set('avgDuration', `${avgDuration}s`);
+    set('successRate', `${successRate}%`);
+
+    // 3. Calcula e exibe as tendências (só se existir dados)
+    if (currentRuns.length > 0) {
+      try {
+        const previousData = getPreviousPeriodData(ns.historyPeriod);
+        const trends = calculateTrends(currentData, previousData);
+        updateTrendBadges(trends);
+        console.log('📈 Trends atualizados:', trends);
+      } catch (e) {
+        console.log('⚠️ Erro ao calcular trends:', e.message);
+        // Remover badges de erro
+        document.querySelectorAll('.trend-indicator').forEach(el => {
+          el.textContent = '';
+          el.style.display = 'none';
+        });
+      }
+    } else {
+      console.log('📭 Nenhum dado para exibir trends');
+      // Esconder badges quando não há dados
+      document.querySelectorAll('.trend-indicator').forEach(el => {
+        el.textContent = '';
+        el.style.display = 'none';
+      });
+    }
+  }
 
   function formatDateTime(s) {
     const d = new Date(s);
@@ -60,7 +123,7 @@
     const slot = content.querySelector(".btn-spinner-slot")?.outerHTML || '<span class="btn-spinner-slot" aria-hidden="true"></span>';
     content.innerHTML = `${icon}${text}${slot}`;
   }
-  function mostrarStatusNoBotao(statusText, variant=null) {
+  function mostrarStatusNoBotao(statusText, variant = null) {
     const btn = document.getElementById("runPipelineBtn");
     if (!btn) return;
     btn.classList.remove("is-in-progress", "is-success", "is-failure");
@@ -125,7 +188,7 @@
         result = await res.json();
         const label = result.status === "queued" ? "Na fila..."
           : result.status === "in_progress" ? "Executando..."
-          : result.status === "completed" ? "Finalizando..." : "Processando...";
+            : result.status === "completed" ? "Finalizando..." : "Processando...";
         mostrarStatusNoBotao(label, "in_progress");
       } while (result.status !== "completed");
       if (result.conclusion === "success") mostrarStatusNoBotao("Concluída ✓", "success");
@@ -136,7 +199,7 @@
     } finally {
       setTimeout(() => {
         btn.disabled = false;
-        btn.classList.remove("btn--loading","is-in-progress","is-success","is-failure");
+        btn.classList.remove("btn--loading", "is-in-progress", "is-success", "is-failure");
         setButtonLabel("Executar Pipeline");
         ensureButtonStructure();
       }, 1800);
@@ -584,22 +647,22 @@
       });
     });
 
-  const container = document.querySelector('#historySection') || document;
-  container.addEventListener('click', (e) => {
-    const btn = e.target.closest('[data-history-period]');
-    if (!btn) return;
-    onHistoryPeriodClick.call(btn, e);
-  });
+    const container = document.querySelector('#historySection') || document;
+    container.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-history-period]');
+      if (!btn) return;
+      onHistoryPeriodClick.call(btn, e);
+    });
 
-  // Garantir que apenas 24h esteja ativo no início
-  setTimeout(() => {
-    buttons.forEach(btn => btn.classList.remove('period-btn--active'));
-    const defaultBtn = document.querySelector('[data-history-period="24h"]');
-    if (defaultBtn) {
-      defaultBtn.classList.add('period-btn--active');
-    }
-  }, 100);
-}
+    // Garantir que apenas 24h esteja ativo no início
+    setTimeout(() => {
+      buttons.forEach(btn => btn.classList.remove('period-btn--active'));
+      const defaultBtn = document.querySelector('[data-history-period="24h"]');
+      if (defaultBtn) {
+        defaultBtn.classList.add('period-btn--active');
+      }
+    }, 100);
+  }
 
   function onHistoryPeriodClick(e) {
     e.preventDefault();
@@ -692,6 +755,7 @@
         console.log('🔄 Trends atualizados após carregamento inicial');
       }, 500);
 
+
     } catch (err) {
       console.error('Falha ao carregar execuções:', err);
     }
@@ -701,48 +765,48 @@
   // Sistema de Tendências
   // ===========================
   // Sua função calculateTrends (mantida igual)
-function calculateTrends(currentData, previousData) {
-  const trends = {};
-  
-  for (const key in currentData) {
-    const current = currentData[key] || 0;
-    const previous = previousData[key] || 0;
-    
-    // ✅ CORREÇÃO: Baseline mais baixa e mais permissiva
-    if (previous === 0) {
-      // ✅ Usar valor mínimo de 1 para evitar divisão por zero
-      const assumedPrevious = 1;
-      const diff = current - assumedPrevious;
-      const percent = Math.round((diff / assumedPrevious) * 100);
-      
-      // ✅ Limitar percentuais para valores razoáveis
-      const cappedPercent = Math.min(Math.max(percent, -100), 300);
-      
-      trends[key] = {
-        value: current,
-        change: diff,
-        percent: cappedPercent,
-        trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
-      };
-    } else {
-      // Cálculo normal quando há dados anteriores válidos
-      const diff = current - previous;
-      const percent = Math.round((diff / previous) * 100);
-      
-      // ✅ Limitar percentuais para valores razoáveis
-      const cappedPercent = Math.min(Math.max(percent, -100), 300);
-      
-      trends[key] = {
-        value: current,
-        change: diff,
-        percent: cappedPercent,
-        trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
-      };
+  function calculateTrends(currentData, previousData) {
+    const trends = {};
+
+    for (const key in currentData) {
+      const current = currentData[key] || 0;
+      const previous = previousData[key] || 0;
+
+      // ✅ CORREÇÃO: Baseline mais baixa e mais permissiva
+      if (previous === 0) {
+        // ✅ Usar valor mínimo de 1 para evitar divisão por zero
+        const assumedPrevious = 1;
+        const diff = current - assumedPrevious;
+        const percent = Math.round((diff / assumedPrevious) * 100);
+
+        // ✅ Limitar percentuais para valores razoáveis
+        const cappedPercent = Math.min(Math.max(percent, -100), 300);
+
+        trends[key] = {
+          value: current,
+          change: diff,
+          percent: cappedPercent,
+          trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
+        };
+      } else {
+        // Cálculo normal quando há dados anteriores válidos
+        const diff = current - previous;
+        const percent = Math.round((diff / previous) * 100);
+
+        // ✅ Limitar percentuais para valores razoáveis
+        const cappedPercent = Math.min(Math.max(percent, -100), 300);
+
+        trends[key] = {
+          value: current,
+          change: diff,
+          percent: cappedPercent,
+          trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
+        };
+      }
     }
+
+    return trends;
   }
-  
-  return trends;
-}
 
   // ✨ NOVA FUNÇÃO: Para atualizar os badges no HTML
   function updateTrendBadges(trends) {
@@ -886,11 +950,11 @@ function calculateTrends(currentData, previousData) {
         </div>
       `;
     }
-    
+
     return artifacts.map(a => {
       const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(a.url || '');
       const isVideo = /\.(mp4|webm|mov)$/i.test(a.url || '');
-      
+
       if (isImage) {
         return `
           <div class="artifact-item">
@@ -969,20 +1033,20 @@ function calculateTrends(currentData, previousData) {
         <div class="image-modal-caption">${name}</div>
       </div>
     `;
-    
+
     // Fechar modal ao clicar no fundo
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.remove();
       }
     });
-    
+
     document.body.appendChild(modal);
   }
 
-// Exponha utilitários se necessário
-root.__DASH_API__ = { loadRuns }; 
-})(window); 
+  // Exponha utilitários se necessário
+  root.__DASH_API__ = { loadRuns };
+})(window);
 
 // ===========================
 // Modal Functions
@@ -1033,7 +1097,7 @@ async function loadDetailedMetrics() {
 async function fetchDetailedPageSpeed(url) {
   try {
     console.log(`📡 Chamando Netlify Function para: ${url}`);
-    
+
     const response = await fetch('/api/page-speed', {  // ← Note o hífen
       method: 'POST',
       headers: {
@@ -1041,35 +1105,35 @@ async function fetchDetailedPageSpeed(url) {
       },
       body: JSON.stringify({ url: url })
     });
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error: ${response.status} - ${response.statusText}`);
     }
-    
+
     const data = await response.json();
-    
+
     if (data.error) {
       throw new Error(data.error);
     }
-    
+
     console.log(`✅ Dados recebidos da Netlify Function:`, data);
-    
+
     // Extrair métricas
     const categories = data.lighthouseResult?.categories || {};
-    
+
     return {
       performance: Math.round((categories.performance?.score || 0) * 100),
       accessibility: Math.round((categories.accessibility?.score || 0) * 100),
       bestPractices: Math.round((categories['best-practices']?.score || 0) * 100),
       seo: Math.round((categories.seo?.score || 0) * 100)
     };
-    
+
   } catch (error) {
     console.error(`❌ Erro ao buscar métricas para ${url}:`, error);
     return {
       performance: '--',
       accessibility: '--',
-      bestPractices: '--', 
+      bestPractices: '--',
       seo: '--'
     };
   }
@@ -1087,7 +1151,7 @@ const STORES_CONFIG = [
 function updateMetricsTable(results) {
   const tbody = document.getElementById('metrics-table-body');
   if (!tbody) return;
-  
+
   tbody.innerHTML = results.map(store => `
     <tr>
       <td><strong>${store.name}</strong></td>
@@ -1101,7 +1165,7 @@ function updateMetricsTable(results) {
 
 function updateSummaryCards(results) {
   const validResults = results.filter(r => parseInt(r.performance) > 0);
-  
+
   if (validResults.length === 0) {
     document.getElementById('avg-performance').textContent = '--';
     document.getElementById('avg-accessibility').textContent = '--';
@@ -1109,12 +1173,12 @@ function updateSummaryCards(results) {
     document.getElementById('avg-seo').textContent = '--';
     return;
   }
-  
+
   const avgPerformance = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.performance) || 0), 0) / validResults.length);
   const avgAccessibility = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.accessibility) || 0), 0) / validResults.length);
   const avgBestPractices = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.bestPractices) || 0), 0) / validResults.length);
   const avgSeo = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.seo) || 0), 0) / validResults.length);
-  
+
   document.getElementById('avg-performance').textContent = avgPerformance;
   document.getElementById('avg-accessibility').textContent = avgAccessibility;
   document.getElementById('avg-best-practices').textContent = avgBestPractices;
@@ -1137,7 +1201,7 @@ function refreshAllPageSpeed() {
 // ===========================
 document.addEventListener('DOMContentLoaded', () => {
   console.log('✅ Dashboard module loaded');
-  
+
   // ✅ Código existente para modal de métricas
   const modal = document.getElementById('metricsModal');
   if (modal) {
