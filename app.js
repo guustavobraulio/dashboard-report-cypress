@@ -11,10 +11,10 @@
 
   // namespace único para estado global
   const ns = (root.__DASH_STATE__ = root.__DASH_STATE__ || {});
-  ns.executionsData = ns.executionsData || [];        
+  ns.executionsData = ns.executionsData || [];
   ns.filteredExecutions = ns.filteredExecutions || [];
-  ns.statusChart = ns.statusChart || null;            
-  ns.historyChart = ns.historyChart || null;          
+  ns.statusChart = ns.statusChart || null;
+  ns.historyChart = ns.historyChart || null;
   ns.currentPage = ns.currentPage || 1;
   ns.itemsPerPage = ns.itemsPerPage || 10;
   ns.historyPeriod = ns.historyPeriod || '7d'; // ✅ MUDANÇA: 7d por padrão
@@ -39,33 +39,42 @@
   // ===========================
   function updateStatistics() {
     console.log('📊 Atualizando estatísticas...');
-    
-    // Calcular dados atuais
-    const totalPassed = ns.filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
-    const totalFailed = ns.filteredExecutions.reduce((s, e) => s + (e.failedTests || 0), 0);
+
+    const currentRuns = ns.filteredExecutions || [];
+    const totalPassed = currentRuns.reduce((sum, run) => sum + (run.passedTests || 0), 0);
+    const totalFailed = currentRuns.reduce((sum, run) => sum + (run.failedTests || 0), 0);
     const totalTests = totalPassed + totalFailed;
-    const avgDuration = ns.filteredExecutions.length
-      ? Math.round(ns.filteredExecutions.reduce((s, e) => s + (e.duration || 0), 0) / ns.filteredExecutions.length)
-      : 0;
-    const successRate = totalTests ? Math.round((totalPassed / totalTests) * 100) : 0;
-    
-    console.log('📊 Métricas calculadas:', { totalPassed, totalFailed, avgDuration, successRate });
-    
-    // ✅ VERSÃO SIMPLES: Apenas atualizar valores (sem trends)
-    const tp = document.getElementById("totalPassed");
-    const tf = document.getElementById("totalFailed");
-    const ad = document.getElementById("avgDuration");
-    const sr = document.getElementById("successRate");
-    
-    if (tp) tp.textContent = totalPassed;
-    if (tf) tf.textContent = totalFailed;
-    if (ad) ad.textContent = `${avgDuration}s`;
-    if (sr) sr.textContent = `${successRate}%`;
-    
-    // Esconder badges de trend para evitar problemas
-    document.querySelectorAll('.trend-indicator').forEach(el => {
-      el.style.display = 'none';
-    });
+    const avgDuration = currentRuns.length > 0 ? Math.round(currentRuns.reduce((sum, run) => sum + (run.duration || 0), 0) / currentRuns.length) : 0;
+    const successRate = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
+
+    const currentData = { totalPassed, totalFailed, avgDuration, successRate };
+
+    // ✅ USAR AS FUNÇÕES DE TRENDS
+    if (currentRuns.length > 0) {
+      try {
+        const previousData = getPreviousPeriodData(ns.historyPeriod);
+        const trends = calculateTrends(currentData, previousData);
+
+        // ✅ APLICAR TRENDS NOS ELEMENTOS
+        const tp = document.getElementById("totalPassed");
+        const tf = document.getElementById("totalFailed");
+        const ad = document.getElementById("avgDuration");
+        const sr = document.getElementById("successRate");
+
+        if (tp) tp.innerHTML = `${totalPassed}${formatTrend(trends.totalPassed)}`;
+        if (tf) tf.innerHTML = `${totalFailed}${formatTrend(trends.totalFailed)}`;
+        if (ad) ad.innerHTML = `${avgDuration}s${formatTrend(trends.avgDuration)}`;
+        if (sr) sr.innerHTML = `${successRate}%${formatTrend(trends.successRate)}`;
+
+      } catch (e) {
+        console.log('⚠️ Erro ao calcular trends:', e.message);
+        // Fallback sem trends
+        document.getElementById("totalPassed").textContent = totalPassed;
+        document.getElementById("totalFailed").textContent = totalFailed;
+        document.getElementById("avgDuration").textContent = `${avgDuration}s`;
+        document.getElementById("successRate").textContent = `${successRate}%`;
+      }
+    }
   }
 
   // ===========================
@@ -367,10 +376,13 @@
   function openExecutionModal(id) {
     const e = ns.executionsData.find(x => x.id === id);
     if (!e) return;
+
     const set = (id, val, prop = 'textContent') => {
       const el = document.getElementById(id);
       if (el) el[prop] = val;
     };
+
+    // ✅ VISÃO GERAL - Apenas dados básicos
     set("modalExecutionId", e.id);
     set("modalExecutionDate", formatDateTime(e.date));
     set("modalExecutionBranch", e.branch);
@@ -378,21 +390,31 @@
     set("modalExecutionAuthor", e.author || "-");
     set("modalExecutionCommit", e.commit || "-");
     set("modalExecutionDuration", `${e.duration}s`);
+
     const statusEl = document.getElementById("modalExecutionStatus");
     if (statusEl) statusEl.innerHTML = `<span class="status status--${e.status}">${e.status === "passed" ? "Aprovado" : "Falhado"}</span>`;
+
     const gh = document.getElementById("modalGithubLink");
     if (gh) gh.href = e.githubUrl || "#";
 
+    // ✅ CONFIGURAR DISPONIBILIDADE DAS TABS
     const testsTabBtn = document.querySelector('[data-tab="tests"]');
     const logsTabBtn = document.querySelector('[data-tab="logs"]');
     const artifactsTabBtn = document.querySelector('[data-tab="artifacts"]');
-    if (testsTabBtn) testsTabBtn.disabled = !(e.tests && e.tests.length);
-    if (logsTabBtn) logsTabBtn.disabled = !(e.logs && e.logs.length);
-    if (artifactsTabBtn) artifactsTabBtn.disabled = !(e.artifacts && e.artifacts.length);
 
+    const hasTests = e.tests && e.tests.length > 0;
+    const hasLogs = e.logs && e.logs.length > 0;
+    const hasArtifacts = e.artifacts && e.artifacts.length > 0;
+
+    if (testsTabBtn) testsTabBtn.disabled = !hasTests;
+    if (logsTabBtn) logsTabBtn.disabled = !hasLogs;
+    if (artifactsTabBtn) artifactsTabBtn.disabled = !hasArtifacts;
+
+    // ✅ TAB TESTES - Apenas cenários de teste
     const testsList = document.getElementById("modalTestsList");
     if (testsList) {
-      testsList.innerHTML = (e.tests || []).map(t => `
+      if (hasTests) {
+        testsList.innerHTML = (e.tests || []).map(t => `
       <div class="test-item test-item--${t.status || "passed"}">
         <div class="test-info">
           <div class="test-name">${t.name}</div>
@@ -400,20 +422,53 @@
         </div>
         <div class="test-duration">${t.duration || 0}s</div>
       </div>`).join("");
+      } else {
+        testsList.innerHTML = '<p>Nenhum teste detalhado disponível para esta execução.</p>';
+      }
     }
 
+    // ✅ TAB LOGS - Apenas logs
     const logsPre = document.getElementById("modalLogs");
-    if (logsPre) logsPre.textContent = (e.logs || []).join("\n\n");
+    if (logsPre) {
+      if (hasLogs) {
+        logsPre.textContent = (e.logs || []).join("\n\n");
+      } else {
+        logsPre.textContent = 'Nenhum log disponível para esta execução.';
+      }
+    }
 
+    // ✅ TAB ARTEFATOS - Apenas artifacts
     const artifactsWrap = document.getElementById("modalArtifacts");
     if (artifactsWrap) {
-      artifactsWrap.innerHTML = renderArtifacts(e.artifacts);
+      if (hasArtifacts) {
+        artifactsWrap.innerHTML = renderArtifacts(e.artifacts);
+      } else {
+        artifactsWrap.innerHTML = `
+        <div class="no-artifacts">
+          <i class="fas fa-images"></i>
+          <p>Nenhum artefato disponível para esta execução</p>
+          <small>Screenshots e vídeos aparecerão aqui quando disponíveis</small>
+        </div>
+      `;
+      }
     }
 
+    // ✅ ABRIR MODAL
     const modal = document.getElementById("executionModal");
     if (modal) {
       modal.classList.remove("hidden");
       modal.style.display = "flex";
+
+      // ✅ ATIVAR TAB VISÃO GERAL por padrão
+      setTimeout(() => {
+        document.querySelectorAll(".tab-button").forEach(btn => btn.classList.remove("tab-button--active"));
+        document.querySelectorAll(".tab-panel").forEach(panel => panel.classList.remove("tab-panel--active"));
+
+        const overviewTab = document.querySelector('.tab-button[data-tab="overview"]');
+        const overviewPanel = document.getElementById("overview-tab");
+        if (overviewTab) overviewTab.classList.add("tab-button--active");
+        if (overviewPanel) overviewPanel.classList.add("tab-panel--active");
+      }, 50);
     }
   }
 
@@ -568,11 +623,11 @@
         </div>
       `;
     }
-    
+
     return artifacts.map(a => {
       const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(a.url || '');
       const isVideo = /\.(mp4|webm|mov)$/i.test(a.url || '');
-      
+
       if (isImage) {
         return `
           <div class="artifact-item">
@@ -651,14 +706,14 @@
         <div class="image-modal-caption">${name}</div>
       </div>
     `;
-    
+
     // Fechar modal ao clicar no fundo
     modal.addEventListener('click', (e) => {
       if (e.target === modal) {
         modal.remove();
       }
     });
-    
+
     document.body.appendChild(modal);
   }
 
@@ -699,7 +754,7 @@
       // 2) Base para cards/tabela/pizza
       ns.executionsData = uniq.slice();
       ns.filteredExecutions = filterRunsByPeriod(ns.executionsData, ns.historyPeriod); // ✅ APLICAR FILTRO
-      
+
       updateStatistics();
       initializeStatusChart();
       populateExecutionTable();
@@ -713,9 +768,103 @@
     }
   }
 
+  function calculateTrends(currentData, previousData) {
+    const trends = {};
+
+    for (const key in currentData) {
+      const current = currentData[key] || 0;
+      const previous = previousData[key] || 0;
+
+      if (previous === 0) {
+        const assumedPrevious = Math.max(1, current * 0.1);
+        const diff = current - assumedPrevious;
+        const percent = Math.round((diff / assumedPrevious) * 100);
+        const cappedPercent = Math.min(Math.max(percent, -100), 100); // ✅ LIMITE ±100%
+
+        trends[key] = {
+          value: current,
+          change: diff,
+          percent: cappedPercent,
+          trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
+        };
+      } else {
+        const diff = current - previous;
+        const percent = Math.round((diff / previous) * 100);
+        const cappedPercent = Math.min(Math.max(percent, -100), 100); // ✅ LIMITE ±100%
+
+        trends[key] = {
+          value: current,
+          change: diff,
+          percent: cappedPercent,
+          trend: diff > 0 ? 'up' : diff < 0 ? 'down' : 'stable'
+        };
+      }
+    }
+
+    return trends;
+  }
+
+  function getPreviousPeriodData(currentPeriod) {
+    const now = Date.now();
+    let previousWindow;
+
+    switch (currentPeriod) {
+      case '24h':
+        previousWindow = { start: now - (48 * 60 * 60 * 1000), end: now - (24 * 60 * 60 * 1000) };
+        break;
+      case '7d':
+        previousWindow = { start: now - (14 * 24 * 60 * 60 * 1000), end: now - (7 * 24 * 60 * 60 * 1000) };
+        break;
+      case '30d':
+        previousWindow = { start: now - (60 * 24 * 60 * 60 * 1000), end: now - (30 * 24 * 60 * 60 * 1000) };
+        break;
+      default:
+        return { totalPassed: 0, totalFailed: 0, avgDuration: 0, successRate: 0 };
+    }
+
+    const previousRuns = ns.executionsData.filter(r => {
+      const runTime = new Date(r.date).getTime();
+      return runTime >= previousWindow.start && runTime <= previousWindow.end;
+    });
+
+    if (previousRuns.length === 0) {
+      return { totalPassed: 0, totalFailed: 0, avgDuration: 0, successRate: 0 };
+    }
+
+    const totalPassed = previousRuns.reduce((s, e) => s + (e.passedTests || 0), 0);
+    const totalFailed = previousRuns.reduce((s, e) => s + (e.failedTests || 0), 0);
+    const totalTests = totalPassed + totalFailed;
+    const avgDuration = Math.round(previousRuns.reduce((s, e) => s + (e.duration || 0), 0) / previousRuns.length);
+    const successRate = totalTests ? Math.round((totalPassed / totalTests) * 100) : 0;
+
+    return {
+      totalPassed: totalPassed,
+      totalFailed: totalFailed,
+      avgDuration: avgDuration,
+      successRate: successRate
+    };
+  }
+
+  function formatTrend(trendData) {
+    if (!trendData || trendData.trend === undefined) {
+      return '';
+    }
+
+    if (trendData.trend === 'new' || (trendData.change === null)) {
+      return '';
+    }
+
+    // ✅ PERCENTUAL JÁ LIMITADO pela calculateTrends
+    const arrow = trendData.trend === 'up' ? '↗️' : trendData.trend === 'down' ? '↘️' : '➡️';
+    const color = trendData.trend === 'up' ? '#16a34a' : trendData.trend === 'down' ? '#dc2626' : '#6b7280';
+    const sign = trendData.percent > 0 ? '+' : '';
+
+    return `<span class="trend-indicator" style="color: ${color}; font-size: 0.85em; margin-left: 8px;">${arrow} ${sign}${trendData.percent}%</span>`;
+  }
+
   // Exponha a API
-  root.__DASH_API__ = { loadRuns }; 
-})(window); 
+  root.__DASH_API__ = { loadRuns };
+})(window);
 
 // ===========================
 // Modal Functions (GLOBAIS)
@@ -765,7 +914,7 @@ async function loadDetailedMetrics() {
 async function fetchDetailedPageSpeed(url) {
   try {
     console.log(`📡 Chamando Netlify Function para: ${url}`);
-    
+
     const response = await fetch('/api/page-speed', {
       method: 'POST',
       headers: {
@@ -773,35 +922,35 @@ async function fetchDetailedPageSpeed(url) {
       },
       body: JSON.stringify({ url: url })
     });
-    
+
     if (!response.ok) {
       throw new Error(`HTTP error: ${response.status} - ${response.statusText}`);
     }
-    
+
     const data = await response.json();
-    
+
     if (data.error) {
       throw new Error(data.error);
     }
-    
+
     console.log(`✅ Dados recebidos da Netlify Function:`, data);
-    
+
     // Extrair métricas
     const categories = data.lighthouseResult?.categories || {};
-    
+
     return {
       performance: Math.round((categories.performance?.score || 0) * 100),
       accessibility: Math.round((categories.accessibility?.score || 0) * 100),
       bestPractices: Math.round((categories['best-practices']?.score || 0) * 100),
       seo: Math.round((categories.seo?.score || 0) * 100)
     };
-    
+
   } catch (error) {
     console.error(`❌ Erro ao buscar métricas para ${url}:`, error);
     return {
       performance: '--',
       accessibility: '--',
-      bestPractices: '--', 
+      bestPractices: '--',
       seo: '--'
     };
   }
@@ -817,7 +966,7 @@ const STORES_CONFIG = [
 function updateMetricsTable(results) {
   const tbody = document.getElementById('metrics-table-body');
   if (!tbody) return;
-  
+
   tbody.innerHTML = results.map(store => `
     <tr>
       <td><strong>${store.name}</strong></td>
@@ -831,7 +980,7 @@ function updateMetricsTable(results) {
 
 function updateSummaryCards(results) {
   const validResults = results.filter(r => parseInt(r.performance) > 0);
-  
+
   if (validResults.length === 0) {
     document.getElementById('avg-performance').textContent = '--';
     document.getElementById('avg-accessibility').textContent = '--';
@@ -839,12 +988,12 @@ function updateSummaryCards(results) {
     document.getElementById('avg-seo').textContent = '--';
     return;
   }
-  
+
   const avgPerformance = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.performance) || 0), 0) / validResults.length);
   const avgAccessibility = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.accessibility) || 0), 0) / validResults.length);
   const avgBestPractices = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.bestPractices) || 0), 0) / validResults.length);
   const avgSeo = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.seo) || 0), 0) / validResults.length);
-  
+
   document.getElementById('avg-performance').textContent = avgPerformance;
   document.getElementById('avg-accessibility').textContent = avgAccessibility;
   document.getElementById('avg-best-practices').textContent = avgBestPractices;
