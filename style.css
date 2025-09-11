@@ -2618,3 +2618,21 @@ body {
     padding: var(--space-4) var(--space-6) !important;
   }
 }
+
+.history-chart-section h2,
+.chart-section h2,
+h2:contains("Histórico de Execuções") {
+  text-align: center !important;
+  margin-bottom: 1.5rem !important;
+  width: 100% !important;
+}
+
+/* Se o título estiver dentro de uma div específica */
+.dashboard-content h2 {
+  text-align: center !important;
+  margin-bottom: 1.5rem !important;
+}
+
+.history-chart-section .card__header h2 {
+  text-align: center !important;
+}

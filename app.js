@@ -17,9 +17,11 @@
   ns.historyChart = ns.historyChart || null;
   ns.currentPage = ns.currentPage || 1;
   ns.itemsPerPage = ns.itemsPerPage || 10;
-  ns.historyPeriod = ns.historyPeriod || '7d'; // ✅ MUDANÇA: padrão 7d
+  ns.historyPeriod = ns.historyPeriod || '7d';
   ns.autoRefreshSeconds = ns.autoRefreshSeconds || 30;
   ns.autoRefreshTimer = ns.autoRefreshTimer || null;
+  ns.countdownTimer = ns.countdownTimer || null; // ✅ NOVO
+  ns.remainingSeconds = ns.remainingSeconds || 30; // ✅ NOVO
 
   // ===========================
   // Utils
@@ -1035,28 +1037,59 @@
 
   function startAutoRefresh() {
     console.log('🔄 Iniciando auto-refresh...');
-
+    
     if (ns.autoRefreshTimer) {
       clearInterval(ns.autoRefreshTimer);
     }
+    
+    if (ns.countdownTimer) {
+      clearInterval(ns.countdownTimer);
+    }
 
-    ns.autoRefreshTimer = setInterval(async () => {
-      console.log('🔄 Auto-refresh executado');
-      try {
-        await loadRuns();
-        updateAutoRefreshDisplay();
-      } catch (error) {
-        console.error('❌ Erro no auto-refresh:', error);
+    // Inicializar contador
+    ns.remainingSeconds = ns.autoRefreshSeconds;
+
+    // Timer para o countdown (atualiza a cada segundo)
+    ns.countdownTimer = setInterval(() => {
+      ns.remainingSeconds--;
+      updateAutoRefreshDisplay();
+
+      // Quando chegar a zero, executar refresh
+      if (ns.remainingSeconds <= 0) {
+        executeRefresh();
+        ns.remainingSeconds = ns.autoRefreshSeconds; // Reset
       }
-    }, ns.autoRefreshSeconds * 1000);
+    }, 1000);
 
+    // Atualizar display inicial
     updateAutoRefreshDisplay();
+  }
+
+  async function executeRefresh() {
+    console.log('🔄 Auto-refresh executado');
+    try {
+      await loadRuns();
+      console.log('✅ Dados atualizados via auto-refresh');
+    } catch (error) {
+      console.error('❌ Erro no auto-refresh:', error);
+    }
   }
 
   function updateAutoRefreshDisplay() {
     const refreshEl = document.querySelector('.auto-refresh span');
     if (refreshEl) {
-      refreshEl.textContent = `Auto-refresh: ${ns.autoRefreshSeconds}s`;
+      refreshEl.textContent = `Auto-refresh: ${ns.remainingSeconds || ns.autoRefreshSeconds}s`;
+    }
+  }
+
+  function stopAutoRefresh() {
+    if (ns.autoRefreshTimer) {
+      clearInterval(ns.autoRefreshTimer);
+      ns.autoRefreshTimer = null;
+    }
+    if (ns.countdownTimer) {
+      clearInterval(ns.countdownTimer);
+      ns.countdownTimer = null;
     }
   }
 
