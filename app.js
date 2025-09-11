@@ -215,35 +215,48 @@
   function populateExecutionTable() {
     const tbody = document.getElementById("executionTableBody");
     if (!tbody) return;
+
     const start = (ns.currentPage - 1) * ns.itemsPerPage;
     const page = ns.filteredExecutions.slice(start, start + ns.itemsPerPage);
+
     tbody.innerHTML = page.map(e => `
       <tr>
-        <td><code>${e.id}</code></td>
+        <td>${e.id}</td>
         <td>${formatDateTime(e.date)}</td>
-        <td><code>${e.branch}</code></td>
-        <td><span class="status status--info">${e.environment}</span></td>
-        <td><span class="status status--${e.status}">${e.status === "passed" ? "Aprovado" : "Falhado"}</span></td>
-        <td>${e.passedTests}/${e.totalTests}</td>
+        <td>${e.branch}</td>
+        <td>${e.environment}</td>
+        <td>
+          <span class="status status--${e.status === 'passed' ? 'success' : 'error'}">
+            ${e.status === 'passed' ? 'APROVADO' : 'FALHADO'}
+          </span>
+        </td>
+        <td>${e.totalTests}/${e.totalTests}</td>
         <td>${e.duration}s</td>
         <td>
-  <button class="action-btn action-btn--view" data-execution-id="${e.id}">
-    <i class="fas fa-eye"></i> Ver
-  </button>
-  ${e.githubUrl && e.githubUrl !== "#" ? `
-    <a class="btn btn--sm btn--outline" href="${e.githubUrl}" target="_blank" rel="noopener">
-      <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" fill="currentColor" class="github-icon" viewBox="0 0 16 16" style="margin-right: 4px; vertical-align: text-bottom;">
-        <path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8"/>
-      </svg>
-      Actions
-    </a>
-  ` : ""}
-</td>
-      </tr>`).join("");
-
+          <button class="action-btn action-btn--view" data-execution-id="${e.id}">
+            <i class="fas fa-eye"></i> Ver
+          </button>
+          <a href="${e.githubUrl}" target="_blank" class="github-icon" title="Ver no GitHub">
+            <i class="fab fa-github"></i>
+          </a>
+        </td>
+      </tr>
+    `).join('');
+    
+    // ✅ USAR APENAS UMA ABORDAGEM - Event Listeners (mais segura)
     document.querySelectorAll(".action-btn--view").forEach(btn => {
-      btn.addEventListener("click", () => openExecutionModal(btn.getAttribute("data-execution-id")));
+      btn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const executionId = btn.getAttribute("data-execution-id");
+        console.log('📋 Abrindo modal para:', executionId);
+        openExecutionDetails(executionId);
+      });
     });
+
+    // Configurar eventos do modal após criar os botões
+    setTimeout(() => {
+      setupModalEventListeners();
+    }, 100);
 
     updatePagination();
   }
@@ -1157,6 +1170,64 @@
     console.log('✅ Eventos do header configurados');
   }
 
+  // ===========================
+  // Sistema de Tabs
+  // ===========================
+  function switchTab(tabName) {
+    console.log('🔄 Mudando para tab:', tabName);
+
+    // Remover classe ativa de todos os botões
+    document.querySelectorAll('.tab-button').forEach(btn => {
+      btn.classList.remove('tab-button--active');
+    });
+
+    // Esconder todos os painéis
+    document.querySelectorAll('.tab-panel').forEach(panel => {
+      panel.classList.remove('tab-panel--active');
+    });
+
+    // Ativar botão clicado
+    const activeButton = document.querySelector(`[data-tab="${tabName}"]`);
+    if (activeButton) {
+      activeButton.classList.add('tab-button--active');
+    }
+
+    // Mostrar painel correspondente
+    const activePanel = document.getElementById(`${tabName}Panel`);
+    if (activePanel) {
+      activePanel.classList.add('tab-panel--active');
+    }
+  }
+
+  function setupModalEventListeners() {
+    console.log('⚙️ Configurando eventos do modal...');
+
+    // Botão de fechar (X)
+    const closeBtn = document.getElementById('closeModal');
+    if (closeBtn) {
+      closeBtn.addEventListener('click', closeModal);
+    }
+
+    // Fechar ao clicar no backdrop
+    const backdrop = document.querySelector('#executionModal .modal-backdrop');
+    if (backdrop) {
+      backdrop.addEventListener('click', closeModal);
+    }
+
+    // Configurar tabs
+    document.querySelectorAll('.tab-button').forEach(button => {
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        const tabName = button.getAttribute('data-tab');
+        if (tabName) {
+          switchTab(tabName);
+        }
+      });
+    });
+
+    console.log('✅ Eventos do modal configurados');
+  }
+
   // Exponha utilitários se necessário
   root.__DASH_API__ = { loadRuns };
 })(window);
@@ -1340,6 +1411,82 @@ function openMetricsModal() {
   // Placeholder - implemente conforme sua necessidade
   alert('Modal de Métricas será implementado aqui!');
 }
+
+// ===========================
+// Função Global para Modal (FORA da IIFE)
+// ===========================
+function openExecutionDetails(executionId) {
+  console.log('📋 Abrindo detalhes para:', executionId);
+  
+  // Buscar dados da execução
+  const execution = window.__DASH_STATE__.filteredExecutions.find(e => e.id === executionId);
+  if (!execution) {
+    console.error('❌ Execução não encontrada:', executionId);
+    return;
+  }
+  
+  // Preencher dados do modal
+  populateModalData(execution);
+  
+  // Mostrar modal
+  const modal = document.getElementById('executionModal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    
+    // Ativar primeira tab por padrão
+    setTimeout(() => {
+      const firstTab = document.querySelector('.tab-button[data-tab="overview"]');
+      if (firstTab) {
+        firstTab.click();
+      }
+    }, 50);
+  }
+}
+
+function populateModalData(execution) {
+  // Preencher título
+  const modalTitle = document.querySelector('#executionModal .modal-header h2');
+  if (modalTitle) {
+    modalTitle.textContent = `Detalhes da Execução - ${execution.id}`;
+  }
+  
+  // Preencher dados gerais
+  const setModalData = (id, value) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  };
+  
+  setModalData('modalExecutionId', execution.id);
+  setModalData('modalDate', formatDateTime(execution.date));
+  setModalData('modalBranch', execution.branch);
+  setModalData('modalEnvironment', execution.environment);
+  setModalData('modalAuthor', execution.author || 'N/A');
+  setModalData('modalCommit', execution.commit || 'N/A');
+  setModalData('modalDuration', `${execution.duration}s`);
+  setModalData('modalStatus', execution.status === 'passed' ? 'APROVADO' : 'FALHADO');
+  
+  // GitHub link
+  const githubLink = document.getElementById('modalGithubLink');
+  if (githubLink && execution.githubUrl) {
+    githubLink.href = execution.githubUrl;
+  }
+  
+  // Logs (se existirem)
+  const logsContainer = document.getElementById('modalLogs');
+  if (logsContainer) {
+    logsContainer.textContent = execution.logs?.join('\n') || 'Nenhum log disponível';
+  }
+  
+  console.log('✅ Dados do modal preenchidos');
+}
+
+// Função utilitária para formatação de data (FORA da IIFE)
+function formatDateTime(dateInput) {
+  if (!dateInput) return 'Data não disponível';
+  const date = new Date(dateInput);
+  return date.toLocaleString('pt-BR');
+}
+
 
 
 
