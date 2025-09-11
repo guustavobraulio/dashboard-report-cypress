@@ -146,69 +146,67 @@
   // ===========================
   // Cards/Estatísticas
   // ===========================
-function updateStatistics() {
-  // Calcular dados atuais
-  const totalPassed = ns.filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
-  const totalFailed = ns.filteredExecutions.reduce((s, e) => s + (e.failedTests || 0), 0);
-  const totalTests = totalPassed + totalFailed;
-  const avgDuration = ns.filteredExecutions.length
-    ? Math.round(ns.filteredExecutions.reduce((s, e) => s + (e.duration || 0), 0) / ns.filteredExecutions.length)
-    : 0;
-  const successRate = totalTests ? Math.round((totalPassed / totalTests) * 100) : 0;
-  
-  // 🔍 DEBUG: Log dados atuais
-  console.log('=== DEBUG TRENDS ===');
-  console.log('Período:', ns.historyPeriod);
-  console.log('Execuções filtradas:', ns.filteredExecutions.length);
-  console.log('Dados atuais:', { totalPassed, totalFailed, avgDuration, successRate });
-  
-  // Obter dados do período anterior
-  const previousData = getPreviousPeriodData(ns.historyPeriod);
-  
-  // 🔍 DEBUG: Log dados anteriores
-  console.log('Dados anteriores:', previousData);
-  
-  // Calcular tendências
-  const currentData = {
-    passed: totalPassed,
-    failed: totalFailed,
-    avgDuration: avgDuration,
-    successRate: successRate
-  };
-  
-  const trends = calculateTrends(currentData, previousData);
-  
-  // 🔍 DEBUG: Log tendências
-  console.log('Tendências calculadas:', trends);
-  console.log('====================');
-  
+  function updateStatistics() {
+    const totalPassed = ns.filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
+    const totalFailed = ns.filteredExecutions.reduce((s, e) => s + (e.failedTests || 0), 0);
+    const totalTests = totalPassed + totalFailed;
+    const avgDuration = ns.filteredExecutions.length
+      ? Math.round(ns.filteredExecutions.reduce((s, e) => s + (e.duration || 0), 0) / ns.filteredExecutions.length)
+      : 0;
+    const successRate = totalTests ? Math.round((totalPassed / totalTests) * 100) : 0;
 
-  function formatTrend(trendData) {
-    if (!trendData || trendData.trend === undefined) {
-      return '';
+    console.log('=== DEBUG TRENDS ===');
+    console.log('Período:', ns.historyPeriod);
+    console.log('Execuções filtradas:', ns.filteredExecutions.length);
+    console.log('Dados atuais:', { totalPassed, totalFailed, avgDuration, successRate });
+
+    const previousData = getPreviousPeriodData(ns.historyPeriod);
+    console.log('Dados anteriores:', previousData);
+
+    const currentData = {
+      totalPassed: totalPassed,    // ← Mudou para "totalPassed"
+      totalFailed: totalFailed,    // ← Mudou para "totalFailed"
+      avgDuration: avgDuration,
+      successRate: successRate
+    };
+
+    const trends = calculateTrends(currentData, previousData);
+
+    // ✅ CORREÇÃO: Usar as chaves corretas
+    if (tp) tp.innerHTML = `${totalPassed}${formatTrend(trends.totalPassed)}`;  // ← CORRIGIDO!
+    if (tf) tf.innerHTML = `${totalFailed}${formatTrend(trends.totalFailed)}`;  // ← CORRIGIDO!
+    if (ad) ad.innerHTML = `${avgDuration}s${formatTrend(trends.avgDuration)}`;
+    if (sr) sr.innerHTML = `${successRate}%${formatTrend(trends.successRate)}`;
+    console.log('Tendências calculadas:', trends);
+
+    // ✅ CORREÇÃO: Usar os nomes corretos dos trends
+    function formatTrend(trendData) {
+      if (!trendData || trendData.trend === undefined) {
+        return '';
+      }
+
+      if (trendData.trend === 'new' || (trendData.change === null)) {
+        return '';
+      }
+
+      const arrow = trendData.trend === 'up' ? '↗️' : trendData.trend === 'down' ? '↘️' : '➡️';
+      const color = trendData.trend === 'up' ? '#16a34a' : trendData.trend === 'down' ? '#dc2626' : '#6b7280';
+      const sign = trendData.change > 0 ? '+' : '';
+
+      return `<span class="trend-indicator" style="color: ${color}; font-size: 0.85em; margin-left: 8px;">${arrow} ${sign}${trendData.percent}%</span>`;
     }
-    
-    if (trendData.trend === 'new' || (trendData.change === null)) {
-      return ''; // Não mostra nem emoji nem indicador
-    }
-    
-    const arrow = trendData.trend === 'up' ? '↗️' : trendData.trend === 'down' ? '↘️' : '➡️';
-    const color = trendData.trend === 'up' ? '#16a34a' : trendData.trend === 'down' ? '#dc2626' : '#6b7280';
-    const sign = trendData.change > 0 ? '+' : '';
-    
-    return `<span class="trend-indicator" style="color: ${color}; font-size: 0.85em; margin-left: 8px;">${arrow} ${sign}${trendData.percent}%</span>`;
+
+    const tp = document.getElementById("totalPassed");
+    const tf = document.getElementById("totalFailed");
+    const ad = document.getElementById("avgDuration");
+    const sr = document.getElementById("successRate");
+
+    // ✅ CORREÇÃO: Usar as chaves corretas
+    if (tp) tp.innerHTML = `${totalPassed}${formatTrend(trends.totalPassed)}`;
+    if (tf) tf.innerHTML = `${totalFailed}${formatTrend(trends.totalFailed)}`;
+    if (ad) ad.innerHTML = `${avgDuration}s${formatTrend(trends.avgDuration)}`;
+    if (sr) sr.innerHTML = `${successRate}%${formatTrend(trends.successRate)}`;
   }
-  
-  const tp = document.getElementById("totalPassed");
-  const tf = document.getElementById("totalFailed");
-  const ad = document.getElementById("avgDuration");
-  const sr = document.getElementById("successRate");
-  
-  if (tp) tp.innerHTML = `${totalPassed}${formatTrend(trends.passed)}`;
-  if (tf) tf.innerHTML = `${totalFailed}${formatTrend(trends.failed)}`;
-  if (ad) ad.innerHTML = `${avgDuration}s${formatTrend(trends.avgDuration)}`;
-  if (sr) sr.innerHTML = `${successRate}%${formatTrend(trends.successRate)}`;
-}
 
 
   // ===========================
@@ -929,10 +927,22 @@ function calculateTrends(currentData, previousData) {
         previousWindow = { start: now - (60 * 24 * 60 * 60 * 1000), end: now - (30 * 24 * 60 * 60 * 1000) };
         break;
       default:
-        return { passed: 0, failed: 0, avgDuration: 0, successRate: 0 };
+        return { totalPassed: 0, totalFailed: 0, avgDuration: 0, successRate: 0 };
+
+        // ✅ CORREÇÃO: Se não há execuções anteriores
+        if (previousRuns.length === 0) {
+          return { totalPassed: 0, totalFailed: 0, avgDuration: 0, successRate: 0 };
+        }
+
+        // ✅ CORREÇÃO: Retorno final
+        return {
+          totalPassed: totalPassed,    // ← Era "passed"
+          totalFailed: totalFailed,    // ← Era "failed"
+          avgDuration: avgDuration,
+          successRate: successRate
+        };
     }
 
-    // 🔍 DEBUG: Log janela de tempo anterior
     console.log('Janela anterior:', new Date(previousWindow.start), 'até', new Date(previousWindow.end));
 
     const previousRuns = ns.executionsData.filter(r => {
@@ -940,11 +950,11 @@ function calculateTrends(currentData, previousData) {
       return runTime >= previousWindow.start && runTime <= previousWindow.end;
     });
 
-    // 🔍 DEBUG: Log execuções encontradas
     console.log('Execuções no período anterior:', previousRuns.length);
 
     if (previousRuns.length === 0) {
-      return { passed: 0, failed: 0, avgDuration: 0, successRate: 0 };
+      // ✅ CORREÇÃO: Usar nomes consistentes
+      return { totalPassed: 0, totalFailed: 0, avgDuration: 0, successRate: 0 };
     }
 
     const totalPassed = previousRuns.reduce((s, e) => s + (e.passedTests || 0), 0);
@@ -953,9 +963,10 @@ function calculateTrends(currentData, previousData) {
     const avgDuration = Math.round(previousRuns.reduce((s, e) => s + (e.duration || 0), 0) / previousRuns.length);
     const successRate = totalTests ? Math.round((totalPassed / totalTests) * 100) : 0;
 
+    // ✅ CORREÇÃO: Usar nomes consistentes
     return {
-      passed: totalPassed,
-      failed: totalFailed,
+      totalPassed: totalPassed,    // ← Era só "passed"
+      totalFailed: totalFailed,    // ← Era só "failed"
       avgDuration: avgDuration,
       successRate: successRate
     };
@@ -1226,7 +1237,7 @@ function refreshAllPageSpeed() {
 // ===========================
 document.addEventListener('DOMContentLoaded', () => {
   console.log('✅ PageSpeed metrics module loaded');
-  
+
   // ✅ Código existente para modal
   const modal = document.getElementById('metricsModal');
   if (modal) {
@@ -1238,17 +1249,17 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // ✨ NOVO: Código dos filtros de período
-  const periods = {"24h": "last24h", "7d": "last7days", "30d": "last30days"};
+  const periods = { "24h": "last24h", "7d": "last7days", "30d": "last30days" };
   const filterButtons = document.querySelectorAll('.period-btn');
-  
+
   filterButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       // Pegar período do botão clicado
       const period = btn.dataset.historyPeriod;
-      
+
       // Carregar dados desse período
       loadRealData(periods[period]);
-      
+
       // Atualizar botão ativo
       filterButtons.forEach(b => b.classList.remove('period-btn--active'));
       btn.classList.add('period-btn--active');
@@ -1257,5 +1268,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ✨ Carregar dados iniciais (7d por padrão)
   loadRealData("last7days");
+
+  // ✅ CORREÇÃO: Forçar atualização das estatísticas após carregamento
+  setTimeout(() => {
+    if (ns.filteredExecutions && ns.filteredExecutions.length > 0) {
+      updateStatistics();
+      console.log('🔄 Forçou atualização das estatísticas após carregamento');
+    }
+  }, 1000);
 });
 
