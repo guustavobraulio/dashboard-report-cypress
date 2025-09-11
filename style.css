@@ -2110,7 +2110,7 @@ body {
   color: var(--color-text) !important;
   line-height: 1 !important;
   margin: 0 !important;
-  display: block !important;
+  display: inline !important;
   text-align: center !important;
 }
 
@@ -2523,12 +2523,7 @@ body {
 /* Estrutura do valor + badge - MELHORADA */
 .stat-content .card-value {
   display: block !important; 
-  flex-direction: column !important; 
-  align-items: center !important;
-  justify-content: center !important;
-  gap: var(--space-2) !important;
   margin-bottom: var(--space-8) !important;
-  position: relative !important;
   text-align: center !important;
 }
 
@@ -2545,8 +2540,8 @@ body {
   position: static !important; 
   top: auto !important;
   white-space: nowrap !important;
-  display: block !important; /* NOVA LINHA */
-  margin: var(--space-4) auto 0 auto !important; /* CENTRALIZADO */
+  display: block !important;
+  margin: 8px auto 0 auto !important; 
   width: fit-content !important;
 }
 
