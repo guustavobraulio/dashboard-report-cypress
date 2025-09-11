@@ -214,6 +214,10 @@
     if (tf) tf.innerHTML = `${totalFailed}${formatTrend(trends.totalFailed)}`;
     if (ad) ad.innerHTML = `${avgDuration}s${formatTrend(trends.avgDuration)}`;
     if (sr) sr.innerHTML = `${successRate}%${formatTrend(trends.successRate)}`;
+
+    setTimeout(() => {
+      fixPercentageSymbol();
+    }, 50);
   }
 
 
