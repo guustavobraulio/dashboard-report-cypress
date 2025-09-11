@@ -2095,12 +2095,7 @@ body {
 }
 
 .card-value span:first-child {
-  display: inline !important; 
   font-size: 2.75rem !important;
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: #1f2937;
-  line-height: 1;
 }
 
 .card-value span:first-child,
@@ -2112,6 +2107,45 @@ body {
   margin: 0 !important;
   display: inline !important;
   text-align: center !important;
+}
+
+.card-value span:first-child:contains('%') {
+  font-size: 1.8rem !important;
+}
+
+#successRate,
+[id*="success"] span:first-child,
+[class*="success"] .card-value span:first-child {
+  position: relative;
+}
+
+#successRate::before,
+[id*="success"] span:first-child::before {
+  content: attr(data-number);
+  font-size: 2.75rem !important;
+  font-weight: 700 !important;
+}
+
+#successRate::after,
+[id*="success"] span:first-child::after {
+  content: '%';
+  font-size: 1.8rem !important;
+  font-weight: 600 !important;
+  vertical-align: top !important;
+  margin-left: 2px !important;
+}
+
+/* Números normais grandes */
+.card-value span:first-child:not([id*="success"]):not(:contains('%')),
+.stat-content h3:not([id*="success"]) {
+  font-size: 2.75rem !important;
+}
+
+/* APENAS o símbolo % menor */
+.card-value span:first-child[id*="success"],
+#successRate,
+.card-value span[id*="Rate"] {
+  font-size: 1.8rem !important;    /* ✅ MUDANÇA 2 - % MENOR */
 }
 
 
