@@ -1199,17 +1199,42 @@ function refreshAllPageSpeed() {
 // ===========================
 // Event Listeners
 // ===========================
-document.addEventListener('DOMContentLoaded', () => {
-  console.log('✅ Dashboard module loaded');
-
-  // ✅ Código existente para modal de métricas
-  const modal = document.getElementById('metricsModal');
-  if (modal) {
-    modal.addEventListener('click', (e) => {
-      if (e.target === modal) {
-        closeMetricsPage();
-      }
-    });
+document.addEventListener('DOMContentLoaded', async () => {
+  console.log('🚀 Inicializando dashboard...');
+  
+  // Aguardar um pouco para garantir que o DOM esteja totalmente carregado
+  await new Promise(resolve => setTimeout(resolve, 100));
+  
+  try {
+    // Verificar se a API está disponível
+    if (window.__DASH_API__ && window.__DASH_API__.loadRuns) {
+      console.log('📡 Carregando dados iniciais...');
+      await window.__DASH_API__.loadRuns();
+      console.log('✅ Dados carregados com sucesso');
+    } else {
+      console.error('❌ API não está disponível');
+    }
+    
+    // Configurar event listeners
+    const setupEventListeners = window.setupEventListeners;
+    if (typeof setupEventListeners === 'function') {
+      setupEventListeners();
+    }
+    
+    // Configurar botões de período
+    const setupPeriodButtons = window.setupPeriodButtons;
+    if (typeof setupPeriodButtons === 'function') {
+      setupPeriodButtons();
+    }
+    
+    // Iniciar auto-refresh
+    const startAutoRefreshCountdown = window.startAutoRefreshCountdown;
+    if (typeof startAutoRefreshCountdown === 'function') {
+      startAutoRefreshCountdown();
+    }
+    
+  } catch (error) {
+    console.error('❌ Erro na inicialização:', error);
   }
 });
 
