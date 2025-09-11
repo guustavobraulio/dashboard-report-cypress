@@ -236,14 +236,14 @@
           <button class="action-btn action-btn--view" data-execution-id="${e.id}">
             <i class="fas fa-eye"></i> Ver
           </button>
-          <a href="${e.githubUrl}" target="_blank" class="github-icon" title="Ver no GitHub">
-            <i class="fab fa-github"></i>
-          </a>
+          <button class="action-btn action-btn--github" onclick="window.open('${e.githubUrl}', '_blank')" title="Ver no GitHub Actions">
+            <i class="fab fa-github"></i> Actions
+          </button>
         </td>
       </tr>
     `).join('');
-    
-    // ✅ USAR APENAS UMA ABORDAGEM - Event Listeners (mais segura)
+
+    // Event listeners para botões Ver
     document.querySelectorAll(".action-btn--view").forEach(btn => {
       btn.addEventListener("click", (e) => {
         e.preventDefault();
@@ -253,7 +253,6 @@
       });
     });
 
-    // Configurar eventos do modal após criar os botões
     setTimeout(() => {
       setupModalEventListeners();
     }, 100);
@@ -1418,28 +1417,104 @@ function openMetricsModal() {
 function openExecutionDetails(executionId) {
   console.log('📋 Abrindo detalhes para:', executionId);
   
-  // Buscar dados da execução
-  const execution = window.__DASH_STATE__.filteredExecutions.find(e => e.id === executionId);
+  // Buscar dados da execução no namespace global
+  const executions = window.__DASH_STATE__?.filteredExecutions || [];
+  const execution = executions.find(e => e.id === executionId);
+  
   if (!execution) {
     console.error('❌ Execução não encontrada:', executionId);
     return;
   }
   
-  // Preencher dados do modal
-  populateModalData(execution);
+  console.log('✅ Execução encontrada:', execution);
+  
+  // Buscar o modal
+  const modal = document.getElementById('executionModal');
+  if (!modal) {
+    console.error('❌ Modal #executionModal não encontrado no HTML');
+    console.log('🔍 Modais disponíveis:', Array.from(document.querySelectorAll('[id*="modal"], [id*="Modal"]')).map(m => m.id));
+    return;
+  }
+  
+  // Preencher dados básicos diretamente
+  fillBasicModalData(execution);
   
   // Mostrar modal
-  const modal = document.getElementById('executionModal');
-  if (modal) {
-    modal.classList.remove('hidden');
-    
-    // Ativar primeira tab por padrão
-    setTimeout(() => {
-      const firstTab = document.querySelector('.tab-button[data-tab="overview"]');
-      if (firstTab) {
-        firstTab.click();
-      }
-    }, 50);
+  modal.classList.remove('hidden');
+  modal.style.display = 'flex'; // Força exibição
+  console.log('✅ Modal deve estar visível agora');
+  
+  // Ativar primeira tab
+  setTimeout(() => {
+    activateFirstTab();
+  }, 100);
+}
+
+function fillBasicModalData(execution) {
+  // Preencher título do modal
+  const modalTitle = document.querySelector('#executionModal .modal-header h2');
+  if (modalTitle) {
+    modalTitle.textContent = `Detalhes da Execução - ${execution.id}`;
+  }
+  
+  // Função auxiliar para preencher campos
+  const setField = (selector, value) => {
+    const element = document.querySelector(selector);
+    if (element) {
+      element.textContent = value || 'N/A';
+      console.log(`✅ Campo ${selector} preenchido:`, value);
+    } else {
+      console.warn(`⚠️ Campo ${selector} não encontrado`);
+    }
+  };
+  
+  // Preencher campos básicos (use seletores mais específicos se necessário)
+  setField('#executionModal #modalExecutionId', execution.id);
+  setField('#executionModal #modalDate', formatDateTime(execution.date));
+  setField('#executionModal #modalBranch', execution.branch);
+  setField('#executionModal #modalEnvironment', execution.environment);
+  setField('#executionModal #modalAuthor', execution.author);
+  setField('#executionModal #modalCommit', execution.commit);
+  setField('#executionModal #modalDuration', `${execution.duration}s`);
+  setField('#executionModal #modalStatus', execution.status === 'passed' ? 'APROVADO' : 'FALHADO');
+  
+  // GitHub link
+  const githubLink = document.querySelector('#executionModal #modalGithubLink');
+  if (githubLink && execution.githubUrl) {
+    githubLink.href = execution.githubUrl;
+  }
+  
+  console.log('✅ Dados básicos do modal preenchidos');
+}
+
+function activateFirstTab() {
+  // Remover active de todas as tabs
+  document.querySelectorAll('.tab-button').forEach(btn => {
+    btn.classList.remove('tab-button--active');
+  });
+  document.querySelectorAll('.tab-panel').forEach(panel => {
+    panel.classList.remove('tab-panel--active');
+  });
+  
+  // Ativar primeira tab
+  const firstTabBtn = document.querySelector('.tab-button[data-tab]');
+  const firstTabPanel = document.querySelector('.tab-panel');
+  
+  if (firstTabBtn && firstTabPanel) {
+    firstTabBtn.classList.add('tab-button--active');
+    firstTabPanel.classList.add('tab-panel--active');
+    console.log('✅ Primeira tab ativada');
+  }
+}
+
+// Função auxiliar de formatação de data
+function formatDateTime(dateInput) {
+  if (!dateInput) return 'Data não disponível';
+  try {
+    const date = new Date(dateInput);
+    return date.toLocaleString('pt-BR');
+  } catch (e) {
+    return 'Data inválida';
   }
 }
 
