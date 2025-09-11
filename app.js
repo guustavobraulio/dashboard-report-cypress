@@ -164,20 +164,16 @@
     console.log('Dados anteriores:', previousData);
 
     const currentData = {
-      totalPassed: totalPassed,    // ← MUDOU!
-      totalFailed: totalFailed,    // ← MUDOU!
+      totalPassed: totalPassed,
+      totalFailed: totalFailed,
       avgDuration: avgDuration,
       successRate: successRate
     };
 
-    // ✅ CORREÇÃO:
-    if (tp) tp.innerHTML = `${totalPassed}${formatTrend(trends.totalPassed)}`;  // ← MUDOU!
-    if (tf) tf.innerHTML = `${totalFailed}${formatTrend(trends.totalFailed)}`;  // ← MUDOU!
-    if (ad) ad.innerHTML = `${avgDuration}s${formatTrend(trends.avgDuration)}`;
-    if (sr) sr.innerHTML = `${successRate}%${formatTrend(trends.successRate)}`;
+    const trends = calculateTrends(currentData, previousData);
     console.log('Tendências calculadas:', trends);
 
-    // ✅ CORREÇÃO: Usar os nomes corretos dos trends
+    // ✅ DEFINIR formatTrend ANTES de usar
     function formatTrend(trendData) {
       if (!trendData || trendData.trend === undefined) {
         return '';
@@ -194,12 +190,13 @@
       return `<span class="trend-indicator" style="color: ${color}; font-size: 0.85em; margin-left: 8px;">${arrow} ${sign}${trendData.percent}%</span>`;
     }
 
+    // ✅ DEFINIR elementos ANTES de usar
     const tp = document.getElementById("totalPassed");
     const tf = document.getElementById("totalFailed");
     const ad = document.getElementById("avgDuration");
     const sr = document.getElementById("successRate");
 
-    // ✅ CORREÇÃO: Usar as chaves corretas
+    // ✅ USAR com segurança
     if (tp) tp.innerHTML = `${totalPassed}${formatTrend(trends.totalPassed)}`;
     if (tf) tf.innerHTML = `${totalFailed}${formatTrend(trends.totalFailed)}`;
     if (ad) ad.innerHTML = `${avgDuration}s${formatTrend(trends.avgDuration)}`;
@@ -857,69 +854,6 @@ function calculateTrends(currentData, previousData) {
     }
   }
 
-  // ✨ COMO USAR: Exemplo de integração
-  function loadDashboardData() {
-    // Exemplo de dados atuais e anteriores
-    const currentData = {
-      totalPassed: 110,
-      totalFailed: 28,
-      avgDuration: 35,
-      successRate: 80
-    };
-
-    const previousData = {
-      totalPassed: 85,
-      totalFailed: 15,
-      avgDuration: 40,
-      successRate: 75
-    };
-
-    // 1. Calcular as tendências usando SUA função
-    const trends = calculateTrends(currentData, previousData);
-
-    // 2. Atualizar os badges no dashboard
-    updateTrendBadges(trends);
-
-    // 3. Atualizar os valores principais também
-    document.getElementById('totalPassed').textContent = currentData.totalPassed;
-    document.getElementById('totalFailed').textContent = currentData.totalFailed;
-    document.getElementById('avgDuration').textContent = currentData.avgDuration + 's';
-    document.getElementById('successRate').textContent = currentData.successRate + '%';
-  }
-
-  // ✨ Chamar quando carregar os dados
-  loadDashboardData();
-
-  const periods = {
-    "24h": "last24h",
-    "7d": "last7days",
-    "30d": "last30days"
-  };
-
-  async function loadRealData(period = "last7days") {
-    try {
-      // 📊 Buscar dados do período específico
-      const currentData = await fetch(`/api/current-metrics?period=${period}`).then(r => r.json());
-      const previousData = await fetch(`/api/previous-metrics?period=${period}`).then(r => r.json());
-
-      // 🧮 Calcular tendências
-      const trends = calculateTrends(currentData, previousData);
-
-      // 🎯 Atualizar badges
-      updateTrendBadges(trends);
-
-      // 📈 Atualizar valores principais
-      document.getElementById('totalPassed').textContent = currentData.totalPassed;
-      document.getElementById('totalFailed').textContent = currentData.totalFailed;
-      document.getElementById('avgDuration').textContent = currentData.avgDuration + 's';
-      document.getElementById('successRate').textContent = currentData.successRate + '%';
-
-    } catch (error) {
-      console.error('Erro ao carregar dados:', error);
-    }
-  }
-
-
   function getPreviousPeriodData(currentPeriod) {
     const now = Date.now();
     let previousWindow;
@@ -936,19 +870,6 @@ function calculateTrends(currentData, previousData) {
         break;
       default:
         return { totalPassed: 0, totalFailed: 0, avgDuration: 0, successRate: 0 };
-
-        // ✅ CORREÇÃO: Se não há execuções anteriores
-        if (previousRuns.length === 0) {
-          return { totalPassed: 0, totalFailed: 0, avgDuration: 0, successRate: 0 };
-        }
-
-        // ✅ CORREÇÃO: Retorno final
-        return {
-          totalPassed: totalPassed,    // ← MUDOU!
-          totalFailed: totalFailed,    // ← MUDOU!
-          avgDuration: avgDuration,
-          successRate: successRate
-        };
     }
 
     console.log('Janela anterior:', new Date(previousWindow.start), 'até', new Date(previousWindow.end));
@@ -961,7 +882,6 @@ function calculateTrends(currentData, previousData) {
     console.log('Execuções no período anterior:', previousRuns.length);
 
     if (previousRuns.length === 0) {
-      // ✅ CORREÇÃO: Usar nomes consistentes
       return { totalPassed: 0, totalFailed: 0, avgDuration: 0, successRate: 0 };
     }
 
@@ -971,10 +891,9 @@ function calculateTrends(currentData, previousData) {
     const avgDuration = Math.round(previousRuns.reduce((s, e) => s + (e.duration || 0), 0) / previousRuns.length);
     const successRate = totalTests ? Math.round((totalPassed / totalTests) * 100) : 0;
 
-    // ✅ CORREÇÃO: Usar nomes consistentes
     return {
-      totalPassed: totalPassed,    // ← Era só "passed"
-      totalFailed: totalFailed,    // ← Era só "failed"
+      totalPassed: totalPassed,
+      totalFailed: totalFailed,
       avgDuration: avgDuration,
       successRate: successRate
     };
