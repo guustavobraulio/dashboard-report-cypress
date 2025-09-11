@@ -2494,69 +2494,138 @@ body {
 }
 
 /* ===========================
-   FIX FINAL: Badges únicos e bem posicionados
+   SOLUÇÃO FINAL: Trends badges otimizados
    =========================== */
 
-/* Esconder badges duplicados */
-.stat-content h3 + *,
-.stat-content .trend:not(.trend-indicator),
-.stat-content .badge:not(.trend-indicator) {
-  display: none !important;
-}
-
-/* Forçar apenas os trend-indicator a aparecerem corretamente */
-.stat-content .trend-indicator {
-  font-size: 0.6rem !important;
-  font-weight: 600 !important;
-  padding: 2px 6px !important;
-  border-radius: 8px !important;
+/* Estilo principal para badges de trend - MELHORADO */
+.trend-indicator {
   display: inline-block !important;
-  line-height: 1.1 !important;
-  margin-left: 6px !important;
-  position: relative !important;
-  top: -10px !important;
+  font-size: 0.7rem !important; /* Diminuído para evitar overflow */
+  font-weight: 600 !important;
   white-space: nowrap !important;
-  vertical-align: baseline !important;
+  margin-left: 6px !important;
+  padding: 2px 6px !important;
+  border-radius: 12px !important;
+  background: rgba(255, 255, 255, 0.1) !important;
+  backdrop-filter: blur(4px) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  line-height: 1.2 !important;
+  vertical-align: middle !important;
+  max-width: 80px !important; /* Limita largura máxima */
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  position: relative !important;
+  top: -8px !important; /* Ajustado para melhor posicionamento */
 }
 
-/* Cores específicas */
-.stat-content .trend-up {
-  background: #dcfce7 !important;
-  color: #166534 !important;
+/* Cores específicas para cada trend - MELHORADAS */
+.trend-indicator[style*="#16a34a"] {
+  background: rgba(22, 163, 74, 0.15) !important;
+  border-color: rgba(22, 163, 74, 0.3) !important;
 }
 
-.stat-content .trend-down {
-  background: #fee2e2 !important;
-  color: #991b1b !important;
+.trend-indicator[style*="#dc2626"] {
+  background: rgba(220, 38, 38, 0.15) !important;
+  border-color: rgba(220, 38, 38, 0.3) !important;
 }
 
-.stat-content .trend-neutral {
-  background: #f1f5f9 !important;
-  color: #475569 !important;
+.trend-indicator[style*="#6b7280"] {
+  background: rgba(107, 114, 128, 0.15) !important;
+  border-color: rgba(107, 114, 128, 0.3) !important;
 }
 
-/* Garantir estrutura do card */
+/* Container dos cards para evitar overflow - NOVO */
+.stats-card,
+.stat-card,
+.metric-card {
+  position: relative !important;
+  overflow: visible !important;
+  min-height: 120px !important; /* Garantir espaço suficiente */
+}
+
+.stats-card .card-content,
+.stat-card .card-content {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: space-between !important;
+  height: 100% !important;
+}
+
+/* Estrutura do valor + badge - MELHORADA */
 .stat-content .card-value {
   display: flex !important;
   align-items: baseline !important;
   justify-content: center !important;
   gap: 0 !important;
   margin-bottom: 0.5rem !important;
+  min-height: 3rem !important; /* Espaço para badge */
+  position: relative !important;
 }
-
 
 /* Garantir que apenas UM badge apareça por card */
 .stat-content .trend-indicator:not(:first-of-type) {
   display: none !important;
 }
 
-/* Responsivo */
+/* Responsividade para telas menores - MELHORADA */
 @media (max-width: 768px) {
-  .stat-content .trend-indicator {
-    font-size: 0.5rem !important;
+  .trend-indicator {
+    font-size: 0.6rem !important;
     padding: 1px 4px !important;
-    top: -8px !important;
     margin-left: 4px !important;
+    max-width: 60px !important;
+    top: -6px !important;
+  }
+}
+
+@media (max-width: 480px) {
+  .trend-indicator {
+    font-size: 0.55rem !important;
+    padding: 1px 3px !important;
+    margin-left: 3px !important;
+    max-width: 50px !important;
+    top: -4px !important;
   }
   
+  .stat-content .card-value {
+    min-height: 2.5rem !important;
+  }
+}
+
+/* Classes auxiliares para formatação - NOVAS */
+.trend-up {
+  background: #dcfce7 !important;
+  color: #166534 !important;
+  border-color: #bbf7d0 !important;
+}
+
+.trend-down {
+  background: #fee2e2 !important;
+  color: #991b1b !important;
+  border-color: #fecaca !important;
+}
+
+.trend-neutral {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border-color: #e2e8f0 !important;
+}
+
+/* Evita que o texto principal se mova com o badge */
+.stat-content h3,
+.card-value span:first-child {
+  display: inline-block !important;
+  vertical-align: baseline !important;
+}
+
+/* Fix para cards que podem ter layout quebrado */
+.stats-grid .stat-card {
+  display: flex !important;
+  align-items: center !important;
+  gap: var(--space-16) !important;
+}
+
+.stat-icon + .stat-content {
+  flex: 1 !important;
+  min-width: 0 !important; /* Permite text-overflow funcionar */
 }

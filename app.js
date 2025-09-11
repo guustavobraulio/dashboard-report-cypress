@@ -600,6 +600,12 @@
       if (!btn) return;
       onHistoryPeriodClick.call(btn, e);
     });
+    setTimeout(() => {
+      const defaultBtn = document.querySelector(`[data-history-period="${ns.historyPeriod}"]`);
+      if (defaultBtn) {
+        defaultBtn.classList.add('period-btn--active');
+      }
+    }, 100);
   }
 
   function onHistoryPeriodClick(e) {
@@ -687,42 +693,47 @@
   // Orquestração de carregamento
   // ===========================
   async function loadRuns() {
-  try {
-    const runs = await fetchRuns();
+    try {
+      const runs = await fetchRuns();
 
-    // 1) Deduplicar por id e usar somente 'uniq'
-    const uniqMap = new Map();
-    for (const r of runs || []) uniqMap.set(r.id, r);
-    const uniq = Array.from(uniqMap.values());
+      // 1) Deduplicar por id e usar somente 'uniq'
+      const uniqMap = new Map();
+      for (const r of runs || []) uniqMap.set(r.id, r);
+      const uniq = Array.from(uniqMap.values());
 
-    // 1.1) NORMALIZAR DATAS (garantir milissegundos e valor válido)
-    for (const r of uniq) {
-      // se vier em segundos (epoch < 1e12), converte p/ ms
-      if (typeof r.date === 'number' && r.date < 1e12) r.date = r.date * 1000;
-      // se vier string, tenta parse e normaliza p/ número ms
-      const t = (typeof r.date === 'number') ? r.date : new Date(r.date).getTime();
-      r.date = Number.isFinite(t) ? t : null;
-    } // A escala time do Chart.js exige datas parseáveis e consistentes. [3][4]
+      // 1.1) NORMALIZAR DATAS (garantir milissegundos e valor válido)
+      for (const r of uniq) {
+        if (typeof r.date === 'number' && r.date < 1e12) r.date = r.date * 1000;
+        const t = (typeof r.date === 'number') ? r.date : new Date(r.date).getTime();
+        r.date = Number.isFinite(t) ? t : null;
+      }
 
-    // disponibiliza para inspeção no console
-    window.__allRuns = uniq;
+      // disponibiliza para inspeção no console
+      window.__allRuns = uniq;
 
-    // 2) Base para cards/tabela/pizza
-    ns.executionsData = uniq.slice();
-    ns.filteredExecutions = ns.executionsData.slice();
-    updateStatistics();
-    initializeStatusChart();
-    populateExecutionTable();
+      // 2) Base para cards/tabela/pizza
+      ns.executionsData = uniq.slice();
+      ns.filteredExecutions = ns.executionsData.slice();
+      updateStatistics();
+      initializeStatusChart();
+      populateExecutionTable();
 
-    // 3) Histórico por período
-    console.log('loadRuns: total execs=', ns.executionsData.length, 'period=', ns.historyPeriod);
-    const filtered = filterRunsByPeriod(ns.executionsData, ns.historyPeriod);
-    console.log('history filtered len=', filtered.length);
-    initializeHistoryChartFromRuns(filtered); // pontos no formato {x: Date, y: number} com parsing:false. [3][4]
-  } catch (err) {
-    console.error('Falha ao carregar execuções:', err);
+      // 3) Histórico por período
+      console.log('loadRuns: total execs=', ns.executionsData.length, 'period=', ns.historyPeriod);
+      const filtered = filterRunsByPeriod(ns.executionsData, ns.historyPeriod);
+      console.log('history filtered len=', filtered.length);
+      initializeHistoryChartFromRuns(filtered);
+
+      // ✅ ADICIONE ESTA LINHA: Forçar atualização das estatísticas após carregamento
+      setTimeout(() => {
+        updateStatistics();
+        console.log('🔄 Trends atualizados após carregamento inicial');
+      }, 500);
+
+    } catch (err) {
+      console.error('Falha ao carregar execuções:', err);
+    }
   }
-}
 
   // ===========================
   // Sistema de Tendências
