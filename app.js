@@ -17,7 +17,7 @@
   ns.historyChart = ns.historyChart || null;
   ns.currentPage = ns.currentPage || 1;
   ns.itemsPerPage = ns.itemsPerPage || 10;
-  ns.historyPeriod = ns.historyPeriod || '24h';
+  ns.historyPeriod = ns.historyPeriod || '7d'; // ✅ MUDANÇA: padrão 7d
   ns.autoRefreshSeconds = ns.autoRefreshSeconds || 30;
   ns.autoRefreshTimer = ns.autoRefreshTimer || null;
 
@@ -603,12 +603,12 @@
       });
     });
 
-    // Garantir que o botão 24h seja ativo por padrão
     setTimeout(() => {
-      const defaultBtn = document.querySelector('[data-history-period="24h"]');
+      const defaultBtn = document.querySelector('[data-history-period="7d"]'); // ✅ MUDANÇA
       if (defaultBtn && !defaultBtn.classList.contains('period-btn--active')) {
         buttons.forEach(btn => btn.classList.remove('period-btn--active'));
         defaultBtn.classList.add('period-btn--active');
+        console.log('✅ Botão 7d ativado por padrão');
       }
     }, 100);
   }
@@ -631,10 +631,10 @@
     // Resetar página para primeira
     ns.currentPage = 1;
 
-    // Atualizar toda a interface
+    // Atualizar toda a interface (incluindo gráficos)
     updateStatistics();
     initializeStatusChart();
-    initializeHistoryChart(); // ✅ Agora funcional
+    initializeHistoryChart(); // ✅ IMPORTANTE: incluir gráfico de histórico
     populateExecutionTable();
   }
 
@@ -730,18 +730,19 @@
       // 2) Armazenar dados base (TODOS os dados)
       ns.executionsData = uniq.slice();
 
-      // 3) Aplicar filtro de período atual (padrão 24h)
+      // 3) Aplicar filtro de período atual (padrão 7d agora)
       const filtered = filterRunsByPeriod(ns.executionsData, ns.historyPeriod);
       ns.filteredExecutions = filtered.slice();
 
       console.log(`📊 Total: ${ns.executionsData.length}, Filtrado (${ns.historyPeriod}): ${ns.filteredExecutions.length}`);
 
-      // 4) Atualizar interface
+      // 4) ✅ ATUALIZAR INTERFACE COMPLETA (incluindo gráfico)
       updateStatistics();
       initializeStatusChart();
+      initializeHistoryChart(); // ✅ ADICIONAR ESTA LINHA
       populateExecutionTable();
 
-      // 5) ✨ INICIALIZAR COMPONENTES APÓS CARREGAR DADOS
+      // 5) Inicializar componentes após carregar dados
       initializeApp();
 
     } catch (err) {
@@ -1032,6 +1033,97 @@
     document.body.appendChild(modal);
   }
 
+  function startAutoRefresh() {
+    console.log('🔄 Iniciando auto-refresh...');
+
+    if (ns.autoRefreshTimer) {
+      clearInterval(ns.autoRefreshTimer);
+    }
+
+    ns.autoRefreshTimer = setInterval(async () => {
+      console.log('🔄 Auto-refresh executado');
+      try {
+        await loadRuns();
+        updateAutoRefreshDisplay();
+      } catch (error) {
+        console.error('❌ Erro no auto-refresh:', error);
+      }
+    }, ns.autoRefreshSeconds * 1000);
+
+    updateAutoRefreshDisplay();
+  }
+
+  function updateAutoRefreshDisplay() {
+    const refreshEl = document.querySelector('.auto-refresh span');
+    if (refreshEl) {
+      refreshEl.textContent = `Auto-refresh: ${ns.autoRefreshSeconds}s`;
+    }
+  }
+
+  // Executar Pipeline
+  async function executarPipeline() {
+    console.log('🚀 Executando pipeline...');
+
+    const btn = document.getElementById("runPipelineBtn") || document.querySelector('.header-btn[onclick*="Pipeline"]');
+    if (!btn) return;
+
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Executando...';
+
+    try {
+      // Simular execução do pipeline
+      await new Promise(resolve => setTimeout(resolve, 3000));
+
+      btn.innerHTML = '<i class="fas fa-check"></i> Concluído!';
+      btn.style.backgroundColor = '#16a34a';
+
+      // Recarregar dados após pipeline
+      setTimeout(async () => {
+        await loadRuns();
+        resetPipelineButton(btn);
+      }, 2000);
+
+    } catch (error) {
+      console.error('❌ Erro no pipeline:', error);
+      btn.innerHTML = '<i class="fas fa-times"></i> Erro';
+      btn.style.backgroundColor = '#dc2626';
+
+      setTimeout(() => resetPipelineButton(btn), 3000);
+    }
+  }
+
+  function resetPipelineButton(btn) {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-play"></i> Executar Pipeline';
+    btn.style.backgroundColor = '';
+  }
+
+
+
+  function setupHeaderEventListeners() {
+    console.log('⚙️ Configurando eventos do header...');
+
+    // Botão Métricas
+    const metricsBtn = document.querySelector('.header-btn[onclick*="Métricas"], .header-btn[data-action="metrics"]');
+    if (metricsBtn) {
+      metricsBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        openMetricsModal();
+      });
+    }
+
+    // Botão Executar Pipeline
+    const pipelineBtn = document.querySelector('.header-btn[onclick*="Pipeline"], .header-btn[data-action="pipeline"], #runPipelineBtn');
+    if (pipelineBtn) {
+      pipelineBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        executarPipeline();
+      });
+    }
+
+    console.log('✅ Eventos do header configurados');
+  }
+
   // Exponha utilitários se necessário
   root.__DASH_API__ = { loadRuns };
 })(window);
@@ -1205,101 +1297,18 @@ document.addEventListener('DOMContentLoaded', async () => {
   }
 });
 
-  // ===========================
-  // Funcionalidades do Header
-  // ===========================
-  
-  // Modal de Métricas
-  function openMetricsModal() {
-    console.log('📊 Abrindo modal de métricas...');
-    // Placeholder - implemente conforme sua necessidade
-    alert('Modal de Métricas será implementado aqui!');
-  }
+// ===========================
+// Funcionalidades do Header
+// ===========================
 
-  // Executar Pipeline
-  async function executarPipeline() {
-    console.log('🚀 Executando pipeline...');
-    
-    const btn = document.getElementById("runPipelineBtn") || document.querySelector('.header-btn[onclick*="Pipeline"]');
-    if (!btn) return;
+// Modal de Métricas
+function openMetricsModal() {
+  console.log('📊 Abrindo modal de métricas...');
+  // Placeholder - implemente conforme sua necessidade
+  alert('Modal de Métricas será implementado aqui!');
+}
 
-    btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Executando...';
-    
-    try {
-      // Simular execução do pipeline
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      btn.innerHTML = '<i class="fas fa-check"></i> Concluído!';
-      btn.style.backgroundColor = '#16a34a';
-      
-      // Recarregar dados após pipeline
-      setTimeout(async () => {
-        await loadRuns();
-        resetPipelineButton(btn);
-      }, 2000);
-      
-    } catch (error) {
-      console.error('❌ Erro no pipeline:', error);
-      btn.innerHTML = '<i class="fas fa-times"></i> Erro';
-      btn.style.backgroundColor = '#dc2626';
-      
-      setTimeout(() => resetPipelineButton(btn), 3000);
-    }
-  }
 
-  function resetPipelineButton(btn) {
-    btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-play"></i> Executar Pipeline';
-    btn.style.backgroundColor = '';
-  }
 
-  // Auto-refresh
-  function startAutoRefresh() {
-    console.log('🔄 Iniciando auto-refresh...');
-    
-    if (ns.autoRefreshTimer) {
-      clearInterval(ns.autoRefreshTimer);
-    }
-    
-    ns.autoRefreshTimer = setInterval(async () => {
-      console.log('🔄 Auto-refresh executado');
-      await loadRuns();
-      updateAutoRefreshDisplay();
-    }, ns.autoRefreshSeconds * 1000);
-    
-    updateAutoRefreshDisplay();
-  }
-
-  function updateAutoRefreshDisplay() {
-    const refreshEl = document.querySelector('.auto-refresh span');
-    if (refreshEl) {
-      refreshEl.textContent = `Auto-refresh: ${ns.autoRefreshSeconds}s`;
-    }
-  }
-
-  function setupHeaderEventListeners() {
-    console.log('⚙️ Configurando eventos do header...');
-    
-    // Botão Métricas
-    const metricsBtn = document.querySelector('.header-btn[onclick*="Métricas"], .header-btn[data-action="metrics"]');
-    if (metricsBtn) {
-      metricsBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        openMetricsModal();
-      });
-    }
-
-    // Botão Executar Pipeline
-    const pipelineBtn = document.querySelector('.header-btn[onclick*="Pipeline"], .header-btn[data-action="pipeline"], #runPipelineBtn');
-    if (pipelineBtn) {
-      pipelineBtn.addEventListener('click', (e) => {
-        e.preventDefault();
-        executarPipeline();
-      });
-    }
-
-    console.log('✅ Eventos do header configurados');
-  }
 
 
