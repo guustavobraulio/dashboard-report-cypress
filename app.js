@@ -39,39 +39,29 @@
   // ===========================
   function updateStatistics() {
     console.log('📊 Atualizando estatísticas...');
-    
-    const totalPassed = ns.filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
-    const totalFailed = ns.filteredExecutions.reduce((s, e) => s + (e.failedTests || 0), 0);
+
+    const currentRuns = ns.filteredExecutions || [];
+    const totalPassed = currentRuns.reduce((s, e) => s + (e.passedTests || 0), 0);
+    const totalFailed = currentRuns.reduce((s, e) => s + (e.failedTests || 0), 0);
     const totalTests = totalPassed + totalFailed;
-    const avgDuration = ns.filteredExecutions.length
-      ? Math.round(ns.filteredExecutions.reduce((s, e) => s + (e.duration || 0), 0) / ns.filteredExecutions.length)
-      : 0;
-    const successRate = totalTests ? Math.round((totalPassed / totalTests) * 100) : 0;
-    
-    console.log('📊 Métricas calculadas:', { totalPassed, totalFailed, avgDuration, successRate });
-    
-    // ✅ USAR APENAS textContent (sem HTML, sem trends)
-    const tp = document.getElementById("totalPassed");
-    const tf = document.getElementById("totalFailed");
-    const ad = document.getElementById("avgDuration");
-    const sr = document.getElementById("successRate");
-    
-    if (tp) {
-      tp.textContent = totalPassed; // SEM innerHTML = SEM trends!
-      console.log('✅ totalPassed limpo:', totalPassed);
-    }
-    if (tf) {
-      tf.textContent = totalFailed;
-      console.log('✅ totalFailed limpo:', totalFailed);
-    }
-    if (ad) {
-      ad.textContent = `${avgDuration}s`;
-      console.log('✅ avgDuration limpo:', avgDuration + 's');
-    }
-    if (sr) {
-      sr.textContent = `${successRate}%`;
-      console.log('✅ successRate limpo:', successRate + '%');
-    }
+    const avgDuration = currentRuns.length > 0 ? Math.round(currentRuns.reduce((s, e) => s + (e.duration || 0), 0) / currentRuns.length) : 0;
+    const successRate = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
+
+    const currentData = { totalPassed, totalFailed, avgDuration, successRate };
+
+    // ✅ CALCULAR DADOS DO PERÍODO ANTERIOR
+    const previousData = getPreviousPeriodData(ns.historyPeriod);
+
+    // ✅ CALCULAR TRENDS REAIS
+    const trends = calculateRealTrends(currentData, previousData);
+
+    // ✅ ATUALIZAR COM VALORES REAIS
+    updateElementWithTrend('totalPassed', totalPassed, trends.totalPassed);
+    updateElementWithTrend('totalFailed', totalFailed, trends.totalFailed);
+    updateElementWithTrend('avgDuration', `${avgDuration}s`, trends.avgDuration);
+    updateElementWithTrend('successRate', `${successRate}%`, trends.successRate);
+
+    console.log('📊 Trends reais aplicados:', trends);
   }
 
 
@@ -803,27 +793,23 @@
     return trends;
   }
 
-  function getPreviousPeriodData(currentPeriod) {
+  function getPreviousPeriodData(period) {
     const now = Date.now();
-    let previousWindow;
+    let windowMs;
 
-    switch (currentPeriod) {
-      case '24h':
-        previousWindow = { start: now - (48 * 60 * 60 * 1000), end: now - (24 * 60 * 60 * 1000) };
-        break;
-      case '7d':
-        previousWindow = { start: now - (14 * 24 * 60 * 60 * 1000), end: now - (7 * 24 * 60 * 60 * 1000) };
-        break;
-      case '30d':
-        previousWindow = { start: now - (60 * 24 * 60 * 60 * 1000), end: now - (30 * 24 * 60 * 60 * 1000) };
-        break;
-      default:
-        return { totalPassed: 0, totalFailed: 0, avgDuration: 0, successRate: 0 };
+    switch (period) {
+      case '24h': windowMs = 24 * 60 * 60 * 1000; break;
+      case '7d': windowMs = 7 * 24 * 60 * 60 * 1000; break;
+      case '30d': windowMs = 30 * 24 * 60 * 60 * 1000; break;
+      default: windowMs = 7 * 24 * 60 * 60 * 1000;
     }
+
+    const periodStart = now - (2 * windowMs); // Período anterior
+    const periodEnd = now - windowMs;
 
     const previousRuns = ns.executionsData.filter(r => {
       const runTime = new Date(r.date).getTime();
-      return runTime >= previousWindow.start && runTime <= previousWindow.end;
+      return runTime >= periodStart && runTime <= periodEnd;
     });
 
     if (previousRuns.length === 0) {
@@ -836,13 +822,46 @@
     const avgDuration = Math.round(previousRuns.reduce((s, e) => s + (e.duration || 0), 0) / previousRuns.length);
     const successRate = totalTests ? Math.round((totalPassed / totalTests) * 100) : 0;
 
-    return {
-      totalPassed: totalPassed,
-      totalFailed: totalFailed,
-      avgDuration: avgDuration,
-      successRate: successRate
-    };
+    return { totalPassed, totalFailed, avgDuration, successRate };
   }
+
+  function calculateRealTrends(current, previous) {
+    const trends = {};
+
+    Object.keys(current).forEach(key => {
+      const cur = current[key] || 0;
+      const prev = previous[key] || 0;
+
+      if (prev === 0) {
+        trends[key] = cur > 0 ? { percent: 100, direction: 'up' } : { percent: 0, direction: 'neutral' };
+      } else {
+        const change = ((cur - prev) / prev) * 100;
+        const limitedChange = Math.min(Math.max(Math.round(change), -99), 99); // Limita -99% a +99%
+
+        trends[key] = {
+          percent: Math.abs(limitedChange),
+          direction: limitedChange > 5 ? 'up' : limitedChange < -5 ? 'down' : 'neutral'
+        };
+      }
+    });
+
+    return trends;
+  }
+  function updateElementWithTrend(elementId, value, trend) {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+
+    const arrow = trend.direction === 'up' ? '↗️' : trend.direction === 'down' ? '↘️' : '➡️';
+    const sign = trend.direction === 'up' ? '+' : trend.direction === 'down' ? '-' : '';
+    const color = trend.direction === 'up' ? '#16a34a' : trend.direction === 'down' ? '#dc2626' : '#6b7280';
+
+    // Manter o layout existente, mas com valores reais
+    element.innerHTML = `${value}<small style="color: ${color}; margin-left: 8px; font-size: 0.75rem;">${arrow} ${sign}${trend.percent}%</small>`;
+  }
+
+
+
+
 
   function formatTrend(trendData) {
     if (!trendData || trendData.trend === undefined) {
@@ -1018,34 +1037,34 @@ document.addEventListener('DOMContentLoaded', () => {
   function setupModalTabs() {
     const tabButtons = document.querySelectorAll('.tab-button');
     const tabPanels = document.querySelectorAll('.tab-panel');
-    
+
     tabButtons.forEach(button => {
       button.addEventListener('click', () => {
         if (button.disabled) return;
-        
+
         // Remover active de todas
         tabButtons.forEach(btn => btn.classList.remove('tab-button--active'));
         tabPanels.forEach(panel => panel.classList.remove('tab-panel--active'));
-        
+
         // Ativar clicada
         button.classList.add('tab-button--active');
-        
+
         const targetTab = button.getAttribute('data-tab');
         const targetPanel = document.getElementById(`${targetTab}-tab`);
         if (targetPanel) {
           targetPanel.classList.add('tab-panel--active');
         }
-        
+
         console.log(`✅ Tab ativada: ${targetTab}`);
       });
     });
-    
+
     console.log('✅ Modal tabs configuradas:', tabButtons.length);
   }
-  
+
   // Executar setup após delay
   setTimeout(setupModalTabs, 1000);
-  
+
   // Re-executar quando modal abrir
   const observer = new MutationObserver((mutations) => {
     mutations.forEach((mutation) => {
@@ -1057,7 +1076,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   });
-  
+
   const modal = document.getElementById('executionModal');
   if (modal) {
     observer.observe(modal, { attributes: true });
