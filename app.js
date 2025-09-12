@@ -49,14 +49,13 @@
 
     const currentData = { totalPassed, totalFailed, avgDuration, successRate };
 
-    // ✅ CALCULAR DADOS DO PERÍODO ANTERIOR
-    // const previousData = getPreviousPeriodData(ns.historyPeriod);
+    const previousData = getPreviousPeriodData(ns.historyPeriod);
 
-    // // ✅ CALCULAR TRENDS REAIS
-    // const trends = calculateRealTrends(currentData, previousData);
+    // ✅ CALCULAR TRENDS REAIS
+    const trends = calculateRealTrends(currentData, previousData);
 
-    // // ✅ ATUALIZAR COM VALORES REAIS
-    // updateElementWithTrend('totalPassed', totalPassed, trends.totalPassed);
+    // ✅ ATUALIZAR COM VALORES REAIS
+    updateElementWithTrend('totalPassed', totalPassed, trends.totalPassed);
     updateElementWithTrend('totalFailed', totalFailed, trends.totalFailed);
     updateElementWithTrend('avgDuration', `${avgDuration}s`, trends.avgDuration);
     updateElementWithTrend('successRate', `${successRate}%`, trends.successRate);
