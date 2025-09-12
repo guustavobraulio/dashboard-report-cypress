@@ -39,43 +39,42 @@
   // ===========================
   function updateStatistics() {
     console.log('📊 Atualizando estatísticas...');
-
-    const currentRuns = ns.filteredExecutions || [];
-    const totalPassed = currentRuns.reduce((sum, run) => sum + (run.passedTests || 0), 0);
-    const totalFailed = currentRuns.reduce((sum, run) => sum + (run.failedTests || 0), 0);
+    
+    const totalPassed = ns.filteredExecutions.reduce((s, e) => s + (e.passedTests || 0), 0);
+    const totalFailed = ns.filteredExecutions.reduce((s, e) => s + (e.failedTests || 0), 0);
     const totalTests = totalPassed + totalFailed;
-    const avgDuration = currentRuns.length > 0 ? Math.round(currentRuns.reduce((sum, run) => sum + (run.duration || 0), 0) / currentRuns.length) : 0;
-    const successRate = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
-
-    const currentData = { totalPassed, totalFailed, avgDuration, successRate };
-
-    // ✅ USAR AS FUNÇÕES DE TRENDS
-    if (currentRuns.length > 0) {
-      try {
-        const previousData = getPreviousPeriodData(ns.historyPeriod);
-        const trends = calculateTrends(currentData, previousData);
-
-        // ✅ APLICAR TRENDS NOS ELEMENTOS
-        const tp = document.getElementById("totalPassed");
-        const tf = document.getElementById("totalFailed");
-        const ad = document.getElementById("avgDuration");
-        const sr = document.getElementById("successRate");
-
-        if (tp) tp.innerHTML = `${totalPassed}${formatTrend(trends.totalPassed)}`;
-        if (tf) tf.innerHTML = `${totalFailed}${formatTrend(trends.totalFailed)}`;
-        if (ad) ad.innerHTML = `${avgDuration}s${formatTrend(trends.avgDuration)}`;
-        if (sr) sr.innerHTML = `${successRate}%${formatTrend(trends.successRate)}`;
-
-      } catch (e) {
-        console.log('⚠️ Erro ao calcular trends:', e.message);
-        // Fallback sem trends
-        document.getElementById("totalPassed").textContent = totalPassed;
-        document.getElementById("totalFailed").textContent = totalFailed;
-        document.getElementById("avgDuration").textContent = `${avgDuration}s`;
-        document.getElementById("successRate").textContent = `${successRate}%`;
-      }
+    const avgDuration = ns.filteredExecutions.length
+      ? Math.round(ns.filteredExecutions.reduce((s, e) => s + (e.duration || 0), 0) / ns.filteredExecutions.length)
+      : 0;
+    const successRate = totalTests ? Math.round((totalPassed / totalTests) * 100) : 0;
+    
+    console.log('📊 Métricas calculadas:', { totalPassed, totalFailed, avgDuration, successRate });
+    
+    // ✅ USAR APENAS textContent (sem HTML, sem trends)
+    const tp = document.getElementById("totalPassed");
+    const tf = document.getElementById("totalFailed");
+    const ad = document.getElementById("avgDuration");
+    const sr = document.getElementById("successRate");
+    
+    if (tp) {
+      tp.textContent = totalPassed; // SEM innerHTML = SEM trends!
+      console.log('✅ totalPassed limpo:', totalPassed);
+    }
+    if (tf) {
+      tf.textContent = totalFailed;
+      console.log('✅ totalFailed limpo:', totalFailed);
+    }
+    if (ad) {
+      ad.textContent = `${avgDuration}s`;
+      console.log('✅ avgDuration limpo:', avgDuration + 's');
+    }
+    if (sr) {
+      sr.textContent = `${successRate}%`;
+      console.log('✅ successRate limpo:', successRate + '%');
     }
   }
+
+
 
   // ===========================
   // Backend (Functions)
