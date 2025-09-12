@@ -2605,3 +2605,13 @@ h2:contains("Histórico de Execuções") {
 .history-chart-section .card__header h2 {
   text-align: center !important;
 }
+
+.stat-card *:contains("+300%"),
+small[style*="+300%"] {
+  display: none !important;
+}
+
+/* Se ainda aparecer, forçar */  
+.stat-card small:nth-of-type(2) {
+  display: none !important;
+}
