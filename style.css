@@ -2605,3 +2605,10 @@ h2:contains("Histórico de Execuções") {
 .history-chart-section .card__header h2 {
   text-align: center !important;
 }
+
+.stat-card small[style*="color"] {
+  font-size: 0.75rem !important;
+  padding: 2px 6px !important;
+  border-radius: 4px !important;
+  margin-left: 8px !important;
+}

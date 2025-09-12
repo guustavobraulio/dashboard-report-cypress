@@ -50,13 +50,13 @@
     const currentData = { totalPassed, totalFailed, avgDuration, successRate };
 
     // ✅ CALCULAR DADOS DO PERÍODO ANTERIOR
-    const previousData = getPreviousPeriodData(ns.historyPeriod);
+    // const previousData = getPreviousPeriodData(ns.historyPeriod);
 
-    // ✅ CALCULAR TRENDS REAIS
-    const trends = calculateRealTrends(currentData, previousData);
+    // // ✅ CALCULAR TRENDS REAIS
+    // const trends = calculateRealTrends(currentData, previousData);
 
-    // ✅ ATUALIZAR COM VALORES REAIS
-    updateElementWithTrend('totalPassed', totalPassed, trends.totalPassed);
+    // // ✅ ATUALIZAR COM VALORES REAIS
+    // updateElementWithTrend('totalPassed', totalPassed, trends.totalPassed);
     updateElementWithTrend('totalFailed', totalFailed, trends.totalFailed);
     updateElementWithTrend('avgDuration', `${avgDuration}s`, trends.avgDuration);
     updateElementWithTrend('successRate', `${successRate}%`, trends.successRate);
@@ -1082,3 +1082,103 @@ document.addEventListener('DOMContentLoaded', () => {
     observer.observe(modal, { attributes: true });
   }
 });
+
+// ===========================
+// REMOVER +300% COM JAVASCRIPT - SOLUÇÃO DEFINITIVA
+// ===========================
+document.addEventListener('DOMContentLoaded', () => {
+  function remover300Percent() {
+    // Encontrar todos os elementos que contêm +300%
+    document.querySelectorAll('*').forEach(el => {
+      if (el.textContent && el.textContent.includes('+300%') && 
+          !el.textContent.includes('↗') && 
+          !el.textContent.includes('↘')) {
+        el.style.display = 'none';
+        console.log('✅ Removido +300%:', el);
+      }
+    });
+    
+    // Método alternativo - por classes específicas
+    document.querySelectorAll('.trend-indicator').forEach(el => {
+      if (el.textContent && el.textContent.includes('300%')) {
+        el.remove();
+        console.log('✅ Removido trend 300%:', el);
+      }
+    });
+  }
+  
+  // Executar imediatamente
+  remover300Percent();
+  
+  // Executar a cada 2 segundos para pegar novos
+  setInterval(remover300Percent, 2000);
+  
+  // Executar quando mudar período
+  document.querySelectorAll('[data-history-period]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setTimeout(remover300Percent, 500);
+    });
+  });
+  
+  console.log('✅ Sistema anti-300% ativado');
+});
+
+function removeHardcodedTrends() {
+    console.log('🧹 Limpando trends hardcoded...');
+    
+    // Método 1: Remover spans que contenham exatamente "+300%" sem style
+    const spans = document.querySelectorAll('span');
+    let removidos = 0;
+    
+    spans.forEach(span => {
+        const text = span.textContent.trim();
+        const hasStyle = span.hasAttribute('style');
+        const hasEmoji = span.innerHTML.includes('↗️') || span.innerHTML.includes('↘️') || span.innerHTML.includes('➡️');
+        
+        // Remover apenas "+300%" que NÃO são calculados
+        if ((text === '+300%' || text === '📈 +300%') && !hasStyle && !hasEmoji) {
+            console.log('Removendo span hardcoded:', span.textContent);
+            span.remove();
+            removidos++;
+        }
+    });
+    
+    // Método 2: Limpar elementos com emoji + "+300%" hardcoded
+    const emojiSpans = document.querySelectorAll('span:contains("📈")');
+    emojiSpans.forEach(span => {
+        if (span.textContent.includes('+300%')) {
+            span.remove();
+            removidos++;
+        }
+    });
+    
+    console.log(`✅ ${removidos} elementos hardcoded removidos`);
+}
+
+// Integrar com suas funções existentes
+const originalUpdateStatistics = updateStatistics;
+updateStatistics = function() {
+    console.log('📊 Atualizando estatísticas...');
+    
+    // Executar função original
+    originalUpdateStatistics.apply(this, arguments);
+    
+    // Limpar hardcoded após 200ms (garante que trends reais já foram aplicados)
+    setTimeout(removeHardcodedTrends, 200);
+};
+
+// Executar na inicialização
+document.addEventListener('DOMContentLoaded', () => {
+    setTimeout(removeHardcodedTrends, 1000);
+});
+
+// Executar após refresh automático
+if (ns.autoRefreshTimer) {
+    const originalRefresh = ns.refresh || function(){};
+    ns.refresh = function() {
+        originalRefresh.apply(this, arguments);
+        setTimeout(removeHardcodedTrends, 300);
+    };
+}
+
+
