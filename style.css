@@ -2606,12 +2606,57 @@ h2:contains("Histórico de Execuções") {
   text-align: center !important;
 }
 
-.stat-card *:contains("+300%"),
-small[style*="+300%"] {
+/* ===========================
+   ESCONDER +300% DEFINITIVAMENTE
+   =========================== */
+
+/* Esconde qualquer elemento que contenha +300% */
+*:contains("+300%") {
   display: none !important;
 }
 
-/* Se ainda aparecer, forçar */  
-.stat-card small:nth-of-type(2) {
+/* Método mais específico - esconde small com +300% */
+small {
+  display: block !important;
+}
+
+small[style*="+300%"],
+small:contains("+300%") {
   display: none !important;
+}
+
+/* Se ainda aparecer, força esconder por posição */
+.stat-card small:nth-child(3),
+.stat-card small:nth-child(4) {
+  display: none !important;
+}
+
+/* Esconde texto verde +300% especificamente */
+.stat-card *[style*="color: #16a34a"]:contains("300"),
+.stat-card *[style*="color: green"]:contains("300") {
+  display: none !important;
+}
+
+/* Força esconder qualquer badge com 300 */
+[class*="trend"]:contains("300"),
+[style*="300"] {
+  display: none !important;
+}
+
+/* CSS Hack final - esconde qualquer coisa com '300' nos stats */
+.stat-card *::before {
+  content: "";
+}
+
+.stat-card * {
+  font-size: inherit !important;
+}
+
+.stat-card small[style*="300"] {
+  visibility: hidden !important;
+  width: 0 !important;
+  height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  overflow: hidden !important;
 }
