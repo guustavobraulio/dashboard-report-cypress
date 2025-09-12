@@ -743,7 +743,7 @@
       ns.executionsData = uniq.slice();
       ns.filteredExecutions = filterRunsByPeriod(ns.executionsData, ns.historyPeriod); // ✅ APLICAR FILTRO
 
-      // updateStatistics();
+      updateStatistics();
       initializeStatusChart();
       populateExecutionTable();
 
@@ -1155,29 +1155,16 @@ function removeHardcodedTrends() {
 }
 
 // Integrar com suas funções existentes
-function updateStatistics() {
+const originalUpdateStatistics = updateStatistics;
+updateStatistics = function() {
     console.log('📊 Atualizando estatísticas...');
-    const currentRuns = ns.filteredExecutions || [];
-    const totalPassed = currentRuns.reduce((s, e) => s + (e.passedTests || 0), 0);
-    const totalFailed = currentRuns.reduce((s, e) => s + (e.failedTests || 0), 0);
-    const totalTests = totalPassed + totalFailed;
-    const avgDuration = currentRuns.length > 0 ? 
-        Math.round(currentRuns.reduce((s, e) => s + (e.duration || 0), 0) / currentRuns.length) : 0;
-    const successRate = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
     
-    // ✅ ATUALIZAR ELEMENTOS DIRETAMENTE
-    const totalPassedEl = document.getElementById('totalPassed');
-    const totalFailedEl = document.getElementById('totalFailed');
-    const avgDurationEl = document.getElementById('avgDuration');
-    const successRateEl = document.getElementById('successRate');
+    // Executar função original
+    originalUpdateStatistics.apply(this, arguments);
     
-    if (totalPassedEl) totalPassedEl.textContent = totalPassed;
-    if (totalFailedEl) totalFailedEl.textContent = totalFailed;
-    if (avgDurationEl) avgDurationEl.textContent = `${avgDuration}s`;
-    if (successRateEl) successRateEl.textContent = `${successRate}%`;
-    
-    console.log('📊 Estatísticas atualizadas:', { totalPassed, totalFailed, avgDuration, successRate });
-}
+    // Limpar hardcoded após 200ms (garante que trends reais já foram aplicados)
+    setTimeout(removeHardcodedTrends, 200);
+};
 
 // Executar na inicialização
 document.addEventListener('DOMContentLoaded', () => {
