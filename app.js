@@ -363,7 +363,42 @@
 
   // ===========================
   // Modal
-  // ===========================
+    // ===========================
+  function switchTab(activeTabId, activeButtonId) {
+        console.log('Switching to tab:', activeTabId);
+
+        // Ocultar todos os painéis
+        const allPanels = document.querySelectorAll('#executionModal .tab-panel');
+        allPanels.forEach(panel => {
+          panel.style.display = 'none';
+          panel.classList.remove('tab-panel--active');
+        });
+
+        // Remover classe ativa de todos os botões
+        const allButtons = document.querySelectorAll('#executionModal .tab-button');
+        allButtons.forEach(button => {
+          button.classList.remove('tab-button--active');
+        });
+
+        // Mostrar painel ativo
+        const activePanel = document.getElementById(activeTabId);
+        if (activePanel) {
+          activePanel.style.display = 'block';
+          activePanel.classList.add('tab-panel--active');
+        }
+
+        // Ativar botão clicado
+        const activeButton = document.getElementById(activeButtonId);
+        if (activeButton) {
+          activeButton.classList.add('tab-button--active');
+        }
+
+        // Carregar conteúdo
+        loadTabContent(activeTabId);
+      }
+
+
+
   function openExecutionModal(id) {
     const e = ns.executionsData.find(x => x.id === id);
     if (!e) return;
@@ -925,108 +960,7 @@
       button.parentNode.replaceChild(newButton, button);
     });
 
-    function switchTab(activeTabId, activeButtonId) {
-      console.log('Switching to tab:', activeTabId);
-
-      // Ocultar todos os painéis
-      const allPanels = document.querySelectorAll('#executionModal .tab-panel');
-      allPanels.forEach(panel => {
-        panel.style.display = 'none';
-        panel.classList.remove('tab-panel--active');
-      });
-
-      // Remover classe ativa de todos os botões
-      const allButtons = document.querySelectorAll('#executionModal .tab-button');
-      allButtons.forEach(button => {
-        button.classList.remove('tab-button--active');
-      });
-
-      // Mostrar painel ativo
-      const activePanel = document.getElementById(activeTabId);
-      if (activePanel) {
-        activePanel.style.display = 'block';
-        activePanel.classList.add('tab-panel--active');
-      }
-
-      // Ativar botão clicado
-      const activeButton = document.getElementById(activeButtonId);
-      if (activeButton) {
-        activeButton.classList.add('tab-button--active');
-      }
-
-      // Carregar conteúdo
-      loadTabContent(activeTabId);
-    }
-
     let modalTabsInitialized = false;
-
-    function initializeModalTabs() {
-      // Evitar inicializar múltiplas vezes
-      if (modalTabsInitialized) {
-        console.log('Tabs já inicializadas, pulando...');
-        return;
-      }
-
-      console.log('Inicializando tabs do modal...');
-
-      function switchTab(activeTabId, activeButtonId) {
-        console.log('Switching to tab:', activeTabId);
-
-        // Ocultar todos os painéis
-        const allPanels = document.querySelectorAll('#executionModal .tab-panel');
-        allPanels.forEach(panel => {
-          panel.style.display = 'none';
-          panel.classList.remove('tab-panel--active');
-        });
-
-        // Remover classe ativa de todos os botões
-        const allButtons = document.querySelectorAll('#executionModal .tab-button');
-        allButtons.forEach(button => {
-          button.classList.remove('tab-button--active');
-        });
-
-        // Mostrar painel ativo
-        const activePanel = document.getElementById(activeTabId);
-        if (activePanel) {
-          activePanel.style.display = 'block';
-          activePanel.classList.add('tab-panel--active');
-        }
-
-        // Ativar botão clicado
-        const activeButton = document.getElementById(activeButtonId);
-        if (activeButton) {
-          activeButton.classList.add('tab-button--active');
-        }
-
-        // Carregar conteúdo específico da tab
-        loadTabContent(activeTabId);
-      }
-
-      // ✅ EVENT DELEGATION - Um único listener para todas as tabs
-      document.addEventListener('click', function handleTabClick(e) {
-        // Verificar se o click foi em um botão de tab do modal
-        if (e.target.matches('#executionModal .tab-button') ||
-          e.target.closest('#executionModal .tab-button')) {
-
-          e.preventDefault();
-          e.stopPropagation();
-
-          const button = e.target.closest('.tab-button');
-          const tabId = button.getAttribute('data-tab');
-          const buttonId = button.id;
-
-          console.log('Tab clicked via delegation:', tabId, buttonId);
-
-          if (tabId && buttonId) {
-            switchTab(tabId, buttonId);
-          }
-        }
-      });
-
-      // Marcar como inicializado
-      modalTabsInitialized = true;
-
-    }
 
     // ✅ FUNÇÃO PARA RESETAR O MODAL QUANDO FECHA
     function resetModalTabs() {
@@ -1319,12 +1253,6 @@
     
     console.log('Modal fechado');
   }
-
-  // ✅ INICIALIZAR QUANDO A PÁGINA CARREGAR
-  document.addEventListener('DOMContentLoaded', function () {
-    console.log('DOM carregado - inicializando tabs...');
-    initializeModalTabsOnce();
-  });
 
   // ✅ FALLBACK - Se o DOM já carregou
   if (document.readyState === 'loading') {
