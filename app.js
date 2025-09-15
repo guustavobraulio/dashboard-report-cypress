@@ -885,6 +885,37 @@
   // FUNCIONALIDADE DAS TABS DO MODAL
   // ===========================
 
+  function initializeModalTabsOnce() {
+    console.log('Inicializando tabs globalmente...');
+
+    // Event delegation - listener global permanente
+    document.addEventListener('click', function (e) {
+      // Verificar se o click foi em um botão de tab
+      const tabButton = e.target.closest('#executionModal .tab-button');
+      if (tabButton) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const tabId = tabButton.getAttribute('data-tab');
+        const buttonId = tabButton.id;
+
+        console.log('Tab clicked:', tabId, buttonId);
+        switchTab(tabId, buttonId);
+      }
+    });
+
+    // Listener para fechar modal
+    document.addEventListener('click', function (e) {
+      if (e.target.id === 'closeModal' ||
+        e.target.closest('#closeModal') ||
+        e.target.classList.contains('modal-backdrop')) {
+
+        console.log('Fechando modal...');
+        closeExecutionModal();
+      }
+    });
+  }
+
   function initializeModalTabs() {
     // Limpar event listeners antigos para evitar duplicatas
     const existingButtons = document.querySelectorAll('#executionModal .tab-button');
@@ -895,7 +926,7 @@
     });
 
     function switchTab(activeTabId, activeButtonId) {
-      console.log('Switching to tab:', activeTabId); // Debug
+      console.log('Switching to tab:', activeTabId);
 
       // Ocultar todos os painéis
       const allPanels = document.querySelectorAll('#executionModal .tab-panel');
@@ -923,7 +954,7 @@
         activeButton.classList.add('tab-button--active');
       }
 
-      // ✅ CARREGAR CONTEÚDO ESPECÍFICO DA TAB
+      // Carregar conteúdo
       loadTabContent(activeTabId);
     }
 
@@ -1026,315 +1057,342 @@
       }
     }
 
-      // ✅ FUNÇÃO PARA CARREGAR CONTEÚDO DAS TABS
-      function loadTabContent(tabId) {
-        const currentExecution = ns.currentModalExecution; // Guardar execução atual
+    // ✅ FUNÇÃO PARA CARREGAR CONTEÚDO DAS TABS
+    function loadTabContent(tabId) {
+      const currentExecution = ns.currentModalExecution;
 
-        switch (tabId) {
-          case 'tab-tests':
-            loadTestsContent(currentExecution);
-            break;
-          case 'tab-logs':
-            loadLogsContent(currentExecution);
-            break;
-          case 'tab-artifacts':
-            loadArtifactsContent(currentExecution);
-            break;
+      switch (tabId) {
+        case 'tab-tests':
+          loadTestsContent(currentExecution);
+          break;
+        case 'tab-logs':
+          loadLogsContent(currentExecution);
+          break;
+        case 'tab-artifacts':
+          loadArtifactsContent(currentExecution);
+          break;
+      }
+    }
+
+    // Event listeners para os botões das tabs (novos elementos limpos)
+    const tabButtons = document.querySelectorAll('#executionModal .tab-button');
+    tabButtons.forEach(button => {
+      button.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const tabId = button.getAttribute('data-tab');
+        const buttonId = button.id;
+
+        console.log('Tab clicked:', tabId, buttonId); // Debug
+
+        if (tabId && buttonId) {
+          switchTab(tabId, buttonId);
         }
-      }
-
-      // Event listeners para os botões das tabs (novos elementos limpos)
-      const tabButtons = document.querySelectorAll('#executionModal .tab-button');
-      tabButtons.forEach(button => {
-        button.addEventListener('click', function (e) {
-          e.preventDefault();
-          e.stopPropagation();
-
-          const tabId = button.getAttribute('data-tab');
-          const buttonId = button.id;
-
-          console.log('Tab clicked:', tabId, buttonId); // Debug
-
-          if (tabId && buttonId) {
-            switchTab(tabId, buttonId);
-          }
-        });
       });
+    });
 
-      // Ativar primeira tab por padrão
-      switchTab('tab-overview', 'btn-overview');
+    // Ativar primeira tab por padrão
+    switchTab('tab-overview', 'btn-overview');
+  }
+
+  // ✅ FUNÇÃO PARA CARREGAR TESTES
+  function loadTestsContent(execution) {
+    const testsContainer = document.getElementById('modalTestsList');
+
+    if (!execution) {
+      testsContainer.innerHTML = `
+          <div class="no-artifacts">
+            <i>🧪</i>
+            <h3>Nenhum teste disponível</h3>
+            <p>Esta execução não possui detalhes de testes.</p>
+          </div>
+        `;
+      return;
     }
 
-    // ✅ FUNÇÃO PARA CARREGAR TESTES
-    function loadTestsContent(execution) {
-      const testsContainer = document.getElementById('modalTestsList');
-
-      if (!execution || !execution.tests) {
-        testsContainer.innerHTML = `
-      <div class="no-artifacts">
-        <i>🧪</i>
-        <h3>Nenhum teste disponível</h3>
-        <p>Esta execução não possui detalhes de testes.</p>
-      </div>
-    `;
-        return;
-      }
-
-      // Renderizar lista de testes
-      let testsHtml = '';
-      execution.tests.forEach(test => {
-        const statusClass = test.status === 'passed' ? 'test-item--passed' : 'test-item--failed';
-        testsHtml += `
-      <div class="test-item ${statusClass}">
-        <div class="test-info">
-          <div class="test-name">${test.name}</div>
-          <div class="test-path">${test.path || ''}</div>
-          ${test.error ? `<div class="test-error">${test.error}</div>` : ''}
+    // Simular alguns testes
+    testsContainer.innerHTML = `
+        <div class="test-item test-item--passed">
+          <div class="test-info">
+            <div class="test-name">Login de usuário</div>
+            <div class="test-path">cypress/e2e/login.cy.js</div>
+          </div>
+          <div class="test-duration">2.1s</div>
         </div>
-        <div class="test-duration">${test.duration || '0s'}</div>
-      </div>
-    `;
-      });
-
-      testsContainer.innerHTML = testsHtml;
-    }
-
-    // ✅ FUNÇÃO PARA CARREGAR LOGS
-    function loadLogsContent(execution) {
-      const logsContainer = document.getElementById('modalLogs');
-
-      if (!execution) {
-        logsContainer.textContent = 'Nenhuma execução selecionada.';
-        return;
-      }
-
-      // Simular carregamento
-      logsContainer.textContent = 'Carregando logs...';
-
-      // Simular busca de logs (substitua pela sua API real)
-      setTimeout(() => {
-        // ✅ LOGS SIMULADOS - SUBSTITUA PELA SUA API
-        const mockLogs = `
-🚀 Iniciando execução Cypress...
-📁 Carregando especificações de teste...
-🌐 Abrindo navegador Chrome...
-✅ Teste: Login de usuário - PASSOU
-✅ Teste: Validação da home page - PASSOU  
-❌ Teste: Checkout de produto - FALHOU
-   └─ Erro: Elemento '.btn-checkout' não encontrado
-🧹 Limpando recursos...
-📊 Gerando relatórios...
-✨ Execução finalizada em ${execution.duration || '45s'}
-
---- Log detalhado ---
-[${execution.date}] Starting test execution...
-[${execution.date}] Environment: ${execution.environment}
-[${execution.date}] Branch: ${execution.branch}
-[${execution.date}] Tests completed: ${execution.tests_passed}/${execution.tests_total}
-    `.trim();
-
-        logsContainer.textContent = mockLogs;
-      }, 1000);
-    }
-
-    // ✅ FUNÇÃO PARA CARREGAR ARTEFATOS  
-    function loadArtifactsContent(execution) {
-      const artifactsContainer = document.getElementById('modalArtifacts');
-
-      // Simular artefatos baseados no status da execução
-      if (execution?.status === 'failed') {
-        artifactsContainer.innerHTML = `
-      <div class="artifact-item">
-        <i class="fas fa-image"></i>
-        <div class="artifact-info">
-          <h5>screenshot-error.png</h5>
-          <div class="artifact-type">Screenshot</div>
+        <div class="test-item test-item--passed">
+          <div class="test-info">
+            <div class="test-name">Navegação da home page</div>
+            <div class="test-path">cypress/e2e/homepage.cy.js</div>
+          </div>
+          <div class="test-duration">1.5s</div>
         </div>
-        <button class="btn btn--sm btn--outline">Download</button>
-      </div>
-      <div class="artifact-item">
-        <i class="fas fa-video"></i>
-        <div class="artifact-info">
-          <h5>test-recording.mp4</h5>
-          <div class="artifact-type">Vídeo</div>
+        ${execution.status === 'failed' ? `
+        <div class="test-item test-item--failed">
+          <div class="test-info">
+            <div class="test-name">Checkout de produto</div>
+            <div class="test-path">cypress/e2e/checkout.cy.js</div>
+            <div class="test-error">Elemento '.btn-checkout' não encontrado</div>
+          </div>
+          <div class="test-duration">3.2s</div>
         </div>
-        <button class="btn btn--sm btn--outline">Download</button>
-      </div>
-    `;
-      } else {
-        artifactsContainer.innerHTML = `
-      <div class="no-artifacts">
-        <i>📎</i>
-        <h3>Nenhum artefato disponível</h3>
-        <p>Esta execução foi bem-sucedida e não gerou artefatos de erro.</p>
-      </div>
-    `;
-      }
+        ` : ''}
+      `;
+  }
 
-      // Event listeners para os botões das tabs
-      const tabButtons = document.querySelectorAll('#executionModal .tab-button');
-      tabButtons.forEach(button => {
-        button.addEventListener('click', function (e) {
-          e.preventDefault();
-          e.stopPropagation();
+  // ✅ FUNÇÃO PARA CARREGAR LOGS
+  function loadLogsContent(execution) {
+    const logsContainer = document.getElementById('modalLogs');
 
-          // Determinar qual tab foi clicada
-          const tabId = button.getAttribute('data-tab');
-          const buttonId = button.id;
-
-          if (tabId && buttonId) {
-            switchTab(tabId, buttonId);
-          }
-        });
-      });
-
-      // Ativar primeira tab por padrão
-      switchTab('tab-overview', 'btn-overview');
+    if (!execution) {
+      logsContainer.textContent = 'Nenhuma execução selecionada.';
+      return;
     }
 
-    // Modificar a função openExecutionModal existente
-    function openExecutionModal(id) {
-      const e = ns.executionsData.find(x => x.id === id);
-      if (!e) return;
+    logsContainer.textContent = 'Carregando logs...';
 
-      // ✅ GUARDAR EXECUÇÃO ATUAL PARA AS TABS
-      ns.currentModalExecution = null;
+    setTimeout(() => {
+      const mockLogs = `
+    🚀 Iniciando execução Cypress...
+    📁 Carregando especificações de teste...
+    🌐 Abrindo navegador Chrome...
+    ✅ Teste: Login de usuário - PASSOU (2.1s)
+    ✅ Teste: Navegação da home page - PASSOU (1.5s)
+    ${execution.status === 'failed' ?
+          `❌ Teste: Checkout de produto - FALHOU (3.2s)
+      └─ Erro: Elemento '.btn-checkout' não encontrado
+      └─ Screenshot salvo: cypress/screenshots/checkout-error.png` :
+          `✅ Teste: Checkout de produto - PASSOU (2.8s)`}
+    🧹 Limpando recursos...
+    📊 Gerando relatórios...
+    ✨ Execução finalizada em ${execution.duration || '28s'}
 
-      // Preencher dados da visão geral (seu código existente)
-      document.getElementById("modalExecutionId").textContent = e.id;
-      document.getElementById("modalExecutionDate").textContent = e.date;
-      document.getElementById("modalExecutionBranch").textContent = e.branch;
-      document.getElementById("modalExecutionEnvironment").textContent = e.environment;
-      document.getElementById("modalExecutionAuthor").textContent = e.author || "N/A";
-      document.getElementById("modalExecutionCommit").textContent = e.commit || "N/A";
-      document.getElementById("modalExecutionDuration").textContent = e.duration;
-      document.getElementById("modalExecutionStatus").innerHTML = `<span class="status status--${e.status}">${e.status.toUpperCase()}</span>`;
+    --- Log detalhado ---
+    [${execution.date}] Starting test execution...
+    [${execution.date}] Environment: ${execution.environment}
+    [${execution.date}] Branch: ${execution.branch}
+    [${execution.date}] Status: ${execution.status}
+    [${execution.date}] Tests completed successfully
+        `.trim();
 
-      // Link do GitHub
-      const githubLink = document.getElementById("modalGithubLink");
-      if (e.github_url) {
-        githubLink.href = e.github_url;
-        githubLink.style.display = 'inline-flex';
-      } else {
-        githubLink.style.display = 'none';
-      }
+      logsContainer.textContent = mockLogs;
+    }, 800);
+  }
 
-      // ✅ SEMPRE INICIALIZAR AS TABS (CRÍTICO!)
-      setTimeout(() => {
-        initializeModalTabs();
-      }, 50); // Reduzir delay
+  // ✅ FUNÇÃO PARA CARREGAR ARTEFATOS  
+  function loadArtifactsContent(execution) {
+    const artifactsContainer = document.getElementById('modalArtifacts');
 
-      // Mostrar modal
-      document.getElementById("executionModal").classList.remove("hidden");
-    }
-
-
-    // Exponha a API
-    root.__DASH_API__ = { loadRuns };
-  }) (window);
-
-  // ===========================
-  // Modal Functions (GLOBAIS)
-  // ===========================
-  function openMetricsPage() {
-    console.log('🚀 Abrindo página de métricas...');
-    const modal = document.getElementById('metricsModal');
-    if (modal) {
-      modal.classList.remove('hidden');
-      loadDetailedMetrics();
+    if (execution?.status === 'failed') {
+      artifactsContainer.innerHTML = `
+        <div class="artifact-item">
+          <i class="fas fa-image"></i>
+          <div class="artifact-info">
+            <h5>checkout-error.png</h5>
+            <div class="artifact-type">Screenshot</div>
+          </div>
+          <button class="btn btn--sm btn--outline">Download</button>
+        </div>
+        <div class="artifact-item">
+          <i class="fas fa-video"></i>
+          <div class="artifact-info">
+            <h5>test-recording.mp4</h5>
+            <div class="artifact-type">Vídeo</div>
+          </div>
+          <button class="btn btn--sm btn--outline">Download</button>
+        </div>
+        <div class="artifact-item">
+          <i class="fas fa-file-alt"></i>
+          <div class="artifact-info">
+            <h5>cypress-report.html</h5>
+            <div class="artifact-type">Relatório</div>
+          </div>
+          <button class="btn btn--sm btn--outline">Download</button>
+        </div>
+      `;
     } else {
-      console.error('Modal de métricas não encontrado!');
+      artifactsContainer.innerHTML = `
+        <div class="no-artifacts">
+          <i>📎</i>
+          <h3>Nenhum artefato disponível</h3>
+          <p>Esta execução foi bem-sucedida e não gerou artefatos de erro.</p>
+        </div>
+      `;
     }
   }
+  function openExecutionModal(id) {
+    console.log('=== ABRINDO MODAL ===');
+    console.log('ID da execução:', id);
 
-  function closeMetricsPage() {
-    const modal = document.getElementById('metricsModal');
-    if (modal) {
-      modal.classList.add('hidden');
-    }
-  }
-
-  // ===========================
-  // PageSpeed API Functions (GLOBAIS)
-  // ===========================
-  async function loadDetailedMetrics() {
-    console.log('🔄 Carregando métricas detalhadas...');
-
-    const results = [];
-
-    // Usar STORES_CONFIG em vez de PAGESPEED_CONFIG
-    for (const store of STORES_CONFIG) {
-      console.log(`📊 Buscando métricas para: ${store.name}`);
-      const metrics = await fetchDetailedPageSpeed(store.url);
-      results.push({
-        name: store.name,
-        url: store.url,
-        ...metrics
-      });
+    const e = ns.executionsData.find(x => x.id === id);
+    if (!e) {
+      console.log('Execução não encontrada!');
+      return;
     }
 
-    // Atualizar tabela e cards
-    updateMetricsTable(results);
-    updateSummaryCards(results);
-  }
+    console.log('Dados da execução:', e);
 
-  async function fetchDetailedPageSpeed(url) {
-    try {
-      console.log(`📡 Chamando Netlify Function para: ${url}`);
+    // Guardar execução atual
+    ns.currentModalExecution = e;
 
-      const response = await fetch('/api/page-speed', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ url: url })
-      });
+    // Preencher dados da visão geral
+    document.getElementById("modalExecutionId").textContent = e.id;
+    document.getElementById("modalExecutionDate").textContent = e.date;
+    document.getElementById("modalExecutionBranch").textContent = e.branch;
+    document.getElementById("modalExecutionEnvironment").textContent = e.environment;
+    document.getElementById("modalExecutionAuthor").textContent = e.author || "Sistema";
+    document.getElementById("modalExecutionCommit").textContent = e.commit || "N/A";
+    document.getElementById("modalExecutionDuration").textContent = e.duration;
+    document.getElementById("modalExecutionStatus").innerHTML = `<span class="status status--${e.status}">${e.status.toUpperCase()}</span>`;
 
-      if (!response.ok) {
-        throw new Error(`HTTP error: ${response.status} - ${response.statusText}`);
-      }
-
-      const data = await response.json();
-
-      if (data.error) {
-        throw new Error(data.error);
-      }
-
-      console.log(`✅ Dados recebidos da Netlify Function:`, data);
-
-      // Extrair métricas
-      const categories = data.lighthouseResult?.categories || {};
-
-      return {
-        performance: Math.round((categories.performance?.score || 0) * 100),
-        accessibility: Math.round((categories.accessibility?.score || 0) * 100),
-        bestPractices: Math.round((categories['best-practices']?.score || 0) * 100),
-        seo: Math.round((categories.seo?.score || 0) * 100)
-      };
-
-    } catch (error) {
-      console.error(`❌ Erro ao buscar métricas para ${url}:`, error);
-      return {
-        performance: '--',
-        accessibility: '--',
-        bestPractices: '--',
-        seo: '--'
-      };
+    const githubLink = document.getElementById("modalGithubLink");
+    if (e.github_url) {
+      githubLink.href = e.github_url;
+      githubLink.style.display = 'inline-flex';
+    } else {
+      githubLink.style.display = 'none';
     }
+
+    // Resetar para primeira tab
+    switchTab('tab-overview', 'btn-overview');
+
+    // Mostrar modal
+    document.getElementById("executionModal").classList.remove("hidden");
+    console.log('Modal aberto!');
   }
 
-  // Configuração das lojas
-  const STORES_CONFIG = [
-    { id: 'victor-hugo', url: 'https://www.victorhugo.com.br', name: 'Victor Hugo' },
-    { id: 'shopvinho', url: 'https://www.shopvinho.com.br', name: 'ShopVinho' },
-    { id: 'shopmulti', url: 'https://www.shopmulti.com.br', name: 'ShopMulti' }
-  ];
+  function closeExecutionModal() {
+    document.getElementById("executionModal").classList.add("hidden");
 
-  function updateMetricsTable(results) {
-    const tbody = document.getElementById('metrics-table-body');
-    if (!tbody) return;
+    // Limpar dados
+    ns.currentModalExecution = null;
 
-    tbody.innerHTML = results.map(store => `
+    // Resetar para primeira tab
+    switchTab('tab-overview', 'btn-overview');
+
+    console.log('Modal fechado');
+  }
+
+  // ✅ INICIALIZAR QUANDO A PÁGINA CARREGAR
+  document.addEventListener('DOMContentLoaded', function () {
+    console.log('DOM carregado - inicializando tabs...');
+    initializeModalTabsOnce();
+  });
+
+  // ✅ FALLBACK - Se o DOM já carregou
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initializeModalTabsOnce);
+  } else {
+    initializeModalTabsOnce();
+  }
+
+
+  // Exponha a API
+  root.__DASH_API__ = { loadRuns };
+})(window);
+
+// ===========================
+// Modal Functions (GLOBAIS)
+// ===========================
+function openMetricsPage() {
+  console.log('🚀 Abrindo página de métricas...');
+  const modal = document.getElementById('metricsModal');
+  if (modal) {
+    modal.classList.remove('hidden');
+    loadDetailedMetrics();
+  } else {
+    console.error('Modal de métricas não encontrado!');
+  }
+}
+
+function closeMetricsPage() {
+  const modal = document.getElementById('metricsModal');
+  if (modal) {
+    modal.classList.add('hidden');
+  }
+}
+
+// ===========================
+// PageSpeed API Functions (GLOBAIS)
+// ===========================
+async function loadDetailedMetrics() {
+  console.log('🔄 Carregando métricas detalhadas...');
+
+  const results = [];
+
+  // Usar STORES_CONFIG em vez de PAGESPEED_CONFIG
+  for (const store of STORES_CONFIG) {
+    console.log(`📊 Buscando métricas para: ${store.name}`);
+    const metrics = await fetchDetailedPageSpeed(store.url);
+    results.push({
+      name: store.name,
+      url: store.url,
+      ...metrics
+    });
+  }
+
+  // Atualizar tabela e cards
+  updateMetricsTable(results);
+  updateSummaryCards(results);
+}
+
+async function fetchDetailedPageSpeed(url) {
+  try {
+    console.log(`📡 Chamando Netlify Function para: ${url}`);
+
+    const response = await fetch('/api/page-speed', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ url: url })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error: ${response.status} - ${response.statusText}`);
+    }
+
+    const data = await response.json();
+
+    if (data.error) {
+      throw new Error(data.error);
+    }
+
+    console.log(`✅ Dados recebidos da Netlify Function:`, data);
+
+    // Extrair métricas
+    const categories = data.lighthouseResult?.categories || {};
+
+    return {
+      performance: Math.round((categories.performance?.score || 0) * 100),
+      accessibility: Math.round((categories.accessibility?.score || 0) * 100),
+      bestPractices: Math.round((categories['best-practices']?.score || 0) * 100),
+      seo: Math.round((categories.seo?.score || 0) * 100)
+    };
+
+  } catch (error) {
+    console.error(`❌ Erro ao buscar métricas para ${url}:`, error);
+    return {
+      performance: '--',
+      accessibility: '--',
+      bestPractices: '--',
+      seo: '--'
+    };
+  }
+}
+
+// Configuração das lojas
+const STORES_CONFIG = [
+  { id: 'victor-hugo', url: 'https://www.victorhugo.com.br', name: 'Victor Hugo' },
+  { id: 'shopvinho', url: 'https://www.shopvinho.com.br', name: 'ShopVinho' },
+  { id: 'shopmulti', url: 'https://www.shopmulti.com.br', name: 'ShopMulti' }
+];
+
+function updateMetricsTable(results) {
+  const tbody = document.getElementById('metrics-table-body');
+  if (!tbody) return;
+
+  tbody.innerHTML = results.map(store => `
     <tr>
       <td><strong>${store.name}</strong></td>
       <td><code>${store.url}</code></td>
@@ -1343,198 +1401,198 @@
       <td><span class="score ${getScoreClass(store.seo)}">${store.seo}</span></td>
     </tr>
   `).join('');
+}
+
+function updateSummaryCards(results) {
+  const validResults = results.filter(r => parseInt(r.performance) > 0);
+
+  if (validResults.length === 0) {
+    document.getElementById('avg-performance').textContent = '--';
+    document.getElementById('avg-accessibility').textContent = '--';
+    document.getElementById('avg-best-practices').textContent = '--';
+    document.getElementById('avg-seo').textContent = '--';
+    return;
   }
 
-  function updateSummaryCards(results) {
-    const validResults = results.filter(r => parseInt(r.performance) > 0);
+  const avgPerformance = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.performance) || 0), 0) / validResults.length);
+  const avgAccessibility = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.accessibility) || 0), 0) / validResults.length);
+  const avgBestPractices = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.bestPractices) || 0), 0) / validResults.length);
+  const avgSeo = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.seo) || 0), 0) / validResults.length);
 
-    if (validResults.length === 0) {
-      document.getElementById('avg-performance').textContent = '--';
-      document.getElementById('avg-accessibility').textContent = '--';
-      document.getElementById('avg-best-practices').textContent = '--';
-      document.getElementById('avg-seo').textContent = '--';
-      return;
-    }
+  document.getElementById('avg-performance').textContent = avgPerformance;
+  document.getElementById('avg-accessibility').textContent = avgAccessibility;
+  document.getElementById('avg-best-practices').textContent = avgBestPractices;
+  document.getElementById('avg-seo').textContent = avgSeo;
+}
 
-    const avgPerformance = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.performance) || 0), 0) / validResults.length);
-    const avgAccessibility = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.accessibility) || 0), 0) / validResults.length);
-    const avgBestPractices = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.bestPractices) || 0), 0) / validResults.length);
-    const avgSeo = Math.round(validResults.reduce((sum, r) => sum + (parseInt(r.seo) || 0), 0) / validResults.length);
+function getScoreClass(score) {
+  const num = parseInt(score);
+  if (num >= 90) return 'good';
+  if (num >= 50) return 'average';
+  return 'poor';
+}
 
-    document.getElementById('avg-performance').textContent = avgPerformance;
-    document.getElementById('avg-accessibility').textContent = avgAccessibility;
-    document.getElementById('avg-best-practices').textContent = avgBestPractices;
-    document.getElementById('avg-seo').textContent = avgSeo;
-  }
+function refreshAllPageSpeed() {
+  loadDetailedMetrics();
+}
 
-  function getScoreClass(score) {
-    const num = parseInt(score);
-    if (num >= 90) return 'good';
-    if (num >= 50) return 'average';
-    return 'poor';
-  }
+// ===========================
+// Event Listeners Globais
+// ===========================
+document.addEventListener('DOMContentLoaded', () => {
+  // Setup das tabs do modal
+  function setupModalTabs() {
+    const tabButtons = document.querySelectorAll('.tab-button');
+    const tabPanels = document.querySelectorAll('.tab-panel');
 
-  function refreshAllPageSpeed() {
-    loadDetailedMetrics();
-  }
+    tabButtons.forEach(button => {
+      button.addEventListener('click', () => {
+        if (button.disabled) return;
 
-  // ===========================
-  // Event Listeners Globais
-  // ===========================
-  document.addEventListener('DOMContentLoaded', () => {
-    // Setup das tabs do modal
-    function setupModalTabs() {
-      const tabButtons = document.querySelectorAll('.tab-button');
-      const tabPanels = document.querySelectorAll('.tab-panel');
+        // Remover active de todas
+        tabButtons.forEach(btn => btn.classList.remove('tab-button--active'));
+        tabPanels.forEach(panel => panel.classList.remove('tab-panel--active'));
 
-      tabButtons.forEach(button => {
-        button.addEventListener('click', () => {
-          if (button.disabled) return;
+        // Ativar clicada
+        button.classList.add('tab-button--active');
 
-          // Remover active de todas
-          tabButtons.forEach(btn => btn.classList.remove('tab-button--active'));
-          tabPanels.forEach(panel => panel.classList.remove('tab-panel--active'));
-
-          // Ativar clicada
-          button.classList.add('tab-button--active');
-
-          const targetTab = button.getAttribute('data-tab');
-          const targetPanel = document.getElementById(`${targetTab}-tab`);
-          if (targetPanel) {
-            targetPanel.classList.add('tab-panel--active');
-          }
-
-          console.log(`✅ Tab ativada: ${targetTab}`);
-        });
-      });
-
-      console.log('✅ Modal tabs configuradas:', tabButtons.length);
-    }
-
-    // Executar setup após delay
-    setTimeout(setupModalTabs, 1000);
-
-    // Re-executar quando modal abrir
-    const observer = new MutationObserver((mutations) => {
-      mutations.forEach((mutation) => {
-        if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
-          const modal = mutation.target;
-          if (modal.style.display === 'flex') {
-            setTimeout(setupModalTabs, 100);
-          }
+        const targetTab = button.getAttribute('data-tab');
+        const targetPanel = document.getElementById(`${targetTab}-tab`);
+        if (targetPanel) {
+          targetPanel.classList.add('tab-panel--active');
         }
+
+        console.log(`✅ Tab ativada: ${targetTab}`);
       });
     });
 
-    const modal = document.getElementById('executionModal');
-    if (modal) {
-      observer.observe(modal, { attributes: true });
-    }
+    console.log('✅ Modal tabs configuradas:', tabButtons.length);
+  }
+
+  // Executar setup após delay
+  setTimeout(setupModalTabs, 1000);
+
+  // Re-executar quando modal abrir
+  const observer = new MutationObserver((mutations) => {
+    mutations.forEach((mutation) => {
+      if (mutation.type === 'attributes' && mutation.attributeName === 'style') {
+        const modal = mutation.target;
+        if (modal.style.display === 'flex') {
+          setTimeout(setupModalTabs, 100);
+        }
+      }
+    });
   });
 
-  // ===========================
-  // REMOVER +300% - VERSÃO CORRIGIDA
-  // ===========================
-  document.addEventListener('DOMContentLoaded', () => {
-    function remover300Percent() {
-      // Método 1: Remover elementos que contêm APENAS "+300%"
-      document.querySelectorAll('*').forEach(el => {
-        if (el.textContent && el.textContent.trim() === '+300%') {
-          el.style.display = 'none';
-          console.log('✅ Removido +300%:', el);
-        }
-      });
+  const modal = document.getElementById('executionModal');
+  if (modal) {
+    observer.observe(modal, { attributes: true });
+  }
+});
 
-      // Método 2: Limpar spans com emoji hardcoded
-      const spans = document.querySelectorAll('span');
-      spans.forEach(span => {
-        if (span.textContent.includes('📈') && span.textContent.includes('+300%')) {
-          span.remove();
-          console.log('✅ Removido span hardcoded');
-        }
-      });
-    }
+// ===========================
+// REMOVER +300% - VERSÃO CORRIGIDA
+// ===========================
+document.addEventListener('DOMContentLoaded', () => {
+  function remover300Percent() {
+    // Método 1: Remover elementos que contêm APENAS "+300%"
+    document.querySelectorAll('*').forEach(el => {
+      if (el.textContent && el.textContent.trim() === '+300%') {
+        el.style.display = 'none';
+        console.log('✅ Removido +300%:', el);
+      }
+    });
 
-    // Executar imediatamente
-    remover300Percent();
-
-    // Executar periodicamente
-    setInterval(remover300Percent, 2000);
-
-    console.log('✅ Sistema anti-300% ativado');
-  });
-
-  function removeHardcodedTrends() {
-    console.log('🧹 Limpando trends hardcoded...');
-
-    // Método 1: Remover spans que contenham exatamente "+300%" sem style
+    // Método 2: Limpar spans com emoji hardcoded
     const spans = document.querySelectorAll('span');
-    let removidos = 0;
-
     spans.forEach(span => {
-      const text = span.textContent.trim();
-      const hasStyle = span.hasAttribute('style');
-      const hasEmoji = span.innerHTML.includes('↗️') || span.innerHTML.includes('↘️') || span.innerHTML.includes('➡️');
-
-      // Remover apenas "+300%" que NÃO são calculados
-      if ((text === '+300%' || text === '📈 +300%') && !hasStyle && !hasEmoji) {
-        console.log('Removendo span hardcoded:', span.textContent);
+      if (span.textContent.includes('📈') && span.textContent.includes('+300%')) {
         span.remove();
-        removidos++;
+        console.log('✅ Removido span hardcoded');
       }
     });
-
-    // Método 2: Limpar elementos com emoji + "+300%" hardcoded
-    const emojiSpans = document.querySelectorAll('span');
-    const filteredSpans = Array.from(emojiSpans).filter(span => span.textContent.includes('📈'));
-    filteredSpans.forEach(span => {
-      if (span.textContent.includes('+300%')) {
-        span.remove();
-        removidos++;
-      }
-    });
-
-    console.log(`✅ ${removidos} elementos hardcoded removidos`);
   }
 
-  // Integrar com suas funções existentes
-  function updateStatistics() {
-    console.log('📊 Atualizando estatísticas...');
-    const currentRuns = ns.filteredExecutions || [];
-    const totalPassed = currentRuns.reduce((s, e) => s + (e.passedTests || 0), 0);
-    const totalFailed = currentRuns.reduce((s, e) => s + (e.failedTests || 0), 0);
-    const totalTests = totalPassed + totalFailed;
-    const avgDuration = currentRuns.length > 0 ?
-      Math.round(currentRuns.reduce((s, e) => s + (e.duration || 0), 0) / currentRuns.length) : 0;
-    const successRate = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
+  // Executar imediatamente
+  remover300Percent();
 
-    // ✅ ATUALIZAR ELEMENTOS DIRETAMENTE
-    const totalPassedEl = document.getElementById('totalPassed');
-    const totalFailedEl = document.getElementById('totalFailed');
-    const avgDurationEl = document.getElementById('avgDuration');
-    const successRateEl = document.getElementById('successRate');
+  // Executar periodicamente
+  setInterval(remover300Percent, 2000);
 
-    if (totalPassedEl) totalPassedEl.textContent = totalPassed;
-    if (totalFailedEl) totalFailedEl.textContent = totalFailed;
-    if (avgDurationEl) avgDurationEl.textContent = `${avgDuration}s`;
-    if (successRateEl) successRateEl.textContent = `${successRate}%`;
+  console.log('✅ Sistema anti-300% ativado');
+});
 
-    console.log('📊 Estatísticas atualizadas:', { totalPassed, totalFailed, avgDuration, successRate });
-  }
+function removeHardcodedTrends() {
+  console.log('🧹 Limpando trends hardcoded...');
 
-  // Executar na inicialização
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(removeHardcodedTrends, 1000);
+  // Método 1: Remover spans que contenham exatamente "+300%" sem style
+  const spans = document.querySelectorAll('span');
+  let removidos = 0;
+
+  spans.forEach(span => {
+    const text = span.textContent.trim();
+    const hasStyle = span.hasAttribute('style');
+    const hasEmoji = span.innerHTML.includes('↗️') || span.innerHTML.includes('↘️') || span.innerHTML.includes('➡️');
+
+    // Remover apenas "+300%" que NÃO são calculados
+    if ((text === '+300%' || text === '📈 +300%') && !hasStyle && !hasEmoji) {
+      console.log('Removendo span hardcoded:', span.textContent);
+      span.remove();
+      removidos++;
+    }
   });
 
-  // Executar após refresh automático
-  if (window.__DASH_STATE__?.autoRefreshTimer) {
-    const ns = window.__DASH_STATE__;
-    const originalRefresh = ns.refresh || function () { };
-    ns.refresh = function () {
-      originalRefresh.apply(this, arguments);
-      setTimeout(removeHardcodedTrends, 300);
-    };
-  }
+  // Método 2: Limpar elementos com emoji + "+300%" hardcoded
+  const emojiSpans = document.querySelectorAll('span');
+  const filteredSpans = Array.from(emojiSpans).filter(span => span.textContent.includes('📈'));
+  filteredSpans.forEach(span => {
+    if (span.textContent.includes('+300%')) {
+      span.remove();
+      removidos++;
+    }
+  });
+
+  console.log(`✅ ${removidos} elementos hardcoded removidos`);
+}
+
+// Integrar com suas funções existentes
+function updateStatistics() {
+  console.log('📊 Atualizando estatísticas...');
+  const currentRuns = ns.filteredExecutions || [];
+  const totalPassed = currentRuns.reduce((s, e) => s + (e.passedTests || 0), 0);
+  const totalFailed = currentRuns.reduce((s, e) => s + (e.failedTests || 0), 0);
+  const totalTests = totalPassed + totalFailed;
+  const avgDuration = currentRuns.length > 0 ?
+    Math.round(currentRuns.reduce((s, e) => s + (e.duration || 0), 0) / currentRuns.length) : 0;
+  const successRate = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
+
+  // ✅ ATUALIZAR ELEMENTOS DIRETAMENTE
+  const totalPassedEl = document.getElementById('totalPassed');
+  const totalFailedEl = document.getElementById('totalFailed');
+  const avgDurationEl = document.getElementById('avgDuration');
+  const successRateEl = document.getElementById('successRate');
+
+  if (totalPassedEl) totalPassedEl.textContent = totalPassed;
+  if (totalFailedEl) totalFailedEl.textContent = totalFailed;
+  if (avgDurationEl) avgDurationEl.textContent = `${avgDuration}s`;
+  if (successRateEl) successRateEl.textContent = `${successRate}%`;
+
+  console.log('📊 Estatísticas atualizadas:', { totalPassed, totalFailed, avgDuration, successRate });
+}
+
+// Executar na inicialização
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(removeHardcodedTrends, 1000);
+});
+
+// Executar após refresh automático
+if (window.__DASH_STATE__?.autoRefreshTimer) {
+  const ns = window.__DASH_STATE__;
+  const originalRefresh = ns.refresh || function () { };
+  ns.refresh = function () {
+    originalRefresh.apply(this, arguments);
+    setTimeout(removeHardcodedTrends, 300);
+  };
+}
 
 
