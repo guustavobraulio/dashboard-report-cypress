@@ -881,6 +881,79 @@
     return `<span class="trend-indicator" style="color: ${color}; font-size: 0.85em; margin-left: 8px;">${arrow} ${sign}${trendData.percent}%</span>`;
   }
 
+  // ===========================
+  // FUNCIONALIDADE DAS TABS DO MODAL
+  // ===========================
+
+  function initializeModalTabs() {
+    // Função para trocar de tab
+    function switchTab(activeTabId, activeButtonId) {
+      // Ocultar todos os painéis de tab
+      const allPanels = document.querySelectorAll('#executionModal .tab-panel');
+      allPanels.forEach(panel => {
+        panel.style.display = 'none';
+        panel.classList.remove('tab-panel--active');
+      });
+
+      // Remover classe ativa de todos os botões
+      const allButtons = document.querySelectorAll('#executionModal .tab-button');
+      allButtons.forEach(button => {
+        button.classList.remove('tab-button--active');
+      });
+
+      // Mostrar painel ativo
+      const activePanel = document.getElementById(activeTabId);
+      if (activePanel) {
+        activePanel.style.display = 'block';
+        activePanel.classList.add('tab-panel--active');
+      }
+
+      // Ativar botão clicado
+      const activeButton = document.getElementById(activeButtonId);
+      if (activeButton) {
+        activeButton.classList.add('tab-button--active');
+      }
+    }
+
+    // Event listeners para os botões das tabs
+    const tabButtons = document.querySelectorAll('#executionModal .tab-button');
+    tabButtons.forEach(button => {
+      button.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        // Determinar qual tab foi clicada
+        const tabId = button.getAttribute('data-tab');
+        const buttonId = button.id;
+
+        if (tabId && buttonId) {
+          switchTab(tabId, buttonId);
+        }
+      });
+    });
+
+    // Ativar primeira tab por padrão
+    switchTab('tab-overview', 'btn-overview');
+  }
+
+  // Modificar a função openExecutionModal existente
+  function openExecutionModal(id) {
+    const e = ns.executionsData.find(x => x.id === id);
+    if (!e) return;
+
+    // ... seu código existente da função ...
+
+    // ✅ ADICIONAR NO FINAL DA FUNÇÃO:
+    // Inicializar tabs após o modal ser aberto
+    setTimeout(() => {
+      initializeModalTabs();
+    }, 100);
+
+    // Mostrar o modal
+    document.getElementById("executionModal").classList.remove("hidden");
+  }
+
+
   // Exponha a API
   root.__DASH_API__ = { loadRuns };
 })(window);
@@ -1140,46 +1213,46 @@ function removeHardcodedTrends() {
   const emojiSpans = document.querySelectorAll('span');
   const filteredSpans = Array.from(emojiSpans).filter(span => span.textContent.includes('📈'));
   filteredSpans.forEach(span => {
-      if (span.textContent.includes('+300%')) {
-        span.remove();
-        removidos++;
-      }
-    });
+    if (span.textContent.includes('+300%')) {
+      span.remove();
+      removidos++;
+    }
+  });
 
-    console.log(`✅ ${removidos} elementos hardcoded removidos`);
-  }
+  console.log(`✅ ${removidos} elementos hardcoded removidos`);
+}
 
 // Integrar com suas funções existentes
 function updateStatistics() {
-      console.log('📊 Atualizando estatísticas...');
-      const currentRuns = ns.filteredExecutions || [];
-      const totalPassed = currentRuns.reduce((s, e) => s + (e.passedTests || 0), 0);
-      const totalFailed = currentRuns.reduce((s, e) => s + (e.failedTests || 0), 0);
-      const totalTests = totalPassed + totalFailed;
-      const avgDuration = currentRuns.length > 0 ?
-        Math.round(currentRuns.reduce((s, e) => s + (e.duration || 0), 0) / currentRuns.length) : 0;
-      const successRate = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
+  console.log('📊 Atualizando estatísticas...');
+  const currentRuns = ns.filteredExecutions || [];
+  const totalPassed = currentRuns.reduce((s, e) => s + (e.passedTests || 0), 0);
+  const totalFailed = currentRuns.reduce((s, e) => s + (e.failedTests || 0), 0);
+  const totalTests = totalPassed + totalFailed;
+  const avgDuration = currentRuns.length > 0 ?
+    Math.round(currentRuns.reduce((s, e) => s + (e.duration || 0), 0) / currentRuns.length) : 0;
+  const successRate = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
 
-      // ✅ ATUALIZAR ELEMENTOS DIRETAMENTE
-      const totalPassedEl = document.getElementById('totalPassed');
-      const totalFailedEl = document.getElementById('totalFailed');
-      const avgDurationEl = document.getElementById('avgDuration');
-      const successRateEl = document.getElementById('successRate');
+  // ✅ ATUALIZAR ELEMENTOS DIRETAMENTE
+  const totalPassedEl = document.getElementById('totalPassed');
+  const totalFailedEl = document.getElementById('totalFailed');
+  const avgDurationEl = document.getElementById('avgDuration');
+  const successRateEl = document.getElementById('successRate');
 
-      if (totalPassedEl) totalPassedEl.textContent = totalPassed;
-      if (totalFailedEl) totalFailedEl.textContent = totalFailed;
-      if (avgDurationEl) avgDurationEl.textContent = `${avgDuration}s`;
-      if (successRateEl) successRateEl.textContent = `${successRate}%`;
+  if (totalPassedEl) totalPassedEl.textContent = totalPassed;
+  if (totalFailedEl) totalFailedEl.textContent = totalFailed;
+  if (avgDurationEl) avgDurationEl.textContent = `${avgDuration}s`;
+  if (successRateEl) successRateEl.textContent = `${successRate}%`;
 
-      console.log('📊 Estatísticas atualizadas:', { totalPassed, totalFailed, avgDuration, successRate });
-    }
+  console.log('📊 Estatísticas atualizadas:', { totalPassed, totalFailed, avgDuration, successRate });
+}
 
 // Executar na inicialização
 document.addEventListener('DOMContentLoaded', () => {
-      setTimeout(removeHardcodedTrends, 1000);
-    });
+  setTimeout(removeHardcodedTrends, 1000);
+});
 
-  // Executar após refresh automático
+// Executar após refresh automático
 if (window.__DASH_STATE__?.autoRefreshTimer) {
   const ns = window.__DASH_STATE__;
   const originalRefresh = ns.refresh || function () { };

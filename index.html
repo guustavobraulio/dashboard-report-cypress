@@ -20,171 +20,171 @@
 </head>
 
 <body>
-<header class="header">
-  <div class="container">
-    <div class="header-content">
-      <!-- Mantendo sua logo e nome -->
-      <div class="logo-section">
-        <img src="https://www.socialsa.com/wp-content/uploads/2024/11/Logo-Colorida-2.webp"
-          alt="Social Digital Commerce" class="brand-logo" width="28" height="28" decoding="async" loading="eager" />
-        <h1>Social Watch</h1>
-      </div>
-      
-      <!-- Botões atualizados com estilo minimalista -->
-      <div class="header-actions">
-        <button class="header-btn" id="metricsBtn" onclick="openMetricsPage()">
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M3,3V21H21V19H5V3H3M9,17H7V10H9V17M13,17H11V7H13V17M17,17H15V13H17V17M19,17H17V4H15V2H19V17Z"/>
-          </svg>
-          <span>Métricas</span>
-        </button>
-        
-        <button class="header-btn btn-primary" id="runPipelineBtn" aria-live="polite">
-          <svg viewBox="0 0 24 24" fill="currentColor">
-            <path d="M8,5.14V19.14L19,12.14L8,5.14Z"/>
-          </svg>
-          <span>Executar Pipeline</span>
-          <span class="btn-spinner-slot" aria-hidden="true"></span>
-        </button>
-        
-        <div class="auto-refresh">
-          <i class="fas fa-sync-alt" id="refreshIcon"></i>
-          <span>Auto-refresh: <span id="refreshTime">30s</span></span>
+  <header class="header">
+    <div class="container">
+      <div class="header-content">
+        <!-- Mantendo sua logo e nome -->
+        <div class="logo-section">
+          <img src="https://www.socialsa.com/wp-content/uploads/2024/11/Logo-Colorida-2.webp"
+            alt="Social Digital Commerce" class="brand-logo" width="28" height="28" decoding="async" loading="eager" />
+          <h1>Social Watch</h1>
+        </div>
+
+        <!-- Botões atualizados com estilo minimalista -->
+        <div class="header-actions">
+          <button class="header-btn" id="metricsBtn" onclick="openMetricsPage()">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M3,3V21H21V19H5V3H3M9,17H7V10H9V17M13,17H11V7H13V17M17,17H15V13H17V17M19,17H17V4H15V2H19V17Z" />
+            </svg>
+            <span>Métricas</span>
+          </button>
+
+          <button class="header-btn btn-primary" id="runPipelineBtn" aria-live="polite">
+            <svg viewBox="0 0 24 24" fill="currentColor">
+              <path d="M8,5.14V19.14L19,12.14L8,5.14Z" />
+            </svg>
+            <span>Executar Pipeline</span>
+            <span class="btn-spinner-slot" aria-hidden="true"></span>
+          </button>
+
+          <div class="auto-refresh">
+            <i class="fas fa-sync-alt" id="refreshIcon"></i>
+            <span>Auto-refresh: <span id="refreshTime">30s</span></span>
+          </div>
         </div>
       </div>
     </div>
+  </header>
+
+  <!-- ✨ NOVA SEÇÃO ADICIONADA ✨ -->
+  <div class="subtitle-section">
+    <p class="subtitle-text">Acompanhe execuções e métricas de testes sem distrações.</p>
   </div>
-</header>
 
-<!-- ✨ NOVA SEÇÃO ADICIONADA ✨ -->
-<div class="subtitle-section">
-  <p class="subtitle-text">Acompanhe execuções e métricas de testes sem distrações.</p>
-</div>
+  <!-- Main Content -->
+  <main class="main-content">
+    <div class="container">
+      <!-- Dashboard Content -->
+      <section class="dashboard-content">
+        <!-- Statistics Cards -->
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-icon stat-icon--success"><i class="fas fa-check-circle"></i></div>
+            <div class="stat-content">
+              <div class="card-value">
+                <span id="totalPassed">0</span>
+              </div>
+              <p>Testes Aprovados</p>
+            </div>
+          </div>
 
-<!-- Main Content -->
-<main class="main-content">
-  <div class="container">
-    <!-- Dashboard Content -->
-    <section class="dashboard-content">
-      <!-- Statistics Cards -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon stat-icon--success"><i class="fas fa-check-circle"></i></div>
-          <div class="stat-content">
-            <div class="card-value">
-              <span id="totalPassed">0</span>
+          <div class="stat-card">
+            <div class="stat-icon stat-icon--error"><i class="fas fa-times-circle"></i></div>
+            <div class="stat-content">
+              <div class="card-value">
+                <span id="totalFailed">0</span>
+              </div>
+              <p>Testes Falhados</p>
             </div>
-            <p>Testes Aprovados</p>
           </div>
-        </div>
-      
-        <div class="stat-card">
-          <div class="stat-icon stat-icon--error"><i class="fas fa-times-circle"></i></div>
-          <div class="stat-content">
-            <div class="card-value">
-              <span id="totalFailed">0</span>
-            </div>
-            <p>Testes Falhados</p>
-          </div>
-        </div>
-      
-        <div class="stat-card">
-          <div class="stat-icon stat-icon--info"><i class="fas fa-clock"></i></div>
-          <div class="stat-content">
-            <div class="card-value">
-              <span id="avgDuration">0s</span>
-            </div>
-            <p>Duração Média</p>
-          </div>
-        </div>
-      
-        <div class="stat-card">
-          <div class="stat-icon stat-icon--warning"><i class="fas fa-percentage"></i></div>
-          <div class="stat-content">
-            <div class="card-value">
-              <span id="successRate">0%</span>
-            </div>
-            <p>Taxa de Sucesso</p>
-          </div>
-        </div>
-      </div>
 
-      <!-- Resto do seu dashboard continua igual... -->
-      <!-- Execution History Chart -->
-      <div class="history-chart-section">
-        <div class="card">
-          <div class="card__header">
-            <h2>Histórico de Execuções</h2>
-            <div class="period-filters" id="historySection">
-              <button class="period-btn" data-history-period="24h">24h</button>
-              <button class="period-btn period-btn--active" data-history-period="7d">7 dias</button>
-              <button class="period-btn" data-history-period="30d">30 dias</button>
+          <div class="stat-card">
+            <div class="stat-icon stat-icon--info"><i class="fas fa-clock"></i></div>
+            <div class="stat-content">
+              <div class="card-value">
+                <span id="avgDuration">0s</span>
+              </div>
+              <p>Duração Média</p>
             </div>
           </div>
-          <div class="card__body">
-            <div class="chart-container" style="position: relative; height: 300px;">
-              <canvas id="historyChart"></canvas>
+
+          <div class="stat-card">
+            <div class="stat-icon stat-icon--warning"><i class="fas fa-percentage"></i></div>
+            <div class="stat-content">
+              <div class="card-value">
+                <span id="successRate">0%</span>
+              </div>
+              <p>Taxa de Sucesso</p>
             </div>
           </div>
         </div>
-      </div>
 
-      <!-- Charts and History -->
-      <div class="content-grid">
-        <!-- Pie Chart Section -->
-        <div class="chart-section" style="margin-top: 20px;">
+        <!-- Resto do seu dashboard continua igual... -->
+        <!-- Execution History Chart -->
+        <div class="history-chart-section">
           <div class="card">
-            <div class="card__header" style="text-align: center;">
-              <h2>Status dos Testes</h2>
+            <div class="card__header">
+              <h2>Histórico de Execuções</h2>
+              <div class="period-filters" id="historySection">
+                <button class="period-btn" data-history-period="24h">24h</button>
+                <button class="period-btn period-btn--active" data-history-period="7d">7 dias</button>
+                <button class="period-btn" data-history-period="30d">30 dias</button>
+              </div>
             </div>
             <div class="card__body">
               <div class="chart-container" style="position: relative; height: 300px;">
-                <canvas id="statusChart"></canvas>
+                <canvas id="historyChart"></canvas>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Execution History -->
-        <div class="history-section">
-          <div class="card">
-            <div class="card__header">
-              <h2>Últimas Execuções</h2>
-              <div class="history-actions">
-                <input type="date" id="dateFilter" class="form-control" />
-                <select id="statusFilter" class="form-control">
-                  <option value="">Todos os status</option>
-                  <option value="passed">Aprovado</option>
-                  <option value="failed">Falhado</option>
-                </select>
+        <!-- Charts and History -->
+        <div class="content-grid">
+          <!-- Pie Chart Section -->
+          <div class="chart-section" style="margin-top: 20px;">
+            <div class="card">
+              <div class="card__header" style="text-align: center;">
+                <h2>Status dos Testes</h2>
+              </div>
+              <div class="card__body">
+                <div class="chart-container" style="position: relative; height: 300px;">
+                  <canvas id="statusChart"></canvas>
+                </div>
               </div>
             </div>
-            <div class="card__body">
-              <div class="execution-table">
-                <table class="table">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Data/Hora</th>
-                      <th>Branch</th>
-                      <th>Ambiente</th>
-                      <th>Status</th>
-                      <th>Testes</th>
-                      <th>Duração</th>
-                      <th>Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody id="executionTableBody"></tbody>
-                </table>
+          </div>
+
+          <!-- Execution History -->
+          <div class="history-section">
+            <div class="card">
+              <div class="card__header">
+                <h2>Últimas Execuções</h2>
+                <div class="history-actions">
+                  <input type="date" id="dateFilter" class="form-control" />
+                  <select id="statusFilter" class="form-control">
+                    <option value="">Todos os status</option>
+                    <option value="passed">Aprovado</option>
+                    <option value="failed">Falhado</option>
+                  </select>
+                </div>
               </div>
-              <div class="pagination" id="pagination"></div>
+              <div class="card__body">
+                <div class="execution-table">
+                  <table class="table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Data/Hora</th>
+                        <th>Branch</th>
+                        <th>Ambiente</th>
+                        <th>Status</th>
+                        <th>Testes</th>
+                        <th>Duração</th>
+                        <th>Ações</th>
+                      </tr>
+                    </thead>
+                    <tbody id="executionTableBody"></tbody>
+                  </table>
+                </div>
+                <div class="pagination" id="pagination"></div>
+              </div>
             </div>
           </div>
         </div>
-      </div>
-    </section>
-  </div>
-</main>
+      </section>
+    </div>
+  </main>
 
   <!-- Modal for Execution Details -->
   <div class="modal hidden" id="executionModal">
@@ -195,16 +195,26 @@
         <button class="modal-close" id="closeModal"><i class="fas fa-times"></i></button>
       </div>
       <div class="modal-body">
+        <!-- ✅ TABS CORRIGIDAS COM IDs e data-tab -->
         <div class="modal-tabs">
-          <button class="tab-button tab-button--active" data-tab="overview">Visão Geral</button>
-          <button class="tab-button" data-tab="tests">Testes</button>
-          <button class="tab-button" data-tab="logs">Logs</button>
-          <button class="tab-button" data-tab="artifacts">Artefatos</button>
+          <button id="btn-overview" class="tab-button tab-button--active" data-tab="tab-overview">
+            Visão Geral
+          </button>
+          <button id="btn-tests" class="tab-button" data-tab="tab-tests">
+            Testes
+          </button>
+          <button id="btn-logs" class="tab-button" data-tab="tab-logs">
+            Logs
+          </button>
+          <button id="btn-artifacts" class="tab-button" data-tab="tab-artifacts">
+            Artefatos
+          </button>
         </div>
 
         <div class="tab-content">
+          <!-- ✅ PAINÉIS COM IDs CORRETOS -->
           <!-- Overview Tab -->
-          <div class="tab-panel tab-panel--active" id="overview-tab">
+          <div id="tab-overview" class="tab-panel tab-panel--active">
             <div class="execution-details">
               <div class="detail-grid">
                 <div class="detail-item"><label>ID da Execução:</label><span id="modalExecutionId"></span></div>
@@ -225,31 +235,26 @@
           </div>
 
           <!-- Tests Tab -->
-          <div class="tab-panel" id="tests-tab">
-            <div class="tests-list" id="modalTestsList"></div>
+          <div id="tab-tests" class="tab-panel" style="display: none;">
+            <div class="tests-list" id="modalTestsList">
+              <!-- Conteúdo será inserido dinamicamente -->
+            </div>
           </div>
 
           <!-- Logs Tab -->
-          <div class="tab-panel" id="logs-tab">
+          <div id="tab-logs" class="tab-panel" style="display: none;">
             <div class="logs-container">
-              <pre id="modalLogs"></pre>
+              <pre id="modalLogs">Carregando logs...</pre>
             </div>
           </div>
 
           <!-- Artifacts Tab -->
-          <div class="tab-panel" id="artifacts-tab">
+          <div id="tab-artifacts" class="tab-panel" style="display: none;">
             <div class="artifacts-list" id="modalArtifacts">
-              <div class="artifact-item">
-                <i class="fas fa-image"></i><span>screenshot-login.png</span>
-                <button class="btn btn--sm btn--outline">Download</button>
-              </div>
-              <div class="artifact-item">
-                <i class="fas fa-video"></i><span>test-recording.mp4</span>
-                <button class="btn btn--sm btn--outline">Download</button>
-              </div>
-              <div class="artifact-item">
-                <i class="fas fa-file-alt"></i><span>test-report.html</span>
-                <button class="btn btn--sm btn--outline">Download</button>
+              <div class="no-artifacts">
+                <i>📎</i>
+                <h3>Nenhum artefato disponível</h3>
+                <p>Esta execução não possui screenshots, vídeos ou relatórios.</p>
               </div>
             </div>
           </div>
@@ -257,6 +262,7 @@
       </div> <!-- /modal-body -->
     </div> <!-- /modal-content -->
   </div> <!-- /modal -->
+
 
   <!-- Loading Overlay -->
   <div class="loading-overlay hidden" id="loadingOverlay">
