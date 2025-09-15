@@ -22,6 +22,7 @@
   ns.historyPeriod = ns.historyPeriod || '7d'; // ✅ MUDANÇA: 7d por padrão
   ns.autoRefreshSeconds = ns.autoRefreshSeconds || 30;
   ns.autoRefreshTimer = ns.autoRefreshTimer || null;
+  ns.currentModalExecution = ns.currentModalExecution || null;
 
   // ===========================
   // Utils
@@ -884,7 +885,6 @@
   // ===========================
   // FUNCIONALIDADE DAS TABS DO MODAL
   // ===========================
-
   function initializeModalTabsOnce() {
     console.log('Inicializando tabs globalmente...');
 
@@ -924,6 +924,9 @@
       const newButton = button.cloneNode(true);
       button.parentNode.replaceChild(newButton, button);
     });
+
+    switchTab('tab-overview', 'btn-overview');
+
 
     function switchTab(activeTabId, activeButtonId) {
       console.log('Switching to tab:', activeTabId);
@@ -1026,8 +1029,6 @@
       // Marcar como inicializado
       modalTabsInitialized = true;
 
-      // Ativar primeira tab por padrão
-      switchTab('tab-overview', 'btn-overview');
     }
 
     // ✅ FUNÇÃO PARA RESETAR O MODAL QUANDO FECHA
@@ -1060,8 +1061,8 @@
     // ✅ FUNÇÃO PARA CARREGAR CONTEÚDO DAS TABS
     function loadTabContent(tabId) {
       const currentExecution = ns.currentModalExecution;
-
-      switch (tabId) {
+      
+      switch(tabId) {
         case 'tab-tests':
           loadTestsContent(currentExecution);
           break;
@@ -1099,51 +1100,58 @@
   // ✅ FUNÇÃO PARA CARREGAR TESTES
   function loadTestsContent(execution) {
     const testsContainer = document.getElementById('modalTestsList');
-
+    
     if (!execution) {
       testsContainer.innerHTML = `
-          <div class="no-artifacts">
-            <i>🧪</i>
-            <h3>Nenhum teste disponível</h3>
-            <p>Esta execução não possui detalhes de testes.</p>
-          </div>
-        `;
+        <div class="no-artifacts">
+          <i>🧪</i>
+          <h3>Nenhum teste disponível</h3>
+          <p>Esta execução não possui detalhes de testes.</p>
+        </div>
+      `;
       return;
     }
 
-    // Simular alguns testes
     testsContainer.innerHTML = `
-        <div class="test-item test-item--passed">
-          <div class="test-info">
-            <div class="test-name">Login de usuário</div>
-            <div class="test-path">cypress/e2e/login.cy.js</div>
-          </div>
-          <div class="test-duration">2.1s</div>
+      <div class="test-item test-item--passed">
+        <div class="test-info">
+          <div class="test-name">✅ Login de usuário</div>
+          <div class="test-path">cypress/e2e/login.cy.js</div>
         </div>
-        <div class="test-item test-item--passed">
-          <div class="test-info">
-            <div class="test-name">Navegação da home page</div>
-            <div class="test-path">cypress/e2e/homepage.cy.js</div>
-          </div>
-          <div class="test-duration">1.5s</div>
+        <div class="test-duration">2.1s</div>
+      </div>
+      <div class="test-item test-item--passed">
+        <div class="test-info">
+          <div class="test-name">✅ Navegação da home page</div>
+          <div class="test-path">cypress/e2e/homepage.cy.js</div>
         </div>
-        ${execution.status === 'failed' ? `
-        <div class="test-item test-item--failed">
-          <div class="test-info">
-            <div class="test-name">Checkout de produto</div>
-            <div class="test-path">cypress/e2e/checkout.cy.js</div>
-            <div class="test-error">Elemento '.btn-checkout' não encontrado</div>
-          </div>
-          <div class="test-duration">3.2s</div>
+        <div class="test-duration">1.5s</div>
+      </div>
+      ${execution.status === 'failed' ? `
+      <div class="test-item test-item--failed">
+        <div class="test-info">
+          <div class="test-name">❌ Checkout de produto</div>
+          <div class="test-path">cypress/e2e/checkout.cy.js</div>
+          <div class="test-error">Elemento '.btn-checkout' não encontrado</div>
         </div>
-        ` : ''}
-      `;
+        <div class="test-duration">3.2s</div>
+      </div>
+      ` : `
+      <div class="test-item test-item--passed">
+        <div class="test-info">
+          <div class="test-name">✅ Checkout de produto</div>
+          <div class="test-path">cypress/e2e/checkout.cy.js</div>
+        </div>
+        <div class="test-duration">2.8s</div>
+      </div>
+      `}
+    `;
   }
 
   // ✅ FUNÇÃO PARA CARREGAR LOGS
   function loadLogsContent(execution) {
     const logsContainer = document.getElementById('modalLogs');
-
+    
     if (!execution) {
       logsContainer.textContent = 'Nenhuma execução selecionada.';
       return;
@@ -1152,37 +1160,71 @@
     logsContainer.textContent = 'Carregando logs...';
 
     setTimeout(() => {
-      const mockLogs = `
-    🚀 Iniciando execução Cypress...
-    📁 Carregando especificações de teste...
-    🌐 Abrindo navegador Chrome...
-    ✅ Teste: Login de usuário - PASSOU (2.1s)
-    ✅ Teste: Navegação da home page - PASSOU (1.5s)
-    ${execution.status === 'failed' ?
-          `❌ Teste: Checkout de produto - FALHOU (3.2s)
-      └─ Erro: Elemento '.btn-checkout' não encontrado
-      └─ Screenshot salvo: cypress/screenshots/checkout-error.png` :
-          `✅ Teste: Checkout de produto - PASSOU (2.8s)`}
-    🧹 Limpando recursos...
-    📊 Gerando relatórios...
-    ✨ Execução finalizada em ${execution.duration || '28s'}
+      const mockLogs = `🚀 Iniciando execução Cypress...
+  📁 Carregando especificações de teste...
+  🌐 Abrindo navegador Chrome (headless)...
 
-    --- Log detalhado ---
-    [${execution.date}] Starting test execution...
-    [${execution.date}] Environment: ${execution.environment}
-    [${execution.date}] Branch: ${execution.branch}
-    [${execution.date}] Status: ${execution.status}
-    [${execution.date}] Tests completed successfully
-        `.trim();
+  === TESTES EXECUTADOS ===
+  ✅ Login de usuário - PASSOU (2.1s)
+  ✅ Navegação da home page - PASSOU (1.5s)
+  ${execution.status === 'failed' ? 
+    `❌ Checkout de produto - FALHOU (3.2s)
+    └─ Erro: Elemento '.btn-checkout' não encontrado
+    └─ Screenshot: cypress/screenshots/checkout-error.png
+    └─ Vídeo: cypress/videos/checkout-test.mp4` : 
+    `✅ Checkout de produto - PASSOU (2.8s)`}
+
+  🧹 Limpando recursos do navegador...
+  📊 Gerando relatórios HTML e JSON...
+  ✨ Execução finalizada em ${execution.duration || '28s'}
+
+  === LOG DETALHADO ===
+  [${formatDateTime(execution.date)}] Execution ID: ${execution.id}
+  [${formatDateTime(execution.date)}] Environment: ${execution.environment}
+  [${formatDateTime(execution.date)}] Branch: ${execution.branch}  
+  [${formatDateTime(execution.date)}] Status: ${execution.status.toUpperCase()}
+  [${formatDateTime(execution.date)}] Tests: 3 total, ${execution.status === 'failed' ? '2' : '3'} passed
+  [${formatDateTime(execution.date)}] Duration: ${execution.duration}s
+  [${formatDateTime(execution.date)}] Process completed successfully`;
 
       logsContainer.textContent = mockLogs;
     }, 800);
   }
 
+  function initializeModalTabs() {
+    console.log('Inicializando tabs do modal...');
+
+    // Event delegation - um único listener global
+    document.addEventListener('click', function (e) {
+      const tabButton = e.target.closest('#executionModal .tab-button');
+      if (tabButton) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const tabId = tabButton.getAttribute('data-tab');
+        const buttonId = tabButton.id;
+
+        console.log('Tab clicked:', tabId, buttonId);
+        switchTab(tabId, buttonId);
+      }
+    });
+
+    // Listener para fechar modal
+    document.addEventListener('click', function (e) {
+      if (e.target.id === 'closeModal' ||
+        e.target.closest('#closeModal') ||
+        e.target.classList.contains('modal-backdrop')) {
+
+        console.log('Fechando modal...');
+        closeExecutionModal();
+      }
+    });
+  }
+
   // ✅ FUNÇÃO PARA CARREGAR ARTEFATOS  
   function loadArtifactsContent(execution) {
     const artifactsContainer = document.getElementById('modalArtifacts');
-
+    
     if (execution?.status === 'failed') {
       artifactsContainer.innerHTML = `
         <div class="artifact-item">
@@ -1191,31 +1233,39 @@
             <h5>checkout-error.png</h5>
             <div class="artifact-type">Screenshot</div>
           </div>
-          <button class="btn btn--sm btn--outline">Download</button>
+          <button class="btn btn--sm btn--outline">📥 Download</button>
         </div>
         <div class="artifact-item">
           <i class="fas fa-video"></i>
           <div class="artifact-info">
-            <h5>test-recording.mp4</h5>
-            <div class="artifact-type">Vídeo</div>
+            <h5>checkout-test.mp4</h5>
+            <div class="artifact-type">Vídeo do Teste</div>
           </div>
-          <button class="btn btn--sm btn--outline">Download</button>
+          <button class="btn btn--sm btn--outline">📥 Download</button>
         </div>
         <div class="artifact-item">
           <i class="fas fa-file-alt"></i>
           <div class="artifact-info">
-            <h5>cypress-report.html</h5>
-            <div class="artifact-type">Relatório</div>
+            <h5>mochawesome-report.html</h5>
+            <div class="artifact-type">Relatório HTML</div>
           </div>
-          <button class="btn btn--sm btn--outline">Download</button>
+          <button class="btn btn--sm btn--outline">📥 Download</button>
         </div>
       `;
     } else {
       artifactsContainer.innerHTML = `
+        <div class="artifact-item">
+          <i class="fas fa-file-alt"></i>
+          <div class="artifact-info">
+            <h5>mochawesome-report.html</h5>
+            <div class="artifact-type">Relatório HTML</div>
+          </div>
+          <button class="btn btn--sm btn--outline">📥 Download</button>
+        </div>
         <div class="no-artifacts">
-          <i>📎</i>
-          <h3>Nenhum artefato disponível</h3>
-          <p>Esta execução foi bem-sucedida e não gerou artefatos de erro.</p>
+          <i>✅</i>
+          <h3>Execução bem-sucedida!</h3>
+          <p>Todos os testes passaram. Apenas relatório disponível.</p>
         </div>
       `;
     }
@@ -1237,17 +1287,17 @@
 
     // Preencher dados da visão geral
     document.getElementById("modalExecutionId").textContent = e.id;
-    document.getElementById("modalExecutionDate").textContent = e.date;
+    document.getElementById("modalExecutionDate").textContent = formatDateTime(e.date);
     document.getElementById("modalExecutionBranch").textContent = e.branch;
     document.getElementById("modalExecutionEnvironment").textContent = e.environment;
     document.getElementById("modalExecutionAuthor").textContent = e.author || "Sistema";
     document.getElementById("modalExecutionCommit").textContent = e.commit || "N/A";
-    document.getElementById("modalExecutionDuration").textContent = e.duration;
+    document.getElementById("modalExecutionDuration").textContent = e.duration + 's';
     document.getElementById("modalExecutionStatus").innerHTML = `<span class="status status--${e.status}">${e.status.toUpperCase()}</span>`;
-
+    
     const githubLink = document.getElementById("modalGithubLink");
-    if (e.github_url) {
-      githubLink.href = e.github_url;
+    if (e.githubUrl && e.githubUrl !== "#") {
+      githubLink.href = e.githubUrl;
       githubLink.style.display = 'inline-flex';
     } else {
       githubLink.style.display = 'none';
@@ -1263,13 +1313,13 @@
 
   function closeExecutionModal() {
     document.getElementById("executionModal").classList.add("hidden");
-
+    
     // Limpar dados
     ns.currentModalExecution = null;
-
+    
     // Resetar para primeira tab
     switchTab('tab-overview', 'btn-overview');
-
+    
     console.log('Modal fechado');
   }
 
