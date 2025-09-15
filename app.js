@@ -1121,25 +1121,6 @@
       logsContainer.textContent = mockLogs;
     }, 800);
   }
-
-  function initializeModalTabs() {
-    console.log('Inicializando tabs do modal...');
-
-    // Event delegation - um único listener global
-    document.addEventListener('click', function (e) {
-      const tabButton = e.target.closest('#executionModal .tab-button');
-      if (tabButton) {
-        e.preventDefault();
-        e.stopPropagation();
-
-        const tabId = tabButton.getAttribute('data-tab');
-        const buttonId = tabButton.id;
-
-        console.log('Tab clicked:', tabId, buttonId);
-        switchTab(tabId, buttonId);
-      }
-    });
-
     // Listener para fechar modal
     document.addEventListener('click', function (e) {
       if (e.target.id === 'closeModal' ||
@@ -1150,7 +1131,7 @@
         closeExecutionModal();
       }
     });
-  }
+  
 
   // ✅ FUNÇÃO PARA CARREGAR ARTEFATOS  
   function loadArtifactsContent(execution) {
