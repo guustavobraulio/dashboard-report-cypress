@@ -886,9 +886,18 @@
   // ===========================
 
   function initializeModalTabs() {
-    // Função para trocar de tab
+    // Limpar event listeners antigos para evitar duplicatas
+    const existingButtons = document.querySelectorAll('#executionModal .tab-button');
+    existingButtons.forEach(button => {
+      // Remove listeners antigos (clona o elemento para limpar eventos)
+      const newButton = button.cloneNode(true);
+      button.parentNode.replaceChild(newButton, button);
+    });
+
     function switchTab(activeTabId, activeButtonId) {
-      // Ocultar todos os painéis de tab
+      console.log('Switching to tab:', activeTabId); // Debug
+
+      // Ocultar todos os painéis
       const allPanels = document.querySelectorAll('#executionModal .tab-panel');
       allPanels.forEach(panel => {
         panel.style.display = 'none';
@@ -913,6 +922,154 @@
       if (activeButton) {
         activeButton.classList.add('tab-button--active');
       }
+
+      // ✅ CARREGAR CONTEÚDO ESPECÍFICO DA TAB
+      loadTabContent(activeTabId);
+    }
+
+    // ✅ FUNÇÃO PARA CARREGAR CONTEÚDO DAS TABS
+    function loadTabContent(tabId) {
+      const currentExecution = ns.currentModalExecution; // Guardar execução atual
+
+      switch (tabId) {
+        case 'tab-tests':
+          loadTestsContent(currentExecution);
+          break;
+        case 'tab-logs':
+          loadLogsContent(currentExecution);
+          break;
+        case 'tab-artifacts':
+          loadArtifactsContent(currentExecution);
+          break;
+      }
+    }
+
+    // Event listeners para os botões das tabs (novos elementos limpos)
+    const tabButtons = document.querySelectorAll('#executionModal .tab-button');
+    tabButtons.forEach(button => {
+      button.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const tabId = button.getAttribute('data-tab');
+        const buttonId = button.id;
+
+        console.log('Tab clicked:', tabId, buttonId); // Debug
+
+        if (tabId && buttonId) {
+          switchTab(tabId, buttonId);
+        }
+      });
+    });
+
+    // Ativar primeira tab por padrão
+    switchTab('tab-overview', 'btn-overview');
+  }
+
+  // ✅ FUNÇÃO PARA CARREGAR TESTES
+  function loadTestsContent(execution) {
+    const testsContainer = document.getElementById('modalTestsList');
+
+    if (!execution || !execution.tests) {
+      testsContainer.innerHTML = `
+      <div class="no-artifacts">
+        <i>🧪</i>
+        <h3>Nenhum teste disponível</h3>
+        <p>Esta execução não possui detalhes de testes.</p>
+      </div>
+    `;
+      return;
+    }
+
+    // Renderizar lista de testes
+    let testsHtml = '';
+    execution.tests.forEach(test => {
+      const statusClass = test.status === 'passed' ? 'test-item--passed' : 'test-item--failed';
+      testsHtml += `
+      <div class="test-item ${statusClass}">
+        <div class="test-info">
+          <div class="test-name">${test.name}</div>
+          <div class="test-path">${test.path || ''}</div>
+          ${test.error ? `<div class="test-error">${test.error}</div>` : ''}
+        </div>
+        <div class="test-duration">${test.duration || '0s'}</div>
+      </div>
+    `;
+    });
+
+    testsContainer.innerHTML = testsHtml;
+  }
+
+  // ✅ FUNÇÃO PARA CARREGAR LOGS
+  function loadLogsContent(execution) {
+    const logsContainer = document.getElementById('modalLogs');
+
+    if (!execution) {
+      logsContainer.textContent = 'Nenhuma execução selecionada.';
+      return;
+    }
+
+    // Simular carregamento
+    logsContainer.textContent = 'Carregando logs...';
+
+    // Simular busca de logs (substitua pela sua API real)
+    setTimeout(() => {
+      // ✅ LOGS SIMULADOS - SUBSTITUA PELA SUA API
+      const mockLogs = `
+🚀 Iniciando execução Cypress...
+📁 Carregando especificações de teste...
+🌐 Abrindo navegador Chrome...
+✅ Teste: Login de usuário - PASSOU
+✅ Teste: Validação da home page - PASSOU  
+❌ Teste: Checkout de produto - FALHOU
+   └─ Erro: Elemento '.btn-checkout' não encontrado
+🧹 Limpando recursos...
+📊 Gerando relatórios...
+✨ Execução finalizada em ${execution.duration || '45s'}
+
+--- Log detalhado ---
+[${execution.date}] Starting test execution...
+[${execution.date}] Environment: ${execution.environment}
+[${execution.date}] Branch: ${execution.branch}
+[${execution.date}] Tests completed: ${execution.tests_passed}/${execution.tests_total}
+    `.trim();
+
+      logsContainer.textContent = mockLogs;
+    }, 1000);
+  }
+
+  // ✅ FUNÇÃO PARA CARREGAR ARTEFATOS  
+  function loadArtifactsContent(execution) {
+    const artifactsContainer = document.getElementById('modalArtifacts');
+
+    // Simular artefatos baseados no status da execução
+    if (execution?.status === 'failed') {
+      artifactsContainer.innerHTML = `
+      <div class="artifact-item">
+        <i class="fas fa-image"></i>
+        <div class="artifact-info">
+          <h5>screenshot-error.png</h5>
+          <div class="artifact-type">Screenshot</div>
+        </div>
+        <button class="btn btn--sm btn--outline">Download</button>
+      </div>
+      <div class="artifact-item">
+        <i class="fas fa-video"></i>
+        <div class="artifact-info">
+          <h5>test-recording.mp4</h5>
+          <div class="artifact-type">Vídeo</div>
+        </div>
+        <button class="btn btn--sm btn--outline">Download</button>
+      </div>
+    `;
+    } else {
+      artifactsContainer.innerHTML = `
+      <div class="no-artifacts">
+        <i>📎</i>
+        <h3>Nenhum artefato disponível</h3>
+        <p>Esta execução foi bem-sucedida e não gerou artefatos de erro.</p>
+      </div>
+    `;
     }
 
     // Event listeners para os botões das tabs
@@ -941,15 +1098,34 @@
     const e = ns.executionsData.find(x => x.id === id);
     if (!e) return;
 
-    // ... seu código existente da função ...
+    // ✅ GUARDAR EXECUÇÃO ATUAL PARA AS TABS
+    ns.currentModalExecution = e;
 
-    // ✅ ADICIONAR NO FINAL DA FUNÇÃO:
-    // Inicializar tabs após o modal ser aberto
+    // Preencher dados da visão geral (seu código existente)
+    document.getElementById("modalExecutionId").textContent = e.id;
+    document.getElementById("modalExecutionDate").textContent = e.date;
+    document.getElementById("modalExecutionBranch").textContent = e.branch;
+    document.getElementById("modalExecutionEnvironment").textContent = e.environment;
+    document.getElementById("modalExecutionAuthor").textContent = e.author || "N/A";
+    document.getElementById("modalExecutionCommit").textContent = e.commit || "N/A";
+    document.getElementById("modalExecutionDuration").textContent = e.duration;
+    document.getElementById("modalExecutionStatus").innerHTML = `<span class="status status--${e.status}">${e.status.toUpperCase()}</span>`;
+
+    // Link do GitHub
+    const githubLink = document.getElementById("modalGithubLink");
+    if (e.github_url) {
+      githubLink.href = e.github_url;
+      githubLink.style.display = 'inline-flex';
+    } else {
+      githubLink.style.display = 'none';
+    }
+
+    // ✅ SEMPRE INICIALIZAR AS TABS (CRÍTICO!)
     setTimeout(() => {
       initializeModalTabs();
-    }, 100);
+    }, 50); // Reduzir delay
 
-    // Mostrar o modal
+    // Mostrar modal
     document.getElementById("executionModal").classList.remove("hidden");
   }
 
