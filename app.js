@@ -11,6 +11,8 @@
 
   // namespace único para estado global
   const ns = (root.__DASH_STATE__ = root.__DASH_STATE__ || {});
+  ns.updateStatistics = updateStatistics;
+  window.updateStatistics = updateStatistics;
   ns.executionsData = ns.executionsData || [];
   ns.filteredExecutions = ns.filteredExecutions || [];
   ns.statusChart = ns.statusChart || null;
@@ -1083,114 +1085,107 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ===========================
-// REMOVER +300% COM JAVASCRIPT - SOLUÇÃO DEFINITIVA
+// REMOVER +300% - VERSÃO CORRIGIDA
 // ===========================
 document.addEventListener('DOMContentLoaded', () => {
   function remover300Percent() {
-    // Encontrar todos os elementos que contêm +300%
+    // Método 1: Remover elementos que contêm APENAS "+300%"
     document.querySelectorAll('*').forEach(el => {
-      if (el.textContent && el.textContent.includes('+300%') && 
-          !el.textContent.includes('↗') && 
-          !el.textContent.includes('↘')) {
+      if (el.textContent && el.textContent.trim() === '+300%') {
         el.style.display = 'none';
         console.log('✅ Removido +300%:', el);
       }
     });
-    
-    // Método alternativo - por classes específicas
-    document.querySelectorAll('.trend-indicator').forEach(el => {
-      if (el.textContent && el.textContent.includes('300%')) {
-        el.remove();
-        console.log('✅ Removido trend 300%:', el);
+
+    // Método 2: Limpar spans com emoji hardcoded
+    const spans = document.querySelectorAll('span');
+    spans.forEach(span => {
+      if (span.textContent.includes('📈') && span.textContent.includes('+300%')) {
+        span.remove();
+        console.log('✅ Removido span hardcoded');
       }
     });
   }
-  
+
   // Executar imediatamente
   remover300Percent();
-  
-  // Executar a cada 2 segundos para pegar novos
+
+  // Executar periodicamente
   setInterval(remover300Percent, 2000);
-  
-  // Executar quando mudar período
-  document.querySelectorAll('[data-history-period]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      setTimeout(remover300Percent, 500);
-    });
-  });
-  
+
   console.log('✅ Sistema anti-300% ativado');
 });
 
 function removeHardcodedTrends() {
-    console.log('🧹 Limpando trends hardcoded...');
-    
-    // Método 1: Remover spans que contenham exatamente "+300%" sem style
-    const spans = document.querySelectorAll('span');
-    let removidos = 0;
-    
-    spans.forEach(span => {
-        const text = span.textContent.trim();
-        const hasStyle = span.hasAttribute('style');
-        const hasEmoji = span.innerHTML.includes('↗️') || span.innerHTML.includes('↘️') || span.innerHTML.includes('➡️');
-        
-        // Remover apenas "+300%" que NÃO são calculados
-        if ((text === '+300%' || text === '📈 +300%') && !hasStyle && !hasEmoji) {
-            console.log('Removendo span hardcoded:', span.textContent);
-            span.remove();
-            removidos++;
-        }
+  console.log('🧹 Limpando trends hardcoded...');
+
+  // Método 1: Remover spans que contenham exatamente "+300%" sem style
+  const spans = document.querySelectorAll('span');
+  let removidos = 0;
+
+  spans.forEach(span => {
+    const text = span.textContent.trim();
+    const hasStyle = span.hasAttribute('style');
+    const hasEmoji = span.innerHTML.includes('↗️') || span.innerHTML.includes('↘️') || span.innerHTML.includes('➡️');
+
+    // Remover apenas "+300%" que NÃO são calculados
+    if ((text === '+300%' || text === '📈 +300%') && !hasStyle && !hasEmoji) {
+      console.log('Removendo span hardcoded:', span.textContent);
+      span.remove();
+      removidos++;
+    }
+  });
+
+  // Método 2: Limpar elementos com emoji + "+300%" hardcoded
+  const emojiSpans = document.querySelectorAll('span');
+  const filteredSpans = Array.from(emojiSpans).filter(span => span.textContent.includes('📈'));
+  filteredSpans.forEach(span => {
+      if (span.textContent.includes('+300%')) {
+        span.remove();
+        removidos++;
+      }
     });
-    
-    // Método 2: Limpar elementos com emoji + "+300%" hardcoded
-    const emojiSpans = document.querySelectorAll('span:contains("📈")');
-    emojiSpans.forEach(span => {
-        if (span.textContent.includes('+300%')) {
-            span.remove();
-            removidos++;
-        }
-    });
-    
+
     console.log(`✅ ${removidos} elementos hardcoded removidos`);
-}
+  }
 
 // Integrar com suas funções existentes
 function updateStatistics() {
-    console.log('📊 Atualizando estatísticas...');
-    const currentRuns = ns.filteredExecutions || [];
-    const totalPassed = currentRuns.reduce((s, e) => s + (e.passedTests || 0), 0);
-    const totalFailed = currentRuns.reduce((s, e) => s + (e.failedTests || 0), 0);
-    const totalTests = totalPassed + totalFailed;
-    const avgDuration = currentRuns.length > 0 ? 
+      console.log('📊 Atualizando estatísticas...');
+      const currentRuns = ns.filteredExecutions || [];
+      const totalPassed = currentRuns.reduce((s, e) => s + (e.passedTests || 0), 0);
+      const totalFailed = currentRuns.reduce((s, e) => s + (e.failedTests || 0), 0);
+      const totalTests = totalPassed + totalFailed;
+      const avgDuration = currentRuns.length > 0 ?
         Math.round(currentRuns.reduce((s, e) => s + (e.duration || 0), 0) / currentRuns.length) : 0;
-    const successRate = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
-    
-    // ✅ ATUALIZAR ELEMENTOS DIRETAMENTE
-    const totalPassedEl = document.getElementById('totalPassed');
-    const totalFailedEl = document.getElementById('totalFailed');
-    const avgDurationEl = document.getElementById('avgDuration');
-    const successRateEl = document.getElementById('successRate');
-    
-    if (totalPassedEl) totalPassedEl.textContent = totalPassed;
-    if (totalFailedEl) totalFailedEl.textContent = totalFailed;
-    if (avgDurationEl) avgDurationEl.textContent = `${avgDuration}s`;
-    if (successRateEl) successRateEl.textContent = `${successRate}%`;
-    
-    console.log('📊 Estatísticas atualizadas:', { totalPassed, totalFailed, avgDuration, successRate });
-}
+      const successRate = totalTests > 0 ? Math.round((totalPassed / totalTests) * 100) : 0;
+
+      // ✅ ATUALIZAR ELEMENTOS DIRETAMENTE
+      const totalPassedEl = document.getElementById('totalPassed');
+      const totalFailedEl = document.getElementById('totalFailed');
+      const avgDurationEl = document.getElementById('avgDuration');
+      const successRateEl = document.getElementById('successRate');
+
+      if (totalPassedEl) totalPassedEl.textContent = totalPassed;
+      if (totalFailedEl) totalFailedEl.textContent = totalFailed;
+      if (avgDurationEl) avgDurationEl.textContent = `${avgDuration}s`;
+      if (successRateEl) successRateEl.textContent = `${successRate}%`;
+
+      console.log('📊 Estatísticas atualizadas:', { totalPassed, totalFailed, avgDuration, successRate });
+    }
 
 // Executar na inicialização
 document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(removeHardcodedTrends, 1000);
-});
+      setTimeout(removeHardcodedTrends, 1000);
+    });
 
-// Executar após refresh automático
-if (ns.autoRefreshTimer) {
-    const originalRefresh = ns.refresh || function(){};
-    ns.refresh = function() {
-        originalRefresh.apply(this, arguments);
-        setTimeout(removeHardcodedTrends, 300);
+  // Executar após refresh automático
+  if (ns.autoRefreshTimer) {
+    const originalRefresh = ns.refresh || function () { };
+    ns.refresh = function () {
+      originalRefresh.apply(this, arguments);
+      setTimeout(removeHardcodedTrends, 300);
     };
-}
+  }
 
 
