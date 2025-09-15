@@ -925,9 +925,6 @@
       button.parentNode.replaceChild(newButton, button);
     });
 
-    switchTab('tab-overview', 'btn-overview');
-
-
     function switchTab(activeTabId, activeButtonId) {
       console.log('Switching to tab:', activeTabId);
 
