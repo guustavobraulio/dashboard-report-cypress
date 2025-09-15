@@ -364,38 +364,49 @@
   // ===========================
   // Modal
     // ===========================
+  function loadTabContent(tabId) {
+    const currentExecution = ns.currentModalExecution;
+    switch (tabId) {
+      case 'tab-tests': loadTestsContent(currentExecution); break;
+      case 'tab-logs': loadLogsContent(currentExecution); break;
+      case 'tab-artifacts': loadArtifactsContent(currentExecution); break;
+    }
+  }
+
+
+
   function switchTab(activeTabId, activeButtonId) {
-        console.log('Switching to tab:', activeTabId);
+    console.log('Switching to tab:', activeTabId);
 
-        // Ocultar todos os painéis
-        const allPanels = document.querySelectorAll('#executionModal .tab-panel');
-        allPanels.forEach(panel => {
-          panel.style.display = 'none';
-          panel.classList.remove('tab-panel--active');
-        });
+    // Ocultar todos os painéis
+    const allPanels = document.querySelectorAll('#executionModal .tab-panel');
+    allPanels.forEach(panel => {
+      panel.style.display = 'none';
+      panel.classList.remove('tab-panel--active');
+    });
 
-        // Remover classe ativa de todos os botões
-        const allButtons = document.querySelectorAll('#executionModal .tab-button');
-        allButtons.forEach(button => {
-          button.classList.remove('tab-button--active');
-        });
+    // Remover classe ativa de todos os botões
+    const allButtons = document.querySelectorAll('#executionModal .tab-button');
+    allButtons.forEach(button => {
+      button.classList.remove('tab-button--active');
+    });
 
-        // Mostrar painel ativo
-        const activePanel = document.getElementById(activeTabId);
-        if (activePanel) {
-          activePanel.style.display = 'block';
-          activePanel.classList.add('tab-panel--active');
-        }
+    // Mostrar painel ativo
+    const activePanel = document.getElementById(activeTabId);
+    if (activePanel) {
+      activePanel.style.display = 'block';
+      activePanel.classList.add('tab-panel--active');
+    }
 
-        // Ativar botão clicado
-        const activeButton = document.getElementById(activeButtonId);
-        if (activeButton) {
-          activeButton.classList.add('tab-button--active');
-        }
+    // Ativar botão clicado
+    const activeButton = document.getElementById(activeButtonId);
+    if (activeButton) {
+      activeButton.classList.add('tab-button--active');
+    }
 
-        // Carregar conteúdo
-        loadTabContent(activeTabId);
-      }
+    // Carregar conteúdo
+    loadTabContent(activeTabId);
+  }
 
 
 
@@ -986,23 +997,6 @@
         overviewTab.style.display = 'block';
         overviewTab.classList.add('tab-panel--active');
         overviewBtn.classList.add('tab-button--active');
-      }
-    }
-
-    // ✅ FUNÇÃO PARA CARREGAR CONTEÚDO DAS TABS
-    function loadTabContent(tabId) {
-      const currentExecution = ns.currentModalExecution;
-      
-      switch(tabId) {
-        case 'tab-tests':
-          loadTestsContent(currentExecution);
-          break;
-        case 'tab-logs':
-          loadLogsContent(currentExecution);
-          break;
-        case 'tab-artifacts':
-          loadArtifactsContent(currentExecution);
-          break;
       }
     }
 
