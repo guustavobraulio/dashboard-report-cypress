@@ -745,7 +745,7 @@
       ns.executionsData = uniq.slice();
       ns.filteredExecutions = filterRunsByPeriod(ns.executionsData, ns.historyPeriod); // ✅ APLICAR FILTRO
 
-      // updateStatistics();
+      updateStatistics();
       initializeStatusChart();
       populateExecutionTable();
 
@@ -1180,12 +1180,13 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
   // Executar após refresh automático
-  if (ns.autoRefreshTimer) {
-    const originalRefresh = ns.refresh || function () { };
-    ns.refresh = function () {
-      originalRefresh.apply(this, arguments);
-      setTimeout(removeHardcodedTrends, 300);
-    };
-  }
+if (window.__DASH_STATE__?.autoRefreshTimer) {
+  const ns = window.__DASH_STATE__;
+  const originalRefresh = ns.refresh || function () { };
+  ns.refresh = function () {
+    originalRefresh.apply(this, arguments);
+    setTimeout(removeHardcodedTrends, 300);
+  };
+}
 
 
