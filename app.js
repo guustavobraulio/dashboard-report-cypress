@@ -531,7 +531,10 @@
     el("statusFilter")?.addEventListener("change", applyFilters);
     el("dateFilter")?.addEventListener("change", applyFilters);
     el("closeModal")?.addEventListener("click", closeExecutionModal);
-    document.querySelector("#executionModal .modal-backdrop")?.addEventListener("click", closeModal);
+    // document.querySelector("#executionModal .modal-backdrop")?.addEventListener("click", closeModal);
+    document.querySelector("#executionModal .modal-backdrop")?.addEventListener("click", closeExecutionModal);
+
+
 
     document.querySelectorAll(".tab-button").forEach(button => {
       button.addEventListener("click", () => {
@@ -544,6 +547,17 @@
         if (targetPanel) targetPanel.classList.add("tab-panel--active");
       });
     });
+    const pipelineBtn = document.getElementById("runPipelineBtn");
+    if (pipelineBtn) {
+      pipelineBtn.addEventListener("click", function(e) {
+        e.preventDefault();
+        console.log('🚀 Botão pipeline clicado via event listener!');
+        executarPipeline();
+      });
+      console.log('✅ Event listener do pipeline configurado com sucesso');
+    } else {
+      console.warn('❌ Botão runPipelineBtn não encontrado durante setup');
+    }
   }
 
   function applyFilters() {
