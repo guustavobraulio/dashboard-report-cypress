@@ -1,12 +1,9 @@
-const fetch = require('node-fetch');
-
 const GITHUB_OWNER = 'guustavobraulio';
 const GITHUB_REPO = 'dashboard-report-cypress';
 const WORKFLOW_FILE_NAME = 'pipeline.yml';
 const GITHUB_TOKEN = process.env.GITHUB_PERSONAL_ACCESS_TOKEN;
 
 exports.handler = async function(event) {
-  // CORS headers
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -22,6 +19,7 @@ exports.handler = async function(event) {
     
     const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE_NAME}/dispatches`;
 
+    // ✅ USE fetch GLOBAL (Node.js 18+)
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -46,7 +44,7 @@ exports.handler = async function(event) {
         headers,
         body: JSON.stringify({ 
           success: false,
-          error: `GitHub API error: ${error}` 
+          error: `GitHub API error: ${response.status} ${error}` 
         })
       };
     }
