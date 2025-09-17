@@ -19,7 +19,6 @@ exports.handler = async function(event) {
     
     const url = `https://api.github.com/repos/${GITHUB_OWNER}/${GITHUB_REPO}/actions/workflows/${WORKFLOW_FILE_NAME}/dispatches`;
 
-    // ✅ USE fetch GLOBAL (Node.js 18+)
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -28,11 +27,7 @@ exports.handler = async function(event) {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        ref: 'main',
-        inputs: { 
-          environment: 'staging',
-          triggered_by: 'dashboard'
-        }
+        ref: 'main'
       })
     });
 
