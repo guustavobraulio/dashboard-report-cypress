@@ -1684,23 +1684,62 @@ function generateXmlReport() {
 
 
 // ===========================
-// PageSpeed API Functions (GLOBAIS)
+// PageSpeed API Functions
 // ===========================
 async function loadDetailedMetrics() {
-  console.log('🔄 Carregando métricas detalhadas...');
+  console.log('📊 Carregando métricas detalhadas...');
 
   const results = [];
+  const totalStores = STORES_CONFIG.length;
 
-  // Usar STORES_CONFIG em vez de PAGESPEED_CONFIG
-  for (const store of STORES_CONFIG) {
-    console.log(`📊 Buscando métricas para: ${store.name}`);
-    const metrics = await fetchDetailedPageSpeed(store.url);
-    results.push({
-      name: store.name,
-      url: store.url,
-      ...metrics
-    });
+  // Mostrar indicador de progresso
+  showPageSpeedProgress(0, totalStores);
+
+  // ✅ EXECUÇÃO SEQUENCIAL para evitar sobrecarga
+  for (let i = 0; i < STORES_CONFIG.length; i++) {
+    const store = STORES_CONFIG[i];
+
+    try {
+      console.log(`🏪 [${i + 1}/${totalStores}] Processando ${store.name}...`);
+
+      // Atualizar progresso
+      showPageSpeedProgress(i, totalStores, `Analisando ${store.name}...`);
+
+      const metrics = await fetchDetailedPageSpeed(store.url);
+
+      results.push({
+        name: store.name,
+        url: store.url,
+        ...metrics
+      });
+
+      console.log(`✅ ${store.name} processado:`, metrics);
+
+    } catch (error) {
+      console.error(`❌ Erro ao processar ${store.name}:`, error);
+
+      // Adicionar resultado com erro
+      results.push({
+        name: store.name,
+        url: store.url,
+        performance: '--',
+        accessibility: '--',
+        bestPractices: '--',
+        seo: '--',
+        error: error.message
+      });
+    }
+
+    // Pausa entre requisições para evitar rate limiting
+    if (i < STORES_CONFIG.length - 1) {
+      await new Promise(resolve => setTimeout(resolve, 1500)); // 1.5s entre cada
+    }
   }
+
+  // Esconder indicador de progresso
+  hidePageSpeedProgress();
+
+  console.log('🎉 Todas as métricas carregadas:', results);
 
   // Atualizar tabela e cards
   updateMetricsTable(results);
@@ -1708,47 +1747,73 @@ async function loadDetailedMetrics() {
 }
 
 async function fetchDetailedPageSpeed(url) {
-  try {
-    console.log(`📡 Chamando Netlify Function para: ${url}`);
-
-    const response = await fetch('/api/page-speed', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({ url: url })
-    });
-
-    if (!response.ok) {
-      throw new Error(`HTTP error: ${response.status} - ${response.statusText}`);
+  const maxRetries = 2;
+  const timeout = 50000; // 50 segundos
+  
+  for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
+    try {
+      console.log(`📡 Tentativa ${attempt}/${maxRetries + 1} para: ${url}`);
+      
+      // Criar AbortController para timeout
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+        console.log(`⏰ Timeout de ${timeout/1000}s atingido para ${url}`);
+      }, timeout);
+      
+      const response = await fetch('/api/page-speed', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ url: url }),
+        signal: controller.signal
+      });
+      
+      clearTimeout(timeoutId);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status} - ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data.error) {
+        throw new Error(data.error);
+      }
+      
+      console.log(`✅ Dados recebidos para ${url}:`, data);
+      
+      // Extrair métricas
+      const categories = data.lighthouseResult?.categories || {};
+      
+      return {
+        performance: Math.round((categories.performance?.score || 0) * 100),
+        accessibility: Math.round((categories.accessibility?.score || 0) * 100),
+        bestPractices: Math.round((categories['best-practices']?.score || 0) * 100),
+        seo: Math.round((categories.seo?.score || 0) * 100)
+      };
+      
+    } catch (error) {
+      console.error(`❌ Tentativa ${attempt} falhou para ${url}:`, error.message);
+      
+      if (attempt === maxRetries + 1) {
+        // Última tentativa - retornar erro
+        console.error(`🚫 Falha definitiva para ${url} após ${maxRetries + 1} tentativas`);
+        return {
+          performance: '--',
+          accessibility: '--',
+          bestPractices: '--',
+          seo: '--',
+          error: error.message
+        };
+      }
+      
+      // Aguardar antes da próxima tentativa
+      const delay = Math.min(2000 * attempt, 6000); // Máximo 6s
+      console.log(`⏳ Aguardando ${delay}ms antes da próxima tentativa...`);
+      await new Promise(resolve => setTimeout(resolve, delay));
     }
-
-    const data = await response.json();
-
-    if (data.error) {
-      throw new Error(data.error);
-    }
-
-    console.log(`✅ Dados recebidos da Netlify Function:`, data);
-
-    // Extrair métricas
-    const categories = data.lighthouseResult?.categories || {};
-
-    return {
-      performance: Math.round((categories.performance?.score || 0) * 100),
-      accessibility: Math.round((categories.accessibility?.score || 0) * 100),
-      bestPractices: Math.round((categories['best-practices']?.score || 0) * 100),
-      seo: Math.round((categories.seo?.score || 0) * 100)
-    };
-
-  } catch (error) {
-    console.error(`❌ Erro ao buscar métricas para ${url}:`, error);
-    return {
-      performance: '--',
-      accessibility: '--',
-      bestPractices: '--',
-      seo: '--'
-    };
   }
 }
 
@@ -1759,19 +1824,105 @@ const STORES_CONFIG = [
   { id: 'shopmulti', url: 'https://www.shopmulti.com.br', name: 'ShopMulti' }
 ];
 
+function showPageSpeedProgress(current, total, message = 'Carregando...') {
+  const progressHTML = `
+    <div id="pagespeed-progress" style="
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(0,0,0,0.95);
+      color: white;
+      padding: 25px;
+      border-radius: 12px;
+      z-index: 9999;
+      text-align: center;
+      min-width: 320px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    ">
+      <div style="margin-bottom: 15px;">
+        <i class="fas fa-chart-line" style="font-size: 2.5rem; color: #3b82f6;"></i>
+      </div>
+      <h3 style="margin: 10px 0; color: white; font-size: 1.2rem;">Analisando PageSpeed</h3>
+      <p style="margin: 10px 0; color: #d1d5db; font-size: 0.9rem;">${message}</p>
+      <div style="background: #374151; border-radius: 10px; overflow: hidden; margin: 20px 0; height: 8px;">
+        <div style="
+          background: linear-gradient(90deg, #3b82f6, #1d4ed8);
+          height: 100%;
+          width: ${(current / total) * 100}%;
+          transition: width 0.5s ease;
+          border-radius: 10px;
+        "></div>
+      </div>
+      <div style="display: flex; justify-content: space-between; align-items: center;">
+        <small style="color: #9ca3af;">${current}/${total} lojas</small>
+        <small style="color: #9ca3af;">${Math.round((current / total) * 100)}%</small>
+      </div>
+    </div>
+  `;
+  
+  // Remover progresso anterior se existir
+  const existing = document.getElementById('pagespeed-progress');
+  if (existing) existing.remove();
+  
+  // Adicionar novo progresso
+  document.body.insertAdjacentHTML('beforeend', progressHTML);
+}
+
+function hidePageSpeedProgress() {
+  const progress = document.getElementById('pagespeed-progress');
+  if (progress) {
+    progress.style.opacity = '0';
+    progress.style.transform = 'translate(-50%, -50%) scale(0.8)';
+    setTimeout(() => progress.remove(), 300);
+  }
+}
+
+
+
 function updateMetricsTable(results) {
   const tbody = document.getElementById('metrics-table-body');
   if (!tbody) return;
 
-  tbody.innerHTML = results.map(store => `
-    <tr>
-      <td><strong>${store.name}</strong></td>
-      <td><code>${store.url}</code></td>
-      <td><span class="score ${getScoreClass(store.performance)}">${store.performance}</span></td>
-      <td><span class="score ${getScoreClass(store.accessibility)}">${store.accessibility}</span></td>
-      <td><span class="score ${getScoreClass(store.seo)}">${store.seo}</span></td>
-    </tr>
-  `).join('');
+  tbody.innerHTML = results.map(store => {
+    const hasError = store.error;
+    const errorClass = hasError ? 'error-row' : '';
+    
+    return `
+      <tr class="${errorClass}">
+        <td><strong>${store.name}</strong></td>
+        <td><code>${store.url}</code></td>
+        <td>
+          <span class="score ${getScoreClass(store.performance)}">
+            ${store.performance}
+            ${hasError ? ' <i class="fas fa-exclamation-triangle" title="' + store.error + '"></i>' : ''}
+          </span>
+        </td>
+        <td><span class="score ${getScoreClass(store.accessibility)}">${store.accessibility}</span></td>
+        <td><span class="score ${getScoreClass(store.seo)}">${store.seo}</span></td>
+      </tr>
+    `;
+  }).join('');
+  
+  // Adicionar estilos para linhas com erro
+  if (!document.getElementById('pagespeed-error-styles')) {
+    const styles = document.createElement('style');
+    styles.id = 'pagespeed-error-styles';
+    styles.textContent = `
+      .error-row {
+        background-color: rgba(239, 68, 68, 0.1) !important;
+      }
+      .error-row td {
+        color: #dc2626;
+      }
+      .fa-exclamation-triangle {
+        color: #f59e0b;
+        margin-left: 4px;
+        cursor: help;
+      }
+    `;
+    document.head.appendChild(styles);
+  }
 }
 
 function updateSummaryCards(results) {
@@ -1804,6 +1955,7 @@ function getScoreClass(score) {
 }
 
 function refreshAllPageSpeed() {
+  console.log('🔄 Refresh manual do PageSpeed...');
   loadDetailedMetrics();
 }
 
