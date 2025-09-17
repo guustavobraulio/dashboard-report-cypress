@@ -1819,9 +1819,12 @@ async function fetchDetailedPageSpeed(url) {
 
 // Configuração das lojas
 const STORES_CONFIG = [
-  { id: 'victor-hugo', url: 'https://www.victorhugo.com.br', name: 'Victor Hugo' },
-  { id: 'shopvinho', url: 'https://www.shopvinho.com.br', name: 'ShopVinho' },
-  { id: 'shopmulti', url: 'https://www.shopmulti.com.br', name: 'ShopMulti' }
+  { id: 'victor-hugo', url: 'https://www.victorhugo.com.br/', name: 'Victor Hugo' },
+  { id: 'shopvinho', url: 'https://www.shopvinho.com.br/', name: 'ShopVinho' },
+  { id: 'shopmulti', url: 'https://www.shopmulti.com.br/', name: 'ShopMulti' },
+  { id: 'inoar', url: 'https://www.loja.inoar.com.br/', name: 'Loja Inoar'},
+  { id: 'taiff', url: 'https://www.taiff.com.br/', name: 'Loja Taiff'},
+
 ];
 
 function showPageSpeedProgress(current, total, message = 'Carregando...') {
