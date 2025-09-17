@@ -1747,8 +1747,8 @@ async function loadDetailedMetrics() {
 }
 
 async function fetchDetailedPageSpeed(url) {
-  const maxRetries = 2;
-  const timeout = 50000; // 50 segundos
+  const maxRetries = 1;
+  const timeout = 60000; // 100 segundos
   
   for (let attempt = 1; attempt <= maxRetries + 1; attempt++) {
     try {
