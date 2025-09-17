@@ -669,76 +669,76 @@
   // ===========================
   function renderArtifacts(artifacts) {
     if (!artifacts || artifacts.length === 0) {
-      return `
-        <div class="no-artifacts">
-          <i class="fas fa-images"></i>
-          <p>Nenhum artefato disponível para esta execução</p>
-          <small>Screenshots e vídeos aparecerão aqui quando disponíveis</small>
-        </div>
-      `;
+      return `<div class="no-artifacts">
+            <i class="fas fa-images"></i>
+            <p>Nenhum artefato disponível para esta execução</p>
+            <small>Screenshots e vídeos aparecerão aqui quando disponíveis</small>
+        </div>`;
     }
 
     return artifacts.map(a => {
-      const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(a.url || '');
-      const isVideo = /\.(mp4|webm|mov)$/i.test(a.url || '');
+      const isImage = /\.(jpg|jpeg|png|gif|webp)$/i.test(a.url || a.name);
+      const isVideo = /\.(mp4|webm|mov)$/i.test(a.url || a.name);
 
       if (isImage) {
-        return `
-          <div class="artifact-item">
-            <div class="artifact-preview">
-              <img src="${a.url}" alt="${a.name || 'Screenshot'}" class="artifact-thumb" onclick="openImageModal('${a.url}', '${a.name || 'Screenshot'}')">
-            </div>
-            <div class="artifact-info">
-              <h5>${a.name || 'Screenshot do Teste'}</h5>
-              <span class="artifact-type">Imagem • ${getFileSize(a.size)}</span>
-              <div style="margin-top: 0.5rem;">
-                <button class="btn btn--sm btn--outline" onclick="openImageModal('${a.url}', '${a.name || 'Screenshot'}')">
-                  <i class="fas fa-eye"></i> Visualizar
-                </button>
-                <a href="${a.url}" target="_blank" class="btn btn--sm btn--outline" style="margin-left: 0.5rem;">
-                  <i class="fas fa-download"></i> Download
-                </a>
-              </div>
-            </div>
-          </div>
-        `;
-      } else if (isVideo) {
-        return `
-          <div class="artifact-item">
-            <div class="artifact-preview">
-              <video controls class="artifact-video">
-                <source src="${a.url}" type="video/mp4">
-                Seu browser não suporta reprodução de vídeo.
-              </video>
-            </div>
-            <div class="artifact-info">
-              <h5>${a.name || 'Gravação do Teste'}</h5>
-              <span class="artifact-type">Vídeo • ${getFileSize(a.size)}</span>
-              <div style="margin-top: 0.5rem;">
-                <a href="${a.url}" target="_blank" class="btn btn--sm btn--outline">
-                  <i class="fas fa-download"></i> Download
-                </a>
-              </div>
-            </div>
-          </div>
-        `;
-      } else {
-        return `
-          <div class="artifact-item">
-            <div class="artifact-preview">
-              <i class="fas fa-file-alt" style="font-size: 3rem; color: #6b7280;"></i>
-            </div>
-            <div class="artifact-info">
-              <h5>${a.name || 'Arquivo'}</h5>
-              <span class="artifact-type">Documento • ${getFileSize(a.size)}</span>
-              <div style="margin-top: 0.5rem;">
-                <a href="${a.url}" target="_blank" class="btn btn--sm btn--outline">
-                  <i class="fas fa-external-link-alt"></i> Abrir
-                </a>
-              </div>
-            </div>
-          </div>
-        `;
+        return `<div class="artifact-item">
+                <div class="artifact-preview">
+                    <img src="${a.url}" alt="${a.name} - Screenshot" class="artifact-thumb" 
+                         onclick="openImageModal('${a.url}', '${a.name} - Screenshot')">
+                </div>
+                <div class="artifact-info">
+                    <h5>${a.name} - Screenshot do Teste</h5>
+                    <span class="artifact-type">Imagem</span> ${getFileSize(a.size)}
+                </div>
+                <div style="margin-top: 0.5rem;">
+                    <button class="btn btn--sm btn--outline" 
+                            onclick="openImageModal('${a.url}', '${a.name} - Screenshot')">
+                        <i class="fas fa-eye"></i> Visualizar
+                    </button>
+                    <button class="btn btn--sm btn--outline" 
+                            onclick="downloadArtifact('${a.url}', '${a.name}')" 
+                            style="margin-left: 0.5rem;">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                </div>
+            </div>`;
+      }
+      else if (isVideo) {
+        return `<div class="artifact-item">
+                <div class="artifact-preview">
+                    <video controls class="artifact-video">
+                        <source src="${a.url}" type="video/mp4">
+                        Seu browser não suporta reprodução de vídeo.
+                    </video>
+                </div>
+                <div class="artifact-info">
+                    <h5>${a.name} - Gravação do Teste</h5>
+                    <span class="artifact-type">Vídeo</span> ${getFileSize(a.size)}
+                </div>
+                <div style="margin-top: 0.5rem;">
+                    <button class="btn btn--sm btn--outline" 
+                            onclick="downloadArtifact('${a.url}', '${a.name}')">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                </div>
+            </div>`;
+      }
+      else {
+        return `<div class="artifact-item">
+                <div class="artifact-preview">
+                    <i class="fas fa-file-alt" style="font-size: 3rem; color: #6b7280;"></i>
+                </div>
+                <div class="artifact-info">
+                    <h5>${a.name}</h5>
+                    <span class="artifact-type">Documento</span> ${getFileSize(a.size)}
+                </div>
+                <div style="margin-top: 0.5rem;">
+                    <button class="btn btn--sm btn--outline" 
+                            onclick="downloadArtifact('${a.url || ''}', '${a.name}')">
+                        <i class="fas fa-download"></i> Download
+                    </button>
+                </div>
+            </div>`;
       }
     }).join('');
   }
@@ -1138,52 +1138,44 @@
   // ✅ FUNÇÃO PARA CARREGAR ARTEFATOS  
   function loadArtifactsContent(execution) {
     const artifactsContainer = document.getElementById('modalArtifacts');
-    
+
+    // Simulação de artefatos mais realistas
+    const mockArtifacts = [
+      {
+        name: 'mochawesome-report.html',
+        url: '', // URL vazia indica que deve gerar conteúdo
+        size: 245760, // ~240KB
+        type: 'text/html'
+      },
+      {
+        name: 'test-results.json',
+        url: '',
+        size: 15360, // ~15KB
+        type: 'application/json'
+      }
+    ];
+
+    // Se a execução falhou, adicionar artefatos de erro
     if (execution?.status === 'failed') {
-      artifactsContainer.innerHTML = `
-        <div class="artifact-item">
-          <i class="fas fa-image"></i>
-          <div class="artifact-info">
-            <h5>checkout-error.png</h5>
-            <div class="artifact-type">Screenshot</div>
-          </div>
-          <button class="btn btn--sm btn--outline">📥 Download</button>
-        </div>
-        <div class="artifact-item">
-          <i class="fas fa-video"></i>
-          <div class="artifact-info">
-            <h5>checkout-test.mp4</h5>
-            <div class="artifact-type">Vídeo do Teste</div>
-          </div>
-          <button class="btn btn--sm btn--outline">📥 Download</button>
-        </div>
-        <div class="artifact-item">
-          <i class="fas fa-file-alt"></i>
-          <div class="artifact-info">
-            <h5>mochawesome-report.html</h5>
-            <div class="artifact-type">Relatório HTML</div>
-          </div>
-          <button class="btn btn--sm btn--outline">📥 Download</button>
-        </div>
-      `;
-    } else {
-      artifactsContainer.innerHTML = `
-        <div class="artifact-item">
-          <i class="fas fa-file-alt"></i>
-          <div class="artifact-info">
-            <h5>mochawesome-report.html</h5>
-            <div class="artifact-type">Relatório HTML</div>
-          </div>
-          <button class="btn btn--sm btn--outline">📥 Download</button>
-        </div>
-        <div class="no-artifacts">
-          <i>✅</i>
-          <h3>Execução bem-sucedida!</h3>
-          <p>Todos os testes passaram. Apenas relatório disponível.</p>
-        </div>
-      `;
+      mockArtifacts.push(
+        {
+          name: 'checkout-error.png',
+          url: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="100%" height="100%" fill="%23f3f4f6"/><text x="50%" y="50%" font-family="Arial" font-size="16" fill="%236b7280" text-anchor="middle">Screenshot de Erro</text></svg>',
+          size: 89600, // ~87KB
+          type: 'image/png'
+        },
+        {
+          name: 'test-recording.mp4',
+          url: '', // Para vídeo, podemos usar um placeholder
+          size: 2048000, // ~2MB
+          type: 'video/mp4'
+        }
+      );
     }
+
+    artifactsContainer.innerHTML = renderArtifacts(mockArtifacts);
   }
+
   function openExecutionModal(id) {
     console.log('=== ABRINDO MODAL ===');
     console.log('ID da execução:', id);
@@ -1404,6 +1396,292 @@ function showPipelineNotification(message, type = 'info') {
     }
   }, 5000);
 }
+
+//////////////////////////////
+/// mochawesome ///////////// 
+/////////////////////////////
+
+// Função universal para fazer download de qualquer tipo de arquivo
+function downloadArtifact(url, filename) {
+  console.log('Iniciando download de:', filename);
+
+  // Mostrar indicador de carregamento no botão
+  const buttons = document.querySelectorAll(`button[onclick*="${filename}"]`);
+  buttons.forEach(btn => {
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Baixando...';
+    btn.disabled = true;
+  });
+
+  // Função para resetar botões
+  const resetButtons = () => {
+    buttons.forEach(btn => {
+      btn.innerHTML = '<i class="fas fa-download"></i> Download';
+      btn.disabled = false;
+    });
+  };
+
+  try {
+    // Se é uma URL real, fazer download direto
+    if (url && url.startsWith('http')) {
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      setTimeout(resetButtons, 1000);
+      return;
+    }
+
+    // Gerar conteúdo baseado no tipo de arquivo
+    let content = '';
+    let mimeType = 'text/plain';
+
+    if (filename.endsWith('.html')) {
+      content = generateMochaweseReport();
+      mimeType = 'text/html';
+    } else if (filename.endsWith('.json')) {
+      content = generateJsonReport();
+      mimeType = 'application/json';
+    } else if (filename.endsWith('.xml')) {
+      content = generateXmlReport();
+      mimeType = 'text/xml';
+    } else {
+      content = `Relatório de execução: ${filename}\n\nGerado em: ${new Date().toLocaleString()}\n\nDetalhes da execução disponíveis no dashboard.`;
+    }
+
+    // Criar blob e fazer download
+    const blob = new Blob([content], { type: mimeType });
+    const downloadUrl = URL.createObjectURL(blob);
+
+    const link = document.createElement('a');
+    link.href = downloadUrl;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    // Limpar URL do blob
+    URL.revokeObjectURL(downloadUrl);
+
+    console.log('✅ Download concluído:', filename);
+
+    // Mostrar notificação de sucesso
+    showNotification(`✅ Download de "${filename}" concluído com sucesso!`, 'success');
+
+  } catch (error) {
+    console.error('❌ Erro no download:', error);
+    showNotification(`❌ Erro ao baixar "${filename}": ${error.message}`, 'error');
+  }
+
+  setTimeout(resetButtons, 1000);
+}
+
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `notification notification--${type}`;
+  notification.innerHTML = `
+        <div class="notification-content">
+            <span>${message}</span>
+            <button onclick="this.parentElement.parentElement.remove()" style="margin-left: 10px; background: none; border: none; color: inherit; cursor: pointer;">×</button>
+        </div>
+    `;
+
+  // Adicionar estilos se não existirem
+  if (!document.querySelector('#notification-styles')) {
+    const styles = document.createElement('style');
+    styles.id = 'notification-styles';
+    styles.textContent = `
+            .notification {
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                z-index: 9999;
+                min-width: 300px;
+                padding: 15px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                animation: slideIn 0.3s ease-out;
+            }
+            .notification--success { background-color: #10b981; }
+            .notification--error { background-color: #ef4444; }
+            .notification--info { background-color: #3b82f6; }
+            
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            
+            .notification-content {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+            }
+        `;
+    document.head.appendChild(styles);
+  }
+
+  document.body.appendChild(notification);
+
+  // Auto remover após 4 segundos
+  setTimeout(() => {
+    if (notification.parentNode) {
+      notification.remove();
+    }
+  }, 4000);
+}
+
+// Função para gerar relatório HTML Mochawesome
+function generateMochaweseReport() {
+  const execution = window.DASHSTATE?.currentModalExecution;
+  const timestamp = new Date().toLocaleString();
+
+  return `<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Testes - ${execution?.id || 'N/A'}</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .header { background: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px; }
+        .stats { display: flex; gap: 20px; margin: 20px 0; }
+        .stat { background: #e3f2fd; padding: 15px; border-radius: 8px; text-align: center; }
+        .test-item { border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 8px; }
+        .passed { border-left: 4px solid #4caf50; }
+        .failed { border-left: 4px solid #f44336; }
+        .error { color: #f44336; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🧪 Relatório de Execução de Testes</h1>
+        <p><strong>ID da Execução:</strong> ${execution?.id || 'N/A'}</p>
+        <p><strong>Data:</strong> ${execution?.date || timestamp}</p>
+        <p><strong>Branch:</strong> ${execution?.branch || 'main'}</p>
+        <p><strong>Ambiente:</strong> ${execution?.environment || 'production'}</p>
+        <p><strong>Status:</strong> ${execution?.status || 'passed'}</p>
+        <p><strong>Duração:</strong> ${execution?.duration || '0'}s</p>
+    </div>
+    
+    <div class="stats">
+        <div class="stat">
+            <h3>${execution?.passedTests || 0}</h3>
+            <p>Testes Aprovados</p>
+        </div>
+        <div class="stat">
+            <h3>${execution?.failedTests || 0}</h3>
+            <p>Testes Falhados</p>
+        </div>
+        <div class="stat">
+            <h3>${execution?.totalTests || 0}</h3>
+            <p>Total de Testes</p>
+        </div>
+    </div>
+    
+    <h2>📋 Detalhes dos Testes</h2>
+    <div class="test-item passed">
+        <h4>✅ Login de usuário</h4>
+        <p><strong>Arquivo:</strong> cypress/e2e/login.cy.js</p>
+        <p><strong>Duração:</strong> 2.1s</p>
+    </div>
+    
+    <div class="test-item passed">
+        <h4>✅ Navegação da home page</h4>
+        <p><strong>Arquivo:</strong> cypress/e2e/homepage.cy.js</p>
+        <p><strong>Duração:</strong> 1.5s</p>
+    </div>
+    
+    ${execution?.status === 'failed' ? `
+    <div class="test-item failed">
+        <h4>❌ Checkout de produto</h4>
+        <p><strong>Arquivo:</strong> cypress/e2e/checkout.cy.js</p>
+        <p><strong>Duração:</strong> 3.2s</p>
+        <div class="error">Erro: Elemento '.btn-checkout' não encontrado</div>
+    </div>
+    ` : ''}
+    
+    <footer style="margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; font-size: 12px; color: #666;">
+        <p>Relatório gerado automaticamente em ${timestamp}</p>
+        <p>Dashboard de Testes Cypress v1.0</p>
+    </footer>
+</body>
+</html>`;
+}
+
+// Função para gerar relatório JSON
+function generateJsonReport() {
+  const execution = window.DASHSTATE?.currentModalExecution;
+
+  return JSON.stringify({
+    execution: {
+      id: execution?.id || 'N/A',
+      date: execution?.date || new Date().toISOString(),
+      branch: execution?.branch || 'main',
+      environment: execution?.environment || 'production',
+      status: execution?.status || 'passed',
+      duration: execution?.duration || 0,
+      totalTests: execution?.totalTests || 0,
+      passedTests: execution?.passedTests || 0,
+      failedTests: execution?.failedTests || 0
+    },
+    tests: [
+      {
+        name: "Login de usuário",
+        file: "cypress/e2e/login.cy.js",
+        status: "passed",
+        duration: 2.1
+      },
+      {
+        name: "Navegação da home page",
+        file: "cypress/e2e/homepage.cy.js",
+        status: "passed",
+        duration: 1.5
+      }
+    ],
+    generated: new Date().toISOString(),
+    generator: "Cypress Dashboard v1.0"
+  }, null, 2);
+}
+
+// Função para gerar relatório XML
+function generateXmlReport() {
+  const execution = window.DASHSTATE?.currentModalExecution;
+
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<testResults>
+    <execution>
+        <id>${execution?.id || 'N/A'}</id>
+        <date>${execution?.date || new Date().toISOString()}</date>
+        <branch>${execution?.branch || 'main'}</branch>
+        <environment>${execution?.environment || 'production'}</environment>
+        <status>${execution?.status || 'passed'}</status>
+        <duration>${execution?.duration || 0}</duration>
+        <totalTests>${execution?.totalTests || 0}</totalTests>
+        <passedTests>${execution?.passedTests || 0}</passedTests>
+        <failedTests>${execution?.failedTests || 0}</failedTests>
+    </execution>
+    <tests>
+        <test>
+            <name>Login de usuário</name>
+            <file>cypress/e2e/login.cy.js</file>
+            <status>passed</status>
+            <duration>2.1</duration>
+        </test>
+        <test>
+            <name>Navegação da home page</name>
+            <file>cypress/e2e/homepage.cy.js</file>
+            <status>passed</status>
+            <duration>1.5</duration>
+        </test>
+    </tests>
+    <generated>${new Date().toISOString()}</generated>
+</testResults>`;
+}
+
 
 // ===========================
 // PageSpeed API Functions (GLOBAIS)
