@@ -509,17 +509,20 @@
     }
   }
 
-  function closeModal() {
+  function closeExecutionModal() {
     const modal = document.getElementById("executionModal");
     if (!modal) return;
+
+    // Fechar modal
     modal.classList.add("hidden");
     modal.style.display = "none";
-    document.querySelectorAll(".tab-button").forEach(btn => btn.classList.remove("tab-button--active"));
-    document.querySelectorAll(".tab-panel").forEach(p => p.classList.remove("tab-panel--active"));
-    const overviewTab = document.querySelector('.tab-button[data-tab="overview"]');
-    const overviewPanel = document.getElementById("overview-tab");
-    if (overviewTab) overviewTab.classList.add("tab-button--active");
-    if (overviewPanel) overviewPanel.classList.add("tab-panel--active");
+
+    // Limpar dados da execução atual
+    if (window.__DASH_STATE__) {
+      window.__DASH_STATE__.currentModalExecution = null;
+    }
+
+    console.log('Modal fechado e pronto para reabrir');
   }
 
   function setupEventListeners() {
@@ -527,7 +530,7 @@
 
     el("statusFilter")?.addEventListener("change", applyFilters);
     el("dateFilter")?.addEventListener("change", applyFilters);
-    el("closeModal")?.addEventListener("click", closeModal);
+    el("closeModal")?.addEventListener("click", closeExecutionModal);
     document.querySelector("#executionModal .modal-backdrop")?.addEventListener("click", closeModal);
 
     document.querySelectorAll(".tab-button").forEach(button => {
@@ -760,6 +763,7 @@
   document.addEventListener("DOMContentLoaded", () => {
     setupPeriodButtons();
     setupEventListeners();
+    initializeModalTabsOnce();
 
     loadRuns()
       .catch(console.error)
@@ -1115,17 +1119,7 @@
       logsContainer.textContent = mockLogs;
     }, 800);
   }
-    // Listener para fechar modal
-    document.addEventListener('click', function (e) {
-      if (e.target.id === 'closeModal' ||
-        e.target.closest('#closeModal') ||
-        e.target.classList.contains('modal-backdrop')) {
-
-        console.log('Fechando modal...');
-        closeExecutionModal();
-      }
-    });
-  
+ 
 
   // ✅ FUNÇÃO PARA CARREGAR ARTEFATOS  
   function loadArtifactsContent(execution) {
