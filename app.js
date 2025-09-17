@@ -1296,21 +1296,34 @@ async function executarPipeline() {
   showPipelineNotification('Pipeline iniciada com sucesso! ⚡', 'success');
 
   try {
-    // Simular chamada da pipeline (substitua pela sua API)
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    const response = await fetch('/.netlify/functions/trigger-pipeline', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        environment: 'staging',
+        triggered_by: 'dashboard'
+      })
+  });
 
-    // Simular resposta de sucesso
-    console.log('✅ Pipeline executada com sucesso!');
-    
+    if (!response.ok) {
+      const errorData = await response.text();
+      throw new Error(`Erro HTTP ${response.status}: ${errorData}`);
+    }
+
+    const result = await response.json();
+    console.log('✅ Pipeline disparada com sucesso:', result);
+
     // Mostrar sucesso
     btn.innerHTML = `
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M20 6L9 17l-5-5"/>
-      </svg>
-      <span>Executada!</span>
-    `;
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M20 6L9 17l-5-5"/>
+    </svg>
+    <span>Disparada!</span>
+  `;
 
-    showPipelineNotification('Pipeline concluída! Os resultados aparecerão em breve. 🎉', 'success');
+    showPipelineNotification('Pipeline iniciada no GitHub Actions! 🚀', 'success');
 
     // Voltar ao estado normal após 3 segundos
     setTimeout(() => {
@@ -1319,33 +1332,45 @@ async function executarPipeline() {
       btn.disabled = false;
     }, 3000);
 
-    // Atualizar dados após 5 segundos
+    // Atualizar dados após 10 segundos (pipeline demora mais que simulação)
     setTimeout(() => {
       if (typeof loadRuns === 'function') {
         loadRuns();
-        showPipelineNotification('Dados atualizados! 📊', 'info');
+        showPipelineNotification('Verificando novos resultados... 🔍', 'info');
       }
-    }, 5000);
+    }, 10000);
 
   } catch (error) {
-    console.error('❌ Erro ao executar pipeline:', error);
-    
-    // Mostrar erro
+    console.error('❌ Erro ao disparar pipeline:', error);
+
+    // Mostrar erro detalhado
     btn.innerHTML = `
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M18 6L6 18M6 6l12 12"/>
-      </svg>
-      <span>Erro!</span>
-    `;
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18 6L6 18M6 6l12 12"/>
+    </svg>
+    <span>Falhou!</span>
+  `;
 
-    showPipelineNotification('Erro ao executar pipeline. Tente novamente. ❌', 'error');
+    // Mostrar erro específico baseado no tipo
+    let errorMessage = 'Erro ao disparar pipeline. ';
+    if (error.message.includes('404')) {
+      errorMessage += 'Função serverless não encontrada. ';
+    } else if (error.message.includes('401')) {
+      errorMessage += 'Token de acesso inválido. ';
+    } else if (error.message.includes('403')) {
+      errorMessage += 'Permissão negada no GitHub. ';
+    } else {
+      errorMessage += error.message;
+    }
 
-    // Voltar ao estado normal após 4 segundos
+    showPipelineNotification(errorMessage + ' ❌', 'error');
+
+    // Voltar ao estado normal após 5 segundos
     setTimeout(() => {
       btn.innerHTML = originalHTML;
       btn.classList.remove('btn--loading');
       btn.disabled = false;
-    }, 4000);
+    }, 5000);
   }
 }
 
