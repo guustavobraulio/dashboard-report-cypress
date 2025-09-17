@@ -1256,6 +1256,116 @@ function closeMetricsPage() {
   }
 }
 
+async function executarPipeline() {
+  console.log('🚀 Iniciando execução da pipeline...');
+  
+  const btn = document.getElementById('runPipelineBtn');
+  if (!btn) {
+    console.error('❌ Botão runPipelineBtn não encontrado!');
+    return;
+  }
+
+  // Estado de loading
+  btn.classList.add('btn--loading');
+  btn.disabled = true;
+  
+  const originalHTML = btn.innerHTML;
+  btn.innerHTML = `
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M8 5v14l11-7z"/>
+    </svg>
+    <span>Executando...</span>
+    <div class="btn-spinner-slot"></div>
+  `;
+
+  // Mostrar notificação de sucesso
+  showPipelineNotification('Pipeline iniciada com sucesso! ⚡', 'success');
+
+  try {
+    // Simular chamada da pipeline (substitua pela sua API)
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // Simular resposta de sucesso
+    console.log('✅ Pipeline executada com sucesso!');
+    
+    // Mostrar sucesso
+    btn.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M20 6L9 17l-5-5"/>
+      </svg>
+      <span>Executada!</span>
+    `;
+
+    showPipelineNotification('Pipeline concluída! Os resultados aparecerão em breve. 🎉', 'success');
+
+    // Voltar ao estado normal após 3 segundos
+    setTimeout(() => {
+      btn.innerHTML = originalHTML;
+      btn.classList.remove('btn--loading');
+      btn.disabled = false;
+    }, 3000);
+
+    // Atualizar dados após 5 segundos
+    setTimeout(() => {
+      if (typeof loadRuns === 'function') {
+        loadRuns();
+        showPipelineNotification('Dados atualizados! 📊', 'info');
+      }
+    }, 5000);
+
+  } catch (error) {
+    console.error('❌ Erro ao executar pipeline:', error);
+    
+    // Mostrar erro
+    btn.innerHTML = `
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M18 6L6 18M6 6l12 12"/>
+      </svg>
+      <span>Erro!</span>
+    `;
+
+    showPipelineNotification('Erro ao executar pipeline. Tente novamente. ❌', 'error');
+
+    // Voltar ao estado normal após 4 segundos
+    setTimeout(() => {
+      btn.innerHTML = originalHTML;
+      btn.classList.remove('btn--loading');
+      btn.disabled = false;
+    }, 4000);
+  }
+}
+
+// Sistema de notificações toast
+function showPipelineNotification(message, type = 'info') {
+  // Remover notificação existente se houver
+  const existing = document.querySelector('.pipeline-notification');
+  if (existing) existing.remove();
+
+  // Criar notificação
+  const notification = document.createElement('div');
+  notification.className = `pipeline-notification pipeline-notification--${type}`;
+  notification.innerHTML = `
+    <div class="pipeline-notification-content">
+      <span class="pipeline-notification-message">${message}</span>
+      <button class="pipeline-notification-close" onclick="this.parentElement.parentElement.remove()">×</button>
+    </div>
+  `;
+
+  // Adicionar ao body
+  document.body.appendChild(notification);
+
+  // Mostrar com animação
+  setTimeout(() => notification.classList.add('show'), 100);
+
+  // Auto-remover após 5 segundos
+  setTimeout(() => {
+    if (notification.parentElement) {
+      notification.classList.remove('show');
+      setTimeout(() => notification.remove(), 300);
+    }
+  }, 5000);
+}
+
 // ===========================
 // PageSpeed API Functions (GLOBAIS)
 // ===========================

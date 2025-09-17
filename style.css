@@ -950,7 +950,7 @@ select.form-control {
   font-size: 14px;
 }
 
-@keyframes spin {
+/* @keyframes spin {
   from {
     transform: rotate(0deg);
   }
@@ -958,6 +958,11 @@ select.form-control {
   to {
     transform: rotate(360deg);
   }
+} */
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }
 
 .header .auto-refresh {
@@ -1222,8 +1227,47 @@ select.form-control {
   justify-content: center;
   white-space: nowrap;
   flex-shrink: 0;
+  transition: all 0.2s ease !important;
+  position: relative !important;
+  overflow: hidden !important;
 }
 
+#runPipelineBtn.btn--loading {
+  opacity: 0.8 !important;
+  pointer-events: none !important;
+}
+
+#runPipelineBtn .btn-spinner-slot {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  margin-left: 8px;
+}
+
+#runPipelineBtn[data-state="success"] {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+}
+
+#runPipelineBtn[data-state="error"] {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+}
+
+#runPipelineBtn[data-state="loading"] {
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%) !important;
+  cursor: not-allowed !important;
+}
+
+.btn--loading .btn-spinner-slot::after {
+  content: '';
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top: 2px solid white;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  vertical-align: middle;
+}
 
 /* Action Buttons */
 .action-btn {
@@ -2613,3 +2657,81 @@ h2:contains("Histórico de Execuções") {
   margin-left: 8px !important;
 }
 
+/* ===========================
+   Pipeline Notification Styles
+   =========================== 
+*/
+.pipeline-notification {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  min-width: 320px;
+  max-width: 500px;
+  transform: translateX(100%);
+  transition: transform 0.3s ease, opacity 0.3s ease;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pipeline-notification.show {
+  transform: translateX(0);
+  opacity: 1;
+  pointer-events: all;
+}
+
+.pipeline-notification-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  font-family: inherit;
+}
+
+/* Variações por tipo de notificação */
+.pipeline-notification--success .pipeline-notification-content {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  color: white;
+}
+
+.pipeline-notification--error .pipeline-notification-content {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  color: white;
+}
+
+.pipeline-notification--info .pipeline-notification-content {
+  background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%);
+  color: white;
+}
+
+.pipeline-notification-message {
+  flex: 1;
+  font-weight: 500;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.pipeline-notification-close {
+  background: none;
+  border: none;
+  color: currentColor;
+  font-size: 1.25rem;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 1rem;
+  opacity: 0.8;
+  transition: opacity 0.2s ease;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.pipeline-notification-close:hover {
+  opacity: 1;
+}
