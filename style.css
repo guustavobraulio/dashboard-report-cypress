@@ -1320,7 +1320,7 @@ select.form-control {
 }
 
 /* Modal Styles */
-.modal {
+/* .modal {
   position: fixed;
   top: 0;
   left: 0;
@@ -1331,7 +1331,7 @@ select.form-control {
   align-items: center;
   justify-content: center;
   padding: 1rem;
-}
+} */
 
 .modal * {
   box-sizing: border-box !important;
@@ -1379,7 +1379,7 @@ select.form-control {
   font-size: 1.25rem !important;
   font-weight: 600 !important;
   color: #1f2937 !important;
-  padding-right: 3rem !important; /* Espaço para o X */
+  padding-right: 3rem !important;
 }
 
 .modal-close {
@@ -1393,10 +1393,13 @@ select.form-control {
   cursor: pointer !important;
   padding: 0.5rem !important;
   border-radius: 4px !important;
-  z-index: 10 !important;
+  z-index: 100 !important; /* ✅ Z-INDEX ALTO */
   width: auto !important;
   height: auto !important;
   line-height: 1 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }
 
 .modal-close:hover {
@@ -2737,56 +2740,40 @@ h2:contains("Histórico de Execuções") {
 }
 
 /* ===========================
-   MOBILE FIRST - FORÇADO
+   MOBILE RESPONSIVO FINAL - SUBSTITUA A SEÇÃO ANTERIOR
    ========================== */
-
-/* FORÇA VIEWPORT CORRETO */
-html { 
-  width: 100% !important; 
-  overflow-x: hidden !important; 
-}
-
-body { 
-  width: 100% !important; 
-  margin: 0 !important; 
-  padding: 0 !important; 
-  overflow-x: hidden !important; 
-}
-
-/* FORÇA RESPONSIVO EM TELAS <= 768px */
 @media screen and (max-width: 768px) {
   
-  /* REMOVE TODAS AS LARGURAS FIXAS */
+  /* FORÇA VIEWPORT */
+  html, body {
+    width: 100% !important;
+    overflow-x: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
   * {
     max-width: 100% !important;
     box-sizing: border-box !important;
   }
   
-  /* CONTAINER PRINCIPAL */
-  body {
-    font-size: 14px !important;
-  }
-  
+  /* CONTAINER */
   .container,
   .main-content .container {
     width: 100% !important;
-    max-width: 100% !important;
     padding: 0.75rem !important;
     margin: 0 !important;
   }
   
-  /* HEADER - FORÇA VERTICAL */
+  /* HEADER RESPONSIVO */
   .header {
-    display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
     padding: 1rem 0.75rem !important;
-    width: 100% !important;
     gap: 1rem !important;
   }
   
   .header-content {
-    display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
     align-items: center !important;
@@ -2804,7 +2791,6 @@ body {
   }
   
   .header-actions {
-    display: flex !important;
     flex-wrap: wrap !important;
     justify-content: center !important;
     gap: 0.5rem !important;
@@ -2817,7 +2803,6 @@ body {
     max-width: 150px !important;
     font-size: 0.8rem !important;
     padding: 0.6rem !important;
-    text-align: center !important;
   }
   
   .auto-refresh {
@@ -2828,21 +2813,18 @@ body {
     position: static !important;
   }
   
-  /* STATS - FORÇA 1 COLUNA */
+  /* STATS GRID - 1 COLUNA */
   .stats-grid {
     display: flex !important;
     flex-direction: column !important;
     gap: 1rem !important;
-    width: 100% !important;
   }
   
   .stat-card {
-    display: flex !important;
     flex-direction: row !important;
     align-items: center !important;
     padding: 1.25rem !important;
     gap: 1rem !important;
-    width: 100% !important;
   }
   
   .stat-icon {
@@ -2856,30 +2838,17 @@ body {
     text-align: left !important;
   }
   
-  /* CHARTS - FORÇA TAMANHO MOBILE */
-  .chart-section {
-    width: 100% !important;
-    margin: 1rem 0 !important;
-  }
-  
+  /* CHARTS RESPONSIVOS */
   .chart-container {
     width: 100% !important;
     height: 280px !important;
     margin: 1rem 0 !important;
   }
   
-  .chart-container canvas {
-    max-width: 100% !important;
-    height: auto !important;
-  }
-  
-  /* FILTROS - VERTICAL */
   .chart-filters,
   .history-actions {
-    display: flex !important;
     flex-direction: column !important;
     gap: 0.75rem !important;
-    width: 100% !important;
   }
   
   .chart-filters .form-control,
@@ -2887,9 +2856,8 @@ body {
     width: 100% !important;
   }
   
-  /* BOTÕES PERÍODO - FORÇA WRAP */
+  /* BOTÕES PERÍODO */
   .period-filters {
-    display: flex !important;
     flex-wrap: wrap !important;
     gap: 0.5rem !important;
     justify-content: center !important;
@@ -2900,13 +2868,10 @@ body {
     min-width: 70px !important;
     font-size: 0.8rem !important;
     padding: 0.6rem 0.5rem !important;
-    text-align: center !important;
   }
   
-  /* TABELAS - FORÇA SCROLL HORIZONTAL */
-  .table-container,
+  /* TABELAS */
   .table-responsive {
-    width: 100% !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
   }
@@ -2914,7 +2879,6 @@ body {
   .table {
     min-width: 700px !important;
     font-size: 0.8rem !important;
-    width: auto !important;
   }
   
   .table th,
@@ -2923,17 +2887,10 @@ body {
     white-space: nowrap !important;
   }
   
-  /* MODAIS - FORÇA TELA CHEIA */
+  /* MODAL MOBILE */
   .modal {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
     padding: 0.5rem !important;
-    display: flex !important;
     align-items: flex-start !important;
-    justify-content: center !important;
   }
   
   .modal-content {
@@ -2941,27 +2898,12 @@ body {
     max-width: none !important;
     margin: 0.5rem !important;
     max-height: calc(100vh - 1rem) !important;
-    overflow-y: auto !important;
-    border-radius: 8px !important;
   }
   
-  .modal-header {
-    padding: 1rem !important;
-    border-bottom: 1px solid #e5e7eb !important;
-  }
-  
-  .modal-header h2 {
-    font-size: 1.2rem !important;
-    margin: 0 !important;
-  }
-  
-  /* TABS - FORÇA SCROLL HORIZONTAL */
   .modal-tabs {
-    display: flex !important;
     overflow-x: auto !important;
     flex-wrap: nowrap !important;
     -webkit-overflow-scrolling: touch !important;
-    border-bottom: 1px solid #e5e7eb !important;
   }
   
   .tab-button {
@@ -2969,43 +2911,6 @@ body {
     white-space: nowrap !important;
     font-size: 0.85rem !important;
     padding: 0.75rem 1rem !important;
-    border: none !important;
-    background: transparent !important;
-    cursor: pointer !important;
-  }
-  
-  .tab-button.active {
-    background: var(--color-teal-500) !important;
-    color: white !important;
-  }
-  
-  .tab-panel {
-    padding: 1rem !important;
-    width: 100% !important;
-  }
-  
-  /* MODAL MÉTRICAS */
-  .metrics-modal-content {
-    width: calc(100% - 1rem) !important;
-    margin: 0.5rem !important;
-    max-height: calc(100vh - 1rem) !important;
-    overflow-y: auto !important;
-  }
-  
-  .metrics-overview {
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 1rem !important;
-  }
-  
-  .metrics-table {
-    font-size: 0.8rem !important;
-    overflow-x: auto !important;
-  }
-  
-  .metrics-table th,
-  .metrics-table td {
-    padding: 0.75rem 0.5rem !important;
   }
   
   /* BOTÕES TOUCH */
@@ -3016,39 +2921,10 @@ body {
     min-height: 44px !important;
     min-width: 44px !important;
     padding: 0.6rem 1rem !important;
-    font-size: 0.85rem !important;
-  }
-  
-  /* PAGINAÇÃO */
-  .pagination {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    justify-content: center !important;
-    gap: 0.25rem !important;
-  }
-  
-  .pagination button {
-    min-width: 44px !important;
-    min-height: 44px !important;
-    font-size: 0.8rem !important;
-    padding: 0.5rem !important;
-  }
-  
-  /* FORÇA ELEMENTOS PROBLEMÁTICOS */
-  .execution-table,
-  .metrics-table-container {
-    width: 100% !important;
-    overflow-x: auto !important;
-  }
-  
-  /* REMOVE ELEMENTOS QUE QUEBRAM */
-  .trend-indicator {
-    font-size: 0.7rem !important;
-    padding: 2px 4px !important;
   }
 }
 
-/* MOBILE PEQUENO - AJUSTES EXTRAS */
+/* MOBILE PEQUENO */
 @media screen and (max-width: 480px) {
   .container,
   .main-content .container {
@@ -3086,10 +2962,5 @@ body {
   .table {
     font-size: 0.75rem !important;
     min-width: 600px !important;
-  }
-  
-  .table th,
-  .table td {
-    padding: 0.4rem 0.3rem !important;
   }
 }
