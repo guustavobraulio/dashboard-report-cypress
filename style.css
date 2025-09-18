@@ -2756,13 +2756,14 @@ body {
 /* FORÇA RESPONSIVO EM TELAS <= 768px */
 @media screen and (max-width: 768px) {
   
-  /* REMOVE TODAS AS LARGURAS FIXAS */
-  * {
-    max-width: 100% !important;
-    box-sizing: border-box !important;
+  /* BASE */
+  html, body {
+    width: 100% !important;
+    overflow-x: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   
-  /* CONTAINER PRINCIPAL */
   body {
     font-size: 14px !important;
   }
@@ -2770,23 +2771,19 @@ body {
   .container,
   .main-content .container {
     width: 100% !important;
-    max-width: 100% !important;
-    padding: 0.75rem !important;
+    padding: 1rem !important;
     margin: 0 !important;
   }
   
-  /* HEADER - FORÇA VERTICAL */
+  /* HEADER MÓVEL */
   .header {
-    display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    padding: 1rem 0.75rem !important;
-    width: 100% !important;
+    padding: 1rem !important;
     gap: 1rem !important;
   }
   
   .header-content {
-    display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
     align-items: center !important;
@@ -2794,17 +2791,15 @@ body {
   }
   
   .logo-section {
-    width: 100% !important;
     text-align: center !important;
   }
   
   .logo-section h1 {
-    font-size: 1.1rem !important;
+    font-size: 1.125rem !important;
     margin: 0 !important;
   }
   
   .header-actions {
-    display: flex !important;
     flex-wrap: wrap !important;
     justify-content: center !important;
     gap: 0.5rem !important;
@@ -2812,26 +2807,23 @@ body {
   }
   
   .header-btn {
-    flex: 1 1 auto !important;
-    min-width: 110px !important;
-    max-width: 150px !important;
+    min-width: 120px !important;
     font-size: 0.8rem !important;
-    padding: 0.6rem !important;
-    text-align: center !important;
+    padding: 0.6rem 1rem !important;
   }
   
   .auto-refresh {
     width: 100% !important;
     text-align: center !important;
     font-size: 0.75rem !important;
-    margin: 0.5rem 0 0 0 !important;
     position: static !important;
+    margin: 0.5rem 0 0 0 !important;
   }
   
-  /* STATS - FORÇA 1 COLUNA */
+  /* STATS GRID - FORÇAR COLUNA ÚNICA */
   .stats-grid {
-    display: flex !important;
-    flex-direction: column !important;
+    display: grid !important;
+    grid-template-columns: 1fr !important;
     gap: 1rem !important;
     width: 100% !important;
   }
@@ -2856,30 +2848,16 @@ body {
     text-align: left !important;
   }
   
-  /* CHARTS - FORÇA TAMANHO MOBILE */
-  .chart-section {
-    width: 100% !important;
-    margin: 1rem 0 !important;
-  }
-  
+  /* CHARTS */
   .chart-container {
-    width: 100% !important;
     height: 280px !important;
     margin: 1rem 0 !important;
   }
   
-  .chart-container canvas {
-    max-width: 100% !important;
-    height: auto !important;
-  }
-  
-  /* FILTROS - VERTICAL */
   .chart-filters,
   .history-actions {
-    display: flex !important;
     flex-direction: column !important;
     gap: 0.75rem !important;
-    width: 100% !important;
   }
   
   .chart-filters .form-control,
@@ -2887,26 +2865,22 @@ body {
     width: 100% !important;
   }
   
-  /* BOTÕES PERÍODO - FORÇA WRAP */
+  /* PERÍODOS */
   .period-filters {
-    display: flex !important;
     flex-wrap: wrap !important;
     gap: 0.5rem !important;
     justify-content: center !important;
   }
   
   .period-btn {
-    flex: 1 1 calc(33% - 0.5rem) !important;
+    flex: 1 1 calc(33.33% - 0.5rem) !important;
     min-width: 70px !important;
     font-size: 0.8rem !important;
     padding: 0.6rem 0.5rem !important;
-    text-align: center !important;
   }
   
-  /* TABELAS - FORÇA SCROLL HORIZONTAL */
-  .table-container,
+  /* TABELAS */
   .table-responsive {
-    width: 100% !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
   }
@@ -2914,7 +2888,6 @@ body {
   .table {
     min-width: 700px !important;
     font-size: 0.8rem !important;
-    width: auto !important;
   }
   
   .table th,
@@ -2923,50 +2896,21 @@ body {
     white-space: nowrap !important;
   }
   
-  /* MODAIS - FORÇA TELA CHEIA */
+  /* MODAIS */
   .modal {
-    position: fixed !important;
-    top: 0 !important;
-    left: 0 !important;
-    width: 100% !important;
-    height: 100% !important;
     padding: 0.5rem !important;
-    display: flex !important;
-    align-items: flex-start !important;
-    justify-content: center !important;
   }
   
   .modal-content {
-      width: calc(100% - 1rem) !important;
-      max-width: none !important;
-      margin: 0.5rem !important;
-      max-height: calc(100vh - 1rem) !important;
-      overflow-y: auto !important;
-      border-radius: 8px !important;
+    width: calc(100% - 1rem) !important;
+    margin: 0.5rem !important;
+    max-height: calc(100vh - 1rem) !important;
   }
   
-
-.modal-header {
-  position: relative !important;
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
-  padding: 1.5rem !important;
-  border-bottom: 1px solid #e5e7eb !important;
-}
-  
-  .modal-header h2 {
-    font-size: 1.2rem !important;
-    margin: 0 !important;
-  }
-  
-  /* TABS - FORÇA SCROLL HORIZONTAL */
   .modal-tabs {
-    display: flex !important;
     overflow-x: auto !important;
     flex-wrap: nowrap !important;
     -webkit-overflow-scrolling: touch !important;
-    border-bottom: 1px solid #e5e7eb !important;
   }
   
   .tab-button {
@@ -2974,19 +2918,6 @@ body {
     white-space: nowrap !important;
     font-size: 0.85rem !important;
     padding: 0.75rem 1rem !important;
-    border: none !important;
-    background: transparent !important;
-    cursor: pointer !important;
-  }
-  
-  .tab-button.active {
-    background: var(--color-teal-500) !important;
-    color: white !important;
-  }
-  
-  .tab-panel {
-    padding: 1rem !important;
-    width: 100% !important;
   }
   
   /* MODAL MÉTRICAS */
@@ -2994,23 +2925,11 @@ body {
     width: calc(100% - 1rem) !important;
     margin: 0.5rem !important;
     max-height: calc(100vh - 1rem) !important;
-    overflow-y: auto !important;
   }
   
   .metrics-overview {
-    display: flex !important;
-    flex-direction: column !important;
+    grid-template-columns: 1fr !important;
     gap: 1rem !important;
-  }
-  
-  .metrics-table {
-    font-size: 0.8rem !important;
-    overflow-x: auto !important;
-  }
-  
-  .metrics-table th,
-  .metrics-table td {
-    padding: 0.75rem 0.5rem !important;
   }
   
   /* BOTÕES TOUCH */
@@ -3020,44 +2939,15 @@ body {
   .action-btn {
     min-height: 44px !important;
     min-width: 44px !important;
-    padding: 0.6rem 1rem !important;
-    font-size: 0.85rem !important;
-  }
-  
-  /* PAGINAÇÃO */
-  .pagination {
-    display: flex !important;
-    flex-wrap: wrap !important;
-    justify-content: center !important;
-    gap: 0.25rem !important;
-  }
-  
-  .pagination button {
-    min-width: 44px !important;
-    min-height: 44px !important;
-    font-size: 0.8rem !important;
-    padding: 0.5rem !important;
-  }
-  
-  /* FORÇA ELEMENTOS PROBLEMÁTICOS */
-  .execution-table,
-  .metrics-table-container {
-    width: 100% !important;
-    overflow-x: auto !important;
-  }
-  
-  /* REMOVE ELEMENTOS QUE QUEBRAM */
-  .trend-indicator {
-    font-size: 0.7rem !important;
-    padding: 2px 4px !important;
   }
 }
+
 
 /* MOBILE PEQUENO - AJUSTES EXTRAS */
 @media screen and (max-width: 480px) {
   .container,
   .main-content .container {
-    padding: 0.5rem !important;
+    padding: 0.75rem !important;
   }
   
   .header {
@@ -3086,15 +2976,5 @@ body {
   .period-btn {
     flex: 1 1 calc(50% - 0.25rem) !important;
     font-size: 0.75rem !important;
-  }
-  
-  .table {
-    font-size: 0.75rem !important;
-    min-width: 600px !important;
-  }
-  
-  .table th,
-  .table td {
-    padding: 0.4rem 0.3rem !important;
   }
 }

@@ -1256,11 +1256,38 @@ function openMetricsPage() {
 }
 
 function closeMetricsPage() {
+  console.log('🔄 Fechando modal de métricas...');
+  
   const modal = document.getElementById('metricsModal');
   if (modal) {
     modal.classList.add('hidden');
   }
+  
+  // IMPORTANTE: Também esconder o progresso do PageSpeed se estiver ativo
+  hidePageSpeedProgress();
+  
+  console.log('✅ Modal de métricas fechado');
 }
+
+// Adicionar event listener para fechar com ESC
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') {
+    closeMetricsPage();
+    
+    // Fechar outros modais também
+    const executionModal = document.getElementById('executionModal');
+    if (executionModal && !executionModal.classList.contains('hidden')) {
+      closeExecutionModal();
+    }
+  }
+});
+
+// Fechar modal clicando fora dele
+document.addEventListener('click', function(e) {
+  if (e.target.classList.contains('modal') || e.target.classList.contains('metrics-modal')) {
+    closeMetricsPage();
+  }
+});
 
 async function executarPipeline() {
   console.log('🚀 Iniciando execução da pipeline...');
@@ -1880,8 +1907,6 @@ function hidePageSpeedProgress() {
     setTimeout(() => progress.remove(), 300);
   }
 }
-
-
 
 function updateMetricsTable(results) {
   const tbody = document.getElementById('metrics-table-body');
