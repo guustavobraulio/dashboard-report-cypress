@@ -2738,7 +2738,7 @@ h2:contains("Histórico de Execuções") {
 
 @media screen and (max-width: 430px) {
   
-  /* FORÇA VIEWPORT MOBILE */
+  /* FORÇA VIEWPORT MOBILE - SEM MAX-WIDTH */
   html {
     width: 100vw !important;
     overflow-x: hidden !important;
@@ -2748,60 +2748,79 @@ h2:contains("Histórico de Execuções") {
     width: 100vw !important;
     overflow-x: hidden !important;
     font-size: 14px !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
   
-  /* CONTAINER MOBILE */
+  /* CONTAINER MOBILE - LARGURA TOTAL */
   .container,
   .main-content .container {
-    width: 100% !important;
-    max-width: 100% !important;
+    width: 100vw !important; /* ✅ MUDANÇA: 100vw ao invés de 100% */
+    max-width: none !important; /* ✅ REMOVE MAX-WIDTH */
     padding: 0.75rem !important;
-    margin: 0 auto !important;
+    margin: 0 !important;
     box-sizing: border-box !important;
   }
   
-  /* STATS GRID - FORÇA 1 COLUNA NO MOBILE */
+  .main-content {
+    width: 100vw !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  /* STATS GRID - OCUPAR LARGURA TOTAL */
   .stats-grid {
-    display: block !important; /* ✅ MUDANÇA CRÍTICA: block ao invés de grid */
-    width: 100% !important;
+    width: 100vw !important; /* ✅ LARGURA TOTAL */
+    max-width: none !important; /* ✅ REMOVE MAX-WIDTH */
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+    padding: 0 0.75rem !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
   }
   
   .stat-card {
-    display: block !important; /* ✅ FORÇA BLOCK */
-    width: 100% !important;
-    margin-bottom: 1rem !important;
+    width: calc(100vw - 1.5rem) !important; /* ✅ LARGURA TOTAL - PADDING */
+    max-width: none !important; /* ✅ REMOVE MAX-WIDTH */
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
     padding: 1rem !important;
-    text-align: center !important;
+    margin: 0 !important;
+    gap: 1rem !important;
     box-sizing: border-box !important;
   }
   
-  .stat-card .stat-icon {
-    display: inline-block !important;
+  .stat-icon {
+    flex-shrink: 0 !important;
     width: 40px !important;
     height: 40px !important;
-    margin-bottom: 0.5rem !important;
   }
   
   .stat-content {
-    display: block !important;
-    text-align: center !important;
-    width: 100% !important;
+    flex: 1 !important;
+    text-align: left !important;
   }
   
-  /* HEADER MOBILE FORÇADO */
+  /* HEADER MOBILE - LARGURA TOTAL */
   .header {
+    width: 100vw !important;
+    max-width: none !important;
     display: flex !important;
     flex-direction: column !important;
     align-items: center !important;
-    width: 100% !important;
     padding: 0.75rem !important;
     gap: 0.75rem !important;
+    box-sizing: border-box !important;
   }
   
   .header-content {
+    width: 100% !important;
+    max-width: none !important;
     display: flex !important;
     flex-direction: column !important;
-    width: 100% !important;
     align-items: center !important;
     gap: 0.75rem !important;
   }
@@ -2823,16 +2842,16 @@ h2:contains("Histórico de Execuções") {
   }
   
   .header-actions {
+    width: 100% !important;
+    max-width: none !important;
     display: flex !important;
     flex-wrap: wrap !important;
     justify-content: center !important;
     gap: 0.5rem !important;
-    width: 100% !important;
   }
   
   .header-btn {
     flex: 1 1 calc(50% - 0.25rem) !important;
-    min-width: 140px !important;
     max-width: none !important;
     font-size: 0.75rem !important;
     padding: 0.5rem !important;
@@ -2841,38 +2860,54 @@ h2:contains("Histórico de Execuções") {
   
   .auto-refresh {
     width: 100% !important;
+    max-width: none !important;
     text-align: center !important;
     font-size: 0.7rem !important;
     margin: 0.5rem 0 0 0 !important;
     position: static !important;
   }
   
-  /* CHARTS MOBILE */
+  /* SECTION - LARGURA TOTAL */
+  .dashboard-content,
+  .chart-section,
+  .history-chart-section {
+    width: 100vw !important;
+    max-width: none !important;
+    padding: 0 0.75rem !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* CHARTS MOBILE - LARGURA TOTAL */
   .chart-container {
-    width: 100% !important;
+    width: calc(100vw - 1.5rem) !important;
+    max-width: none !important;
     height: 200px !important;
     margin: 1rem 0 !important;
   }
   
-  /* PERÍODOS - 2 COLUNAS NO MOBILE */
+  /* PERÍODOS - LARGURA TOTAL */
   .period-filters {
+    width: 100% !important;
+    max-width: none !important;
     display: flex !important;
     flex-wrap: wrap !important;
     gap: 0.5rem !important;
-    justify-content: center !important;
+    justify-content: space-between !important;
   }
   
   .period-btn {
-    flex: 1 1 calc(50% - 0.25rem) !important;
-    min-width: 0 !important;
+    flex: 1 1 calc(33.33% - 0.5rem) !important;
+    max-width: none !important;
     font-size: 0.75rem !important;
     padding: 0.5rem !important;
     text-align: center !important;
   }
   
-  /* TABELAS MOBILE */
+  /* TABELAS MOBILE - SCROLL HORIZONTAL */
   .table-responsive {
-    width: 100% !important;
+    width: calc(100vw - 1.5rem) !important;
+    max-width: none !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
   }
@@ -2891,55 +2926,21 @@ h2:contains("Histórico de Execuções") {
   /* MODAIS MOBILE */
   .modal-content {
     width: calc(100vw - 1rem) !important;
+    max-width: none !important;
     margin: 0.5rem !important;
     max-height: calc(100vh - 1rem) !important;
   }
   
-  .modal-tabs {
-    overflow-x: auto !important;
-    flex-wrap: nowrap !important;
-  }
-  
-  .tab-button {
-    flex-shrink: 0 !important;
-    font-size: 0.8rem !important;
-    padding: 0.6rem 0.8rem !important;
-    white-space: nowrap !important;
-  }
-  
-  /* FORÇA TODOS OS ELEMENTOS A RESPEITAREM LARGURA */
+  /* REMOVE QUALQUER MAX-WIDTH GLOBAL */
   * {
-    max-width: 100% !important;
+    max-width: none !important;
     box-sizing: border-box !important;
   }
   
-  /* REMOVE QUALQUER OVERFLOW */
-  body, html, .main-content {
-    overflow-x: hidden !important;
-  }
-}
-
-/* MOBILE MUITO PEQUENO */
-@media screen and (max-width: 375px) {
-  .container,
-  .main-content .container {
-    padding: 0.5rem !important;
-  }
-  
-  .header {
-    padding: 0.5rem !important;
-  }
-  
-  .header-btn {
-    font-size: 0.7rem !important;
-    padding: 0.4rem !important;
-  }
-  
-  .stat-card {
-    padding: 0.75rem !important;
-  }
-  
-  .chart-container {
-    height: 180px !important;
+  /* FORÇA LARGURA NOS CONTAINERS PRINCIPAIS */
+  .dashboard-content > *,
+  .main-content > * {
+    width: 100% !important;
+    max-width: none !important;
   }
 }
