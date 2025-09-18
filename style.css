@@ -2737,37 +2737,56 @@ h2:contains("Histórico de Execuções") {
 }
 
 /* ===========================
-   MOBILE RESPONSIVO MELHORADO
+   MOBILE FIRST - FORÇADO
    ========================== */
 
-/* Reset e base */
+/* FORÇA VIEWPORT CORRETO */
+html { 
+  width: 100% !important; 
+  overflow-x: hidden !important; 
+}
+
+body { 
+  width: 100% !important; 
+  margin: 0 !important; 
+  padding: 0 !important; 
+  overflow-x: hidden !important; 
+}
+
+/* FORÇA RESPONSIVO EM TELAS <= 768px */
 @media screen and (max-width: 768px) {
-  * { box-sizing: border-box; }
   
-  body { 
-    font-size: 14px !important; 
-    margin: 0 !important;
-    padding: 0 !important;
-    overflow-x: hidden !important;
+  /* REMOVE TODAS AS LARGURAS FIXAS */
+  * {
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
   
   /* CONTAINER PRINCIPAL */
-  .container, .main-content .container { 
-    padding: 0.75rem !important;
+  body {
+    font-size: 14px !important;
+  }
+  
+  .container,
+  .main-content .container {
+    width: 100% !important;
     max-width: 100% !important;
+    padding: 0.75rem !important;
     margin: 0 !important;
   }
   
-  /* HEADER COMPLETO */
-  .header { 
-    flex-direction: column !important; 
+  /* HEADER - FORÇA VERTICAL */
+  .header {
+    display: flex !important;
+    flex-direction: column !important;
     align-items: center !important;
-    gap: 1rem !important; 
     padding: 1rem 0.75rem !important;
     width: 100% !important;
+    gap: 1rem !important;
   }
   
   .header-content {
+    display: flex !important;
     flex-direction: column !important;
     width: 100% !important;
     align-items: center !important;
@@ -2775,52 +2794,55 @@ h2:contains("Histórico de Execuções") {
   }
   
   .logo-section {
-    text-align: center !important;
     width: 100% !important;
+    text-align: center !important;
   }
   
-  .header-actions { 
+  .logo-section h1 {
+    font-size: 1.1rem !important;
+    margin: 0 !important;
+  }
+  
+  .header-actions {
     display: flex !important;
-    flex-wrap: wrap !important; 
+    flex-wrap: wrap !important;
     justify-content: center !important;
     gap: 0.5rem !important;
     width: 100% !important;
   }
   
-  .header-btn { 
-    flex: 1 !important; 
+  .header-btn {
+    flex: 1 1 auto !important;
     min-width: 110px !important;
-    max-width: 140px !important;
+    max-width: 150px !important;
     font-size: 0.8rem !important;
-    padding: 0.6rem 0.8rem !important;
-    white-space: nowrap !important;
+    padding: 0.6rem !important;
+    text-align: center !important;
   }
   
-  /* AUTO-REFRESH */
   .auto-refresh {
-    position: static !important;
+    width: 100% !important;
     text-align: center !important;
     font-size: 0.75rem !important;
     margin: 0.5rem 0 0 0 !important;
-    width: 100% !important;
+    position: static !important;
   }
   
-  /* STATS GRID - FORÇA COLUNA ÚNICA */
-  .stats-grid { 
-    display: grid !important;
-    grid-template-columns: 1fr !important; 
-    gap: 1rem !important;
-    width: 100% !important;
-  }
-  
-  .stat-card { 
+  /* STATS - FORÇA 1 COLUNA */
+  .stats-grid {
     display: flex !important;
-    flex-direction: row !important; 
-    align-items: center !important;
-    text-align: left !important;
-    padding: 1.25rem !important;
-    width: 100% !important;
+    flex-direction: column !important;
     gap: 1rem !important;
+    width: 100% !important;
+  }
+  
+  .stat-card {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 1.25rem !important;
+    gap: 1rem !important;
+    width: 100% !important;
   }
   
   .stat-icon {
@@ -2834,21 +2856,28 @@ h2:contains("Histórico de Execuções") {
     text-align: left !important;
   }
   
-  /* CHARTS E GRÁFICOS */
+  /* CHARTS - FORÇA TAMANHO MOBILE */
   .chart-section {
     width: 100% !important;
     margin: 1rem 0 !important;
   }
   
-  .chart-container { 
-    height: 280px !important; 
+  .chart-container {
     width: 100% !important;
+    height: 280px !important;
     margin: 1rem 0 !important;
   }
   
-  .chart-filters, .history-actions { 
+  .chart-container canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+  
+  /* FILTROS - VERTICAL */
+  .chart-filters,
+  .history-actions {
     display: flex !important;
-    flex-direction: column !important; 
+    flex-direction: column !important;
     gap: 0.75rem !important;
     width: 100% !important;
   }
@@ -2856,62 +2885,69 @@ h2:contains("Histórico de Execuções") {
   .chart-filters .form-control,
   .history-actions .form-control {
     width: 100% !important;
-    min-width: 0 !important;
   }
   
-  /* PERIOD BUTTONS */
-  .period-filters { 
+  /* BOTÕES PERÍODO - FORÇA WRAP */
+  .period-filters {
     display: flex !important;
-    flex-wrap: wrap !important; 
+    flex-wrap: wrap !important;
     gap: 0.5rem !important;
     justify-content: center !important;
-    width: 100% !important;
   }
   
-  .period-btn { 
-    flex: 1 1 calc(33.33% - 0.5rem) !important; 
+  .period-btn {
+    flex: 1 1 calc(33% - 0.5rem) !important;
     min-width: 70px !important;
-    max-width: none !important;
-    text-align: center !important;
     font-size: 0.8rem !important;
     padding: 0.6rem 0.5rem !important;
+    text-align: center !important;
   }
   
-  /* TABELAS */
-  .table-container, .table-responsive { 
+  /* TABELAS - FORÇA SCROLL HORIZONTAL */
+  .table-container,
+  .table-responsive {
     width: 100% !important;
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;
   }
   
-  .table { 
-    min-width: 700px !important; 
+  .table {
+    min-width: 700px !important;
     font-size: 0.8rem !important;
-    width: 100% !important;
+    width: auto !important;
   }
   
-  .table th, .table td { 
-    padding: 0.6rem 0.5rem !important; 
+  .table th,
+  .table td {
+    padding: 0.6rem 0.5rem !important;
     white-space: nowrap !important;
   }
   
-  /* MODAIS - OCUPAR TELA TODA */
-  .modal { 
-    padding: 0.5rem !important; 
+  /* MODAIS - FORÇA TELA CHEIA */
+  .modal {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    padding: 0.5rem !important;
+    display: flex !important;
     align-items: flex-start !important;
+    justify-content: center !important;
   }
   
-  .modal-content { 
-    width: calc(100% - 1rem) !important; 
+  .modal-content {
+    width: calc(100% - 1rem) !important;
     max-width: none !important;
     margin: 0.5rem !important;
     max-height: calc(100vh - 1rem) !important;
     overflow-y: auto !important;
+    border-radius: 8px !important;
   }
   
   .modal-header {
     padding: 1rem !important;
-    flex-wrap: wrap !important;
+    border-bottom: 1px solid #e5e7eb !important;
   }
   
   .modal-header h2 {
@@ -2919,21 +2955,33 @@ h2:contains("Histórico de Execuções") {
     margin: 0 !important;
   }
   
-  .modal-tabs { 
+  /* TABS - FORÇA SCROLL HORIZONTAL */
+  .modal-tabs {
+    display: flex !important;
     overflow-x: auto !important;
     flex-wrap: nowrap !important;
     -webkit-overflow-scrolling: touch !important;
+    border-bottom: 1px solid #e5e7eb !important;
   }
   
-  .tab-button { 
+  .tab-button {
     flex-shrink: 0 !important;
     white-space: nowrap !important;
     font-size: 0.85rem !important;
     padding: 0.75rem 1rem !important;
+    border: none !important;
+    background: transparent !important;
+    cursor: pointer !important;
+  }
+  
+  .tab-button.active {
+    background: var(--color-teal-500) !important;
+    color: white !important;
   }
   
   .tab-panel {
     padding: 1rem !important;
+    width: 100% !important;
   }
   
   /* MODAL MÉTRICAS */
@@ -2941,16 +2989,31 @@ h2:contains("Histórico de Execuções") {
     width: calc(100% - 1rem) !important;
     margin: 0.5rem !important;
     max-height: calc(100vh - 1rem) !important;
+    overflow-y: auto !important;
   }
   
   .metrics-overview {
-    grid-template-columns: 1fr !important;
+    display: flex !important;
+    flex-direction: column !important;
     gap: 1rem !important;
   }
   
-  /* BOTÕES TOUCH-FRIENDLY */
-  .btn, .header-btn, .period-btn, .action-btn { 
-    min-height: 44px !important; 
+  .metrics-table {
+    font-size: 0.8rem !important;
+    overflow-x: auto !important;
+  }
+  
+  .metrics-table th,
+  .metrics-table td {
+    padding: 0.75rem 0.5rem !important;
+  }
+  
+  /* BOTÕES TOUCH */
+  .btn,
+  .header-btn,
+  .period-btn,
+  .action-btn {
+    min-height: 44px !important;
     min-width: 44px !important;
     padding: 0.6rem 1rem !important;
     font-size: 0.85rem !important;
@@ -2958,6 +3021,7 @@ h2:contains("Histórico de Execuções") {
   
   /* PAGINAÇÃO */
   .pagination {
+    display: flex !important;
     flex-wrap: wrap !important;
     justify-content: center !important;
     gap: 0.25rem !important;
@@ -2967,62 +3031,65 @@ h2:contains("Histórico de Execuções") {
     min-width: 44px !important;
     min-height: 44px !important;
     font-size: 0.8rem !important;
+    padding: 0.5rem !important;
+  }
+  
+  /* FORÇA ELEMENTOS PROBLEMÁTICOS */
+  .execution-table,
+  .metrics-table-container {
+    width: 100% !important;
+    overflow-x: auto !important;
+  }
+  
+  /* REMOVE ELEMENTOS QUE QUEBRAM */
+  .trend-indicator {
+    font-size: 0.7rem !important;
+    padding: 2px 4px !important;
   }
 }
 
-/* MOBILE MUITO PEQUENO */
+/* MOBILE PEQUENO - AJUSTES EXTRAS */
 @media screen and (max-width: 480px) {
-  .container, .main-content .container { 
-    padding: 0.5rem !important; 
+  .container,
+  .main-content .container {
+    padding: 0.5rem !important;
   }
   
-  .header { padding: 0.75rem 0.5rem !important; }
+  .header {
+    padding: 0.75rem 0.5rem !important;
+  }
   
-  .header-btn { 
+  .header-btn {
     min-width: 100px !important;
-    font-size: 0.75rem !important; 
+    font-size: 0.75rem !important;
   }
   
-  .stat-card { 
-    padding: 1rem !important; 
+  .stat-card {
     flex-direction: column !important;
+    text-align: center !important;
+    padding: 1rem !important;
+  }
+  
+  .stat-content {
     text-align: center !important;
   }
   
-  .stat-content { text-align: center !important; }
-  
-  .chart-container { height: 220px !important; }
-  
-  .period-btn { 
-    flex: 1 1 calc(50% - 0.25rem) !important;
-    font-size: 0.75rem !important; 
+  .chart-container {
+    height: 220px !important;
   }
   
-  .table { 
+  .period-btn {
+    flex: 1 1 calc(50% - 0.25rem) !important;
+    font-size: 0.75rem !important;
+  }
+  
+  .table {
     font-size: 0.75rem !important;
     min-width: 600px !important;
   }
   
-  .table th, .table td { 
-    padding: 0.4rem 0.3rem !important; 
-  }
-}
-
-/* FORCE RESPONSIVENESS */
-@media screen and (max-width: 932px) {
-  .main-content {
-    width: 100% !important;
-    padding: 0 !important;
-  }
-  
-  /* Força todos os containers a respeitarem a largura */
-  * {
-    max-width: 100% !important;
-  }
-  
-  /* Remove qualquer largura fixa que possa estar causando overflow */
-  .chart-container canvas {
-    max-width: 100% !important;
-    height: auto !important;
+  .table th,
+  .table td {
+    padding: 0.4rem 0.3rem !important;
   }
 }
