@@ -2737,11 +2737,166 @@ h2:contains("Histórico de Execuções") {
 }
 
 /* ===========================
-   TABELA MOBILE - VERSÃO SIMPLES
+   MOBILE RESPONSIVO - VERSÃO CORRIGIDA COMPLETA
    ========================== */
 @media screen and (max-width: 430px) {
   
-  /* TABELA - SEM QUEBRAR O LAYOUT EXISTENTE */
+  /* BASE MOBILE */
+  html, body {
+    width: 100vw !important;
+    overflow-x: hidden !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 14px !important;
+  }
+  
+  /* CONTAINERS PRINCIPAIS */
+  .container,
+  .main-content .container {
+    width: 100vw !important;
+    max-width: none !important;
+    padding: 0.75rem !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+  
+  .main-content {
+    width: 100vw !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  
+  /* HEADER MOBILE */
+  .header {
+    width: 100vw !important;
+    max-width: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    padding: 0.75rem !important;
+    gap: 0.75rem !important;
+    box-sizing: border-box !important;
+  }
+  
+  .header-content {
+    width: 100% !important;
+    max-width: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 0.75rem !important;
+  }
+  
+  .logo-section {
+    width: 100% !important;
+    text-align: center !important;
+  }
+  
+  .logo-section h1 {
+    font-size: 1rem !important;
+    margin: 0 !important;
+  }
+  
+  .header-actions {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    gap: 0.5rem !important;
+  }
+  
+  .header-btn {
+    flex: 1 1 calc(50% - 0.25rem) !important;
+    font-size: 0.75rem !important;
+    padding: 0.5rem !important;
+  }
+  
+  .auto-refresh {
+    width: 100% !important;
+    text-align: center !important;
+    font-size: 0.7rem !important;
+    margin: 0.5rem 0 0 0 !important;
+    position: static !important;
+  }
+  
+  /* STATS CARDS MOBILE */
+  .stats-grid {
+    width: 100vw !important;
+    max-width: none !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 1rem !important;
+    padding: 0 0.75rem !important;
+    margin: 0 !important;
+    box-sizing: border-box !important;
+  }
+  
+  .stat-card {
+    width: calc(100vw - 1.5rem) !important;
+    max-width: none !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 1rem !important;
+    margin: 0 !important;
+    gap: 1rem !important;
+    box-sizing: border-box !important;
+  }
+  
+  .stat-icon {
+    flex-shrink: 0 !important;
+    width: 40px !important;
+    height: 40px !important;
+  }
+  
+  .stat-content {
+    flex: 1 !important;
+    text-align: left !important;
+  }
+  
+  /* SEÇÕES PRINCIPAIS */
+  .dashboard-content,
+  .executions-section,
+  .chart-section,
+  .history-chart-section {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 0.75rem !important;
+    margin: 1rem 0 !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* CHARTS MOBILE */
+  .chart-container {
+    width: 100% !important;
+    max-width: calc(100vw - 1.5rem) !important;
+    height: 200px !important;
+    margin: 1rem 0 !important;
+  }
+  
+  .chart-container canvas {
+    width: 100% !important;
+    max-width: calc(100vw - 1.5rem) !important;
+  }
+  
+  /* PERÍODO BUTTONS */
+  .period-filters {
+    width: 100% !important;
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 0.5rem !important;
+    justify-content: space-between !important;
+  }
+  
+  .period-btn {
+    flex: 1 1 calc(33.33% - 0.5rem) !important;
+    font-size: 0.75rem !important;
+    padding: 0.5rem !important;
+    text-align: center !important;
+  }
+  
+  /* TABELAS MOBILE */
   .table-responsive {
     width: 100% !important;
     overflow-x: auto !important;
@@ -2751,12 +2906,11 @@ h2:contains("Histórico de Execuções") {
   
   .execution-table,
   .table {
-    min-width: 500px !important; /* ✅ Reduzido de 600px para 500px */
+    min-width: 480px !important;
     font-size: 0.75rem !important;
     width: auto !important;
   }
   
-  /* CÉLULAS MENORES */
   .table th,
   .table td {
     padding: 0.4rem 0.3rem !important;
@@ -2764,20 +2918,19 @@ h2:contains("Histórico de Execuções") {
     white-space: nowrap !important;
   }
   
-  /* STATUS MENOR */
+  /* STATUS E BOTÕES */
   .table .status {
     font-size: 0.65rem !important;
     padding: 0.2rem 0.4rem !important;
     border-radius: 3px !important;
   }
   
-  /* BOTÃO MENOR */
   .table .action-btn--view {
     font-size: 0.65rem !important;
     padding: 0.3rem 0.5rem !important;
   }
   
-  /* PAGINAÇÃO AJUSTADA */
+  /* PAGINAÇÃO */
   .pagination {
     justify-content: center !important;
     flex-wrap: wrap !important;
@@ -2792,7 +2945,7 @@ h2:contains("Histórico de Execuções") {
     padding: 0.3rem !important;
   }
   
-  /* FILTROS SIMPLIFICADOS */
+  /* FILTROS */
   .executions-filters {
     flex-direction: column !important;
     gap: 0.5rem !important;
@@ -2805,30 +2958,8 @@ h2:contains("Histórico de Execuções") {
     font-size: 0.8rem !important;
     padding: 0.5rem !important;
   }
-
-  @media screen and (max-width: 430px) {
   
-  /* CORRIGE OVERFLOW EM TODOS OS CONTAINERS */
-  .dashboard-content,
-  .executions-section,
-  .chart-section,
-  .history-chart-section {
-    width: 100% !important;
-    max-width: 100% !important;
-    padding: 0 0.75rem !important;
-    margin: 0 auto !important;
-    box-sizing: border-box !important;
-  }
-  
-  /* FORÇA LARGURA DOS GRÁFICOS */
-  .chart-container,
-  .chart-container canvas {
-    width: 100% !important;
-    max-width: calc(100vw - 1.5rem) !important;
-    height: 200px !important;
-  }
-  
-  /* SEÇÃO HISTÓRICO */
+  /* TÍTULOS */
   .history-section h3,
   .executions-section h3 {
     font-size: 1.1rem !important;
@@ -2836,58 +2967,57 @@ h2:contains("Histórico de Execuções") {
     margin: 1rem 0 !important;
   }
   
-  /* REMOVE QUALQUER LARGURA PROBLEMÁTICA */
+  /* REMOVER MAX-WIDTH PROBLEMÁTICO */
   * {
     max-width: 100% !important;
+    box-sizing: border-box !important;
   }
-  
-  /* ESPECÍFICO PARA NÃO QUEBRAR O HEADER */
-  .header,
-  .header-content,
-  .logo-section,
-  .header-actions {
-    max-width: 100% !important;
-    width: 100% !important;
-  }
-}
 }
 
-/* MOBILE AINDA MENOR */
+/* MOBILE PEQUENO - 375px */
 @media screen and (max-width: 375px) {
   
-  .execution-table {
+  .container,
+  .main-content .container {
+    padding: 0.5rem !important;
+  }
+  
+  .header {
+    padding: 0.5rem !important;
+  }
+  
+  .header-btn {
+    font-size: 0.7rem !important;
+    padding: 0.4rem !important;
+  }
+  
+  .stat-card {
+    flex-direction: column !important;
+    text-align: center !important;
+    padding: 0.75rem !important;
+  }
+  
+  .stat-content {
+    text-align: center !important;
+  }
+  
+  .chart-container {
+    height: 180px !important;
+  }
+  
+  .period-btn {
+    flex: 1 1 calc(50% - 0.25rem) !important;
+    font-size: 0.7rem !important;
+  }
+  
+  .table {
+    min-width: 400px !important;
     font-size: 0.65rem !important;
   }
   
-  .execution-table th,
-  .execution-table td {
-    padding: 0.4rem 0.2rem !important;
-    font-size: 0.65rem !important;
-  }
-  
-  .execution-table .status {
+  .table th,
+  .table td {
+    padding: 0.3rem 0.2rem !important;
     font-size: 0.6rem !important;
-    padding: 0.2rem 0.4rem !important;
-  }
-  
-  .execution-table .action-btn--view {
-    font-size: 0.6rem !important;
-    padding: 0.3rem 0.4rem !important;
-  }
-  
-  /* AJUSTAR LARGURAS PARA TELAS MUITO PEQUENAS */
-  .execution-table th:nth-child(1),
-  .execution-table td:nth-child(1) {
-    width: 30% !important;
-  }
-  
-  .execution-table th:nth-child(5),
-  .execution-table td:nth-child(5) {
-    width: 40% !important;
-  }
-  
-  .execution-table th:nth-child(8),
-  .execution-table td:nth-child(8) {
-    width: 30% !important;
   }
 }
