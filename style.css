@@ -2737,132 +2737,62 @@ h2:contains("Histórico de Execuções") {
 }
 
 /* ===========================
-   TABELA ÚLTIMAS EXECUÇÕES - MOBILE OTIMIZADA
+   TABELA MOBILE - VERSÃO SIMPLES
    ========================== */
 @media screen and (max-width: 430px) {
   
-  /* TABELA EXECUÇÕES - LAYOUT SIMPLIFICADO */
-  .execution-table {
-    width: calc(100vw - 1.5rem) !important;
-    max-width: none !important;
-    overflow-x: visible !important; /* ✅ Remove scroll horizontal */
-    font-size: 0.7rem !important;
-  }
-  
-  .execution-table table {
+  /* TABELA - SEM QUEBRAR O LAYOUT EXISTENTE */
+  .table-responsive {
     width: 100% !important;
-    min-width: 0 !important; /* ✅ Remove min-width */
-    table-layout: fixed !important; /* ✅ Layout fixo para colunas */
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin: 1rem 0 !important;
   }
   
-  /* OCULTAR COLUNAS DESNECESSÁRIAS NO MOBILE */
-  .execution-table th:nth-child(2), /* Data/Hora */
-  .execution-table td:nth-child(2),
-  .execution-table th:nth-child(3), /* Branch */
-  .execution-table td:nth-child(3),
-  .execution-table th:nth-child(4), /* Ambiente */
-  .execution-table td:nth-child(4),
-  .execution-table th:nth-child(6), /* Testes */
-  .execution-table td:nth-child(6),
-  .execution-table th:nth-child(7), /* Duração */
-  .execution-table td:nth-child(7) {
-    display: none !important;
-  }
-  
-  /* AJUSTAR LARGURAS DAS COLUNAS VISÍVEIS */
-  .execution-table th:nth-child(1), /* ID */
-  .execution-table td:nth-child(1) {
-    width: 35% !important;
+  .execution-table,
+  .table {
+    min-width: 500px !important; /* ✅ Reduzido de 600px para 500px */
     font-size: 0.75rem !important;
-    font-weight: 600 !important;
+    width: auto !important;
   }
   
-  .execution-table th:nth-child(5), /* Status */
-  .execution-table td:nth-child(5) {
-    width: 35% !important;
-    text-align: center !important;
-  }
-  
-  .execution-table th:nth-child(8), /* Ações */
-  .execution-table td:nth-child(8) {
-    width: 30% !important;
-    text-align: center !important;
-  }
-  
-  /* HEADER DA TABELA MOBILE */
-  .execution-table th {
-    padding: 0.6rem 0.4rem !important;
-    font-size: 0.7rem !important;
-    font-weight: 600 !important;
-    text-align: left !important;
-    white-space: nowrap !important;
-  }
-  
-  .execution-table th:nth-child(5) {
-    text-align: center !important;
-  }
-  
-  .execution-table th:nth-child(8) {
-    text-align: center !important;
-  }
-  
-  /* CÉLULAS DA TABELA MOBILE */
-  .execution-table td {
-    padding: 0.6rem 0.4rem !important;
+  /* CÉLULAS MENORES */
+  .table th,
+  .table td {
+    padding: 0.4rem 0.3rem !important;
     font-size: 0.7rem !important;
     white-space: nowrap !important;
-    overflow: hidden !important;
-    text-overflow: ellipsis !important;
   }
   
-  /* ID DA EXECUÇÃO - MAIS DESTAQUE */
-  .execution-table td:nth-child(1) {
-    font-weight: 600 !important;
-    color: var(--color-slate-900) !important;
-  }
-  
-  /* STATUS - CENTRALIZED */
-  .execution-table td:nth-child(5) {
-    text-align: center !important;
-  }
-  
-  .execution-table .status {
+  /* STATUS MENOR */
+  .table .status {
     font-size: 0.65rem !important;
-    padding: 0.25rem 0.5rem !important;
-    border-radius: 4px !important;
-    font-weight: 600 !important;
-    text-transform: uppercase !important;
+    padding: 0.2rem 0.4rem !important;
+    border-radius: 3px !important;
   }
   
-  /* BOTÕES DE AÇÃO - MENORES */
-  .execution-table td:nth-child(8) {
-    text-align: center !important;
-  }
-  
-  .execution-table .action-btn--view {
+  /* BOTÃO MENOR */
+  .table .action-btn--view {
     font-size: 0.65rem !important;
-    padding: 0.4rem 0.6rem !important;
-    border-radius: 4px !important;
-    text-decoration: none !important;
-    display: inline-block !important;
+    padding: 0.3rem 0.5rem !important;
   }
   
-  /* PAGINAÇÃO MOBILE */
+  /* PAGINAÇÃO AJUSTADA */
   .pagination {
     justify-content: center !important;
     flex-wrap: wrap !important;
-    gap: 0.25rem !important;
+    gap: 0.2rem !important;
     margin-top: 1rem !important;
   }
   
   .pagination button {
-    min-width: 36px !important;
-    min-height: 36px !important;
+    min-width: 32px !important;
+    min-height: 32px !important;
     font-size: 0.7rem !important;
-    padding: 0.4rem !important;
+    padding: 0.3rem !important;
   }
   
-  /* FILTROS MOBILE - SIMPLIFICADOS */
+  /* FILTROS SIMPLIFICADOS */
   .executions-filters {
     flex-direction: column !important;
     gap: 0.5rem !important;
@@ -2875,19 +2805,51 @@ h2:contains("Histórico de Execuções") {
     font-size: 0.8rem !important;
     padding: 0.5rem !important;
   }
+
+  @media screen and (max-width: 430px) {
   
-  /* SEÇÃO ÚLTIMAS EXECUÇÕES */
-  .executions-section {
-    width: calc(100vw - 1.5rem) !important;
-    max-width: none !important;
+  /* CORRIGE OVERFLOW EM TODOS OS CONTAINERS */
+  .dashboard-content,
+  .executions-section,
+  .chart-section,
+  .history-chart-section {
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 0 0.75rem !important;
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+  }
+  
+  /* FORÇA LARGURA DOS GRÁFICOS */
+  .chart-container,
+  .chart-container canvas {
+    width: 100% !important;
+    max-width: calc(100vw - 1.5rem) !important;
+    height: 200px !important;
+  }
+  
+  /* SEÇÃO HISTÓRICO */
+  .history-section h3,
+  .executions-section h3 {
+    font-size: 1.1rem !important;
+    text-align: center !important;
     margin: 1rem 0 !important;
   }
   
-  .executions-section h3 {
-    font-size: 1.1rem !important;
-    margin-bottom: 1rem !important;
-    text-align: center !important;
+  /* REMOVE QUALQUER LARGURA PROBLEMÁTICA */
+  * {
+    max-width: 100% !important;
   }
+  
+  /* ESPECÍFICO PARA NÃO QUEBRAR O HEADER */
+  .header,
+  .header-content,
+  .logo-section,
+  .header-actions {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+}
 }
 
 /* MOBILE AINDA MENOR */
