@@ -2736,211 +2736,196 @@ h2:contains("Histórico de Execuções") {
   opacity: 1;
 }
 
+/* ===========================
+   TABELA ÚLTIMAS EXECUÇÕES - MOBILE OTIMIZADA
+   ========================== */
 @media screen and (max-width: 430px) {
   
-  /* FORÇA VIEWPORT MOBILE - SEM MAX-WIDTH */
-  html {
-    width: 100vw !important;
-    overflow-x: hidden !important;
-  }
-  
-  body {
-    width: 100vw !important;
-    overflow-x: hidden !important;
-    font-size: 14px !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-  
-  /* CONTAINER MOBILE - LARGURA TOTAL */
-  .container,
-  .main-content .container {
-    width: 100vw !important; /* ✅ MUDANÇA: 100vw ao invés de 100% */
-    max-width: none !important; /* ✅ REMOVE MAX-WIDTH */
-    padding: 0.75rem !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-  }
-  
-  .main-content {
-    width: 100vw !important;
-    max-width: none !important;
-    padding: 0 !important;
-    margin: 0 !important;
-  }
-  
-  /* STATS GRID - OCUPAR LARGURA TOTAL */
-  .stats-grid {
-    width: 100vw !important; /* ✅ LARGURA TOTAL */
-    max-width: none !important; /* ✅ REMOVE MAX-WIDTH */
-    display: flex !important;
-    flex-direction: column !important;
-    gap: 1rem !important;
-    padding: 0 0.75rem !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-  }
-  
-  .stat-card {
-    width: calc(100vw - 1.5rem) !important; /* ✅ LARGURA TOTAL - PADDING */
-    max-width: none !important; /* ✅ REMOVE MAX-WIDTH */
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    padding: 1rem !important;
-    margin: 0 !important;
-    gap: 1rem !important;
-    box-sizing: border-box !important;
-  }
-  
-  .stat-icon {
-    flex-shrink: 0 !important;
-    width: 40px !important;
-    height: 40px !important;
-  }
-  
-  .stat-content {
-    flex: 1 !important;
-    text-align: left !important;
-  }
-  
-  /* HEADER MOBILE - LARGURA TOTAL */
-  .header {
-    width: 100vw !important;
-    max-width: none !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    padding: 0.75rem !important;
-    gap: 0.75rem !important;
-    box-sizing: border-box !important;
-  }
-  
-  .header-content {
-    width: 100% !important;
-    max-width: none !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
-    gap: 0.75rem !important;
-  }
-  
-  .logo-section {
-    width: 100% !important;
-    text-align: center !important;
-  }
-  
-  .logo-section h1 {
-    font-size: 1rem !important;
-    margin: 0 !important;
-    text-align: center !important;
-  }
-  
-  .brand-logo {
-    width: 100px !important;
-    height: auto !important;
-  }
-  
-  .header-actions {
-    width: 100% !important;
-    max-width: none !important;
-    display: flex !important;
-    flex-wrap: wrap !important;
-    justify-content: center !important;
-    gap: 0.5rem !important;
-  }
-  
-  .header-btn {
-    flex: 1 1 calc(50% - 0.25rem) !important;
-    max-width: none !important;
-    font-size: 0.75rem !important;
-    padding: 0.5rem !important;
-    text-align: center !important;
-  }
-  
-  .auto-refresh {
-    width: 100% !important;
-    max-width: none !important;
-    text-align: center !important;
-    font-size: 0.7rem !important;
-    margin: 0.5rem 0 0 0 !important;
-    position: static !important;
-  }
-  
-  /* SECTION - LARGURA TOTAL */
-  .dashboard-content,
-  .chart-section,
-  .history-chart-section {
-    width: 100vw !important;
-    max-width: none !important;
-    padding: 0 0.75rem !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-  }
-  
-  /* CHARTS MOBILE - LARGURA TOTAL */
-  .chart-container {
+  /* TABELA EXECUÇÕES - LAYOUT SIMPLIFICADO */
+  .execution-table {
     width: calc(100vw - 1.5rem) !important;
     max-width: none !important;
-    height: 200px !important;
+    overflow-x: visible !important; /* ✅ Remove scroll horizontal */
+    font-size: 0.7rem !important;
+  }
+  
+  .execution-table table {
+    width: 100% !important;
+    min-width: 0 !important; /* ✅ Remove min-width */
+    table-layout: fixed !important; /* ✅ Layout fixo para colunas */
+  }
+  
+  /* OCULTAR COLUNAS DESNECESSÁRIAS NO MOBILE */
+  .execution-table th:nth-child(2), /* Data/Hora */
+  .execution-table td:nth-child(2),
+  .execution-table th:nth-child(3), /* Branch */
+  .execution-table td:nth-child(3),
+  .execution-table th:nth-child(4), /* Ambiente */
+  .execution-table td:nth-child(4),
+  .execution-table th:nth-child(6), /* Testes */
+  .execution-table td:nth-child(6),
+  .execution-table th:nth-child(7), /* Duração */
+  .execution-table td:nth-child(7) {
+    display: none !important;
+  }
+  
+  /* AJUSTAR LARGURAS DAS COLUNAS VISÍVEIS */
+  .execution-table th:nth-child(1), /* ID */
+  .execution-table td:nth-child(1) {
+    width: 35% !important;
+    font-size: 0.75rem !important;
+    font-weight: 600 !important;
+  }
+  
+  .execution-table th:nth-child(5), /* Status */
+  .execution-table td:nth-child(5) {
+    width: 35% !important;
+    text-align: center !important;
+  }
+  
+  .execution-table th:nth-child(8), /* Ações */
+  .execution-table td:nth-child(8) {
+    width: 30% !important;
+    text-align: center !important;
+  }
+  
+  /* HEADER DA TABELA MOBILE */
+  .execution-table th {
+    padding: 0.6rem 0.4rem !important;
+    font-size: 0.7rem !important;
+    font-weight: 600 !important;
+    text-align: left !important;
+    white-space: nowrap !important;
+  }
+  
+  .execution-table th:nth-child(5) {
+    text-align: center !important;
+  }
+  
+  .execution-table th:nth-child(8) {
+    text-align: center !important;
+  }
+  
+  /* CÉLULAS DA TABELA MOBILE */
+  .execution-table td {
+    padding: 0.6rem 0.4rem !important;
+    font-size: 0.7rem !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  
+  /* ID DA EXECUÇÃO - MAIS DESTAQUE */
+  .execution-table td:nth-child(1) {
+    font-weight: 600 !important;
+    color: var(--color-slate-900) !important;
+  }
+  
+  /* STATUS - CENTRALIZED */
+  .execution-table td:nth-child(5) {
+    text-align: center !important;
+  }
+  
+  .execution-table .status {
+    font-size: 0.65rem !important;
+    padding: 0.25rem 0.5rem !important;
+    border-radius: 4px !important;
+    font-weight: 600 !important;
+    text-transform: uppercase !important;
+  }
+  
+  /* BOTÕES DE AÇÃO - MENORES */
+  .execution-table td:nth-child(8) {
+    text-align: center !important;
+  }
+  
+  .execution-table .action-btn--view {
+    font-size: 0.65rem !important;
+    padding: 0.4rem 0.6rem !important;
+    border-radius: 4px !important;
+    text-decoration: none !important;
+    display: inline-block !important;
+  }
+  
+  /* PAGINAÇÃO MOBILE */
+  .pagination {
+    justify-content: center !important;
+    flex-wrap: wrap !important;
+    gap: 0.25rem !important;
+    margin-top: 1rem !important;
+  }
+  
+  .pagination button {
+    min-width: 36px !important;
+    min-height: 36px !important;
+    font-size: 0.7rem !important;
+    padding: 0.4rem !important;
+  }
+  
+  /* FILTROS MOBILE - SIMPLIFICADOS */
+  .executions-filters {
+    flex-direction: column !important;
+    gap: 0.5rem !important;
+    margin-bottom: 1rem !important;
+  }
+  
+  .executions-filters select,
+  .executions-filters input {
+    width: 100% !important;
+    font-size: 0.8rem !important;
+    padding: 0.5rem !important;
+  }
+  
+  /* SEÇÃO ÚLTIMAS EXECUÇÕES */
+  .executions-section {
+    width: calc(100vw - 1.5rem) !important;
+    max-width: none !important;
     margin: 1rem 0 !important;
   }
   
-  /* PERÍODOS - LARGURA TOTAL */
-  .period-filters {
-    width: 100% !important;
-    max-width: none !important;
-    display: flex !important;
-    flex-wrap: wrap !important;
-    gap: 0.5rem !important;
-    justify-content: space-between !important;
-  }
-  
-  .period-btn {
-    flex: 1 1 calc(33.33% - 0.5rem) !important;
-    max-width: none !important;
-    font-size: 0.75rem !important;
-    padding: 0.5rem !important;
+  .executions-section h3 {
+    font-size: 1.1rem !important;
+    margin-bottom: 1rem !important;
     text-align: center !important;
   }
+}
+
+/* MOBILE AINDA MENOR */
+@media screen and (max-width: 375px) {
   
-  /* TABELAS MOBILE - SCROLL HORIZONTAL */
-  .table-responsive {
-    width: calc(100vw - 1.5rem) !important;
-    max-width: none !important;
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch !important;
+  .execution-table {
+    font-size: 0.65rem !important;
   }
   
-  .table {
-    min-width: 600px !important;
-    font-size: 0.75rem !important;
+  .execution-table th,
+  .execution-table td {
+    padding: 0.4rem 0.2rem !important;
+    font-size: 0.65rem !important;
   }
   
-  .table th,
-  .table td {
-    padding: 0.4rem 0.3rem !important;
-    font-size: 0.7rem !important;
+  .execution-table .status {
+    font-size: 0.6rem !important;
+    padding: 0.2rem 0.4rem !important;
   }
   
-  /* MODAIS MOBILE */
-  .modal-content {
-    width: calc(100vw - 1rem) !important;
-    max-width: none !important;
-    margin: 0.5rem !important;
-    max-height: calc(100vh - 1rem) !important;
+  .execution-table .action-btn--view {
+    font-size: 0.6rem !important;
+    padding: 0.3rem 0.4rem !important;
   }
   
-  /* REMOVE QUALQUER MAX-WIDTH GLOBAL */
-  * {
-    max-width: none !important;
-    box-sizing: border-box !important;
+  /* AJUSTAR LARGURAS PARA TELAS MUITO PEQUENAS */
+  .execution-table th:nth-child(1),
+  .execution-table td:nth-child(1) {
+    width: 30% !important;
   }
   
-  /* FORÇA LARGURA NOS CONTAINERS PRINCIPAIS */
-  .dashboard-content > *,
-  .main-content > * {
-    width: 100% !important;
-    max-width: none !important;
+  .execution-table th:nth-child(5),
+  .execution-table td:nth-child(5) {
+    width: 40% !important;
+  }
+  
+  .execution-table th:nth-child(8),
+  .execution-table td:nth-child(8) {
+    width: 30% !important;
   }
 }
