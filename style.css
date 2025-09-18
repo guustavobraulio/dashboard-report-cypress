@@ -2624,14 +2624,6 @@ body {
 }
 }
 
-@media (max-width: 480px) {
-  .period-btn {
-    min-width: 45px !important;
-    max-width: 60px !important;
-    padding: var(--space-4) var(--space-6) !important;
-  }
-}
-
 .history-chart-section h2,
 .chart-section h2,
 h2:contains("Histórico de Execuções") {
