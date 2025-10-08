@@ -2,10 +2,8 @@ const { defineConfig } = require('cypress');
 const fs = require('fs');
 const path = require('path');
 
-// URL do seu site no Netlify (pode definir como variável de ambiente no CI)
-const NETLIFY_SITE_URL = process.env.NETLIFY_SITE_URL || 'https://seusite.netlify.app';
+const NETLIFY_SITE_URL = process.env.NETLIFY_SITE_URL || 'https://dash-report-cy.netlify.app';
 
-// Função recursiva para buscar todos screenshots (png) em subpastas
 function getFailedScreenshotsPublicUrls() {
   const dir = path.join(process.cwd(), 'public', 'artifacts', 'screenshots');
   if (!fs.existsSync(dir)) return [];
@@ -23,10 +21,28 @@ function getFailedScreenshotsPublicUrls() {
   }
   searchDir(dir);
 
-  // Retorna lista de URLs públicas Netlify para cada screenshot
   return files.map(f =>
     `${NETLIFY_SITE_URL}/artifacts/screenshots/${encodeURIComponent(f)}`
   );
+}
+
+function extractBrandFromTitle(title) {
+  if (!title) return 'Sem marca';
+  
+  const bracketMatch = title.match(/^\[([^\]]+)\]/);
+  if (bracketMatch) return bracketMatch[1].trim();
+  
+  const dashMatch = title.match(/- ([^>]+)$/);
+  if (dashMatch) return dashMatch[1].trim();
+  
+  const brandKeywords = ['Victor Hugo', 'TESTE QA', 'Outro...']; 
+  for (const brand of brandKeywords) {
+    if (title.includes(brand)) {
+      return brand;
+    }
+  }
+  
+  return 'Sem marca';
 }
 
 async function sendResultsToDashboard(results) {
@@ -35,7 +51,6 @@ async function sendResultsToDashboard(results) {
     return;
   }
 
-  // Gerar ID curto para execução
   const execNumber = Math.floor(Date.now() / 1000) % 1000;
   const runId = `Test-${execNumber.toString().padStart(3, '0')}`;
 
@@ -54,12 +69,22 @@ async function sendResultsToDashboard(results) {
       ? `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
       : '',
     tests: Array.isArray(results.runs)
-      ? results.runs.flatMap(run => (run.tests || []).map(t => ({
-          title: Array.isArray(t.title) ? t.title.join(' > ') : (t.title || 'spec'),
-          state: t.state || (t.pass ? 'passed' : (t.fail ? 'failed' : 'unknown')),
-          duration: typeof t.duration === 'number' ? t.duration : 0,
-          error: t.displayError || ''
-        })))
+      ? results.runs.flatMap(run => (run.tests || []).map(t => {
+          const title = Array.isArray(t.title) ? t.title.join(' > ') : (t.title || 'spec');
+          
+          // 🔥 EXTRAI A BRAND DO TÍTULO DO TESTE
+          const brand = extractBrandFromTitle(title);
+          
+          console.log(`  🏷️ "${title}" -> Brand: "${brand}"`);
+          
+          return {
+            title,
+            brand, // 🔥 BRAND EXTRAÍDA!
+            state: t.state || (t.pass ? 'passed' : (t.fail ? 'failed' : 'unknown')),
+            duration: typeof t.duration === 'number' ? t.duration : 0,
+            error: t.displayError || ''
+          };
+        }))
       : [],
     logs: Array.isArray(results.runs)
       ? results.runs.flatMap(run => (run.tests || [])
@@ -69,12 +94,15 @@ async function sendResultsToDashboard(results) {
     artifacts: getFailedScreenshotsPublicUrls(),
   };
 
+  // Log das marcas capturadas
+  const uniqueBrands = [...new Set(payload.tests.map(t => t.brand))];
+  console.log(`📊 Marcas capturadas: ${uniqueBrands.join(', ')}`);
+
   const headers = { 'Content-Type': 'application/json' };
   if (process.env.API_TOKEN) headers.Authorization = `Bearer ${process.env.API_TOKEN}`;
 
   const url = `${process.env.DASHBOARD_API_URL}/.netlify/functions/test-results`;
   console.log('[dashboard] POST →', url);
-  console.log('[dashboard] Payload:', payload);
 
   const res = await fetch(url, {
     method: 'POST',
@@ -91,14 +119,22 @@ module.exports = defineConfig({
     screenshotOnRunFailure: true,
     video: true,
     baseUrl: process.env.CYPRESS_baseUrl || 'https://dash-report-cy.netlify.app',
+    
     setupNodeEvents(on, config) {
       on('after:run', async (results) => {
+        if (!results) {
+          console.log('⚠️ Modo interativo - results não disponível');
+          return;
+        }
+        
         try {
+          console.log('📊 Processando resultados com brands...');
           await sendResultsToDashboard(results);
         } catch (err) {
           console.error('[dashboard] Erro no envio:', err?.message || err);
         }
       });
+      
       return config;
     },
   },

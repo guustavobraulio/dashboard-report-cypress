@@ -10,12 +10,32 @@ export async function handler(event) {
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
+
   try {
     const data = JSON.parse(event.body || '{}');
-
+    
     if (!data.runId) {
-      return { statusCode: 400, body: 'runId é obrigatório' };
+      return { statusCode: 400, body: JSON.stringify({ error: 'runId é obrigatório' }) };
     }
+
+    console.log('📊 [test-results] Recebendo payload:', {
+      runId: data.runId,
+      totalTests: data.totalTests,
+      testsCount: data.tests?.length || 0
+    });
+
+    const testsWithBrand = Array.isArray(data.tests) 
+      ? data.tests.map(test => ({
+          title: test.title || '',
+          brand: test.brand || 'Sem marca', 
+          state: test.state || 'unknown',
+          duration: test.duration || 0,
+          error: test.error || test.displayError || null
+        }))
+      : [];
+
+    const uniqueBrands = [...new Set(testsWithBrand.map(t => t.brand))];
+    console.log('🏷️ [test-results] Marcas capturadas:', uniqueBrands.join(', '));
 
     const row = {
       id: data.runId,
@@ -29,23 +49,45 @@ export async function handler(event) {
       author: data.author || '',
       commit: data.commit || '',
       github_run_url: data.githubRunUrl || '',
-      tests: Array.isArray(data.tests) ? data.tests : [],
+      tests: testsWithBrand, // 🔥 TESTES COM BRAND!
       logs: Array.isArray(data.logs) ? data.logs : [],
       artifacts: Array.isArray(data.artifacts) ? data.artifacts : []
     };
 
+    // Salva no Supabase
     const { error } = await supabase
-      .from('tabela_runs')  // Confirme o nome correto da tabela
+      .from('tabela_runs')
       .upsert(row, { onConflict: 'id' });
 
     if (error) {
-      console.error('[fn:test-results] supabase upsert error:', error);
-      return { statusCode: 500, body: 'DB error' };
+      console.error('❌ [test-results] Erro ao salvar no Supabase:', error);
+      return { 
+        statusCode: 500, 
+        body: JSON.stringify({ error: 'Erro ao salvar no banco de dados', details: error.message }) 
+      };
     }
 
-    return { statusCode: 200, body: JSON.stringify({ ok: true }) };
+    console.log('✅ [test-results] Dados salvos com sucesso:', {
+      runId: data.runId,
+      tests: testsWithBrand.length,
+      brands: uniqueBrands
+    });
+
+    return { 
+      statusCode: 200, 
+      body: JSON.stringify({ 
+        ok: true, 
+        runId: data.runId,
+        testsSaved: testsWithBrand.length,
+        brands: uniqueBrands
+      }) 
+    };
+
   } catch (e) {
-    console.error('[fn:test-results] error:', e);
-    return { statusCode: 500, body: e.message || 'Server error' };
+    console.error('❌ [test-results] Erro:', e);
+    return { 
+      statusCode: 500, 
+      body: JSON.stringify({ error: e.message || 'Server error' })
+    };
   }
 }

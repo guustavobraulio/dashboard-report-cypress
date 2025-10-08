@@ -1,15 +1,13 @@
-describe('Validação da Home page - Victor Hugo', () => {
+describe('[TESTE QA] Validação da Home page', () => {
     
-    beforeEach(() => {
-
+    beforeEach(function() {
         cy.viewport(1920, 1080);
         cy.intercept('**/google-analytics.com/**', { statusCode: 204 });
         cy.visit('https://www.victorhugo.com.br/', {setTimeout: 100000});
-
+        
     });
     
-    it('Validando categorias "Presentes" do header ', () => {
-        
+    it('Validando categorias "Presentes" do header ', function() {
         cy.url()
             .should('include','https://www.victorhugo.com.br')
 
@@ -27,8 +25,7 @@ describe('Validação da Home page - Victor Hugo', () => {
             .should('include','https://www.victorhugo.com.br/colecao/luxury')
     });
 
-    it('Validando o direcionamento do SHOP NOW', () => {
-        
+    it('Validando o direcionamento do SHOP NOW', function() {
         cy.url()
             .should('include','https://www.victorhugo.com.br')
 

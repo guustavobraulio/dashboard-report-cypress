@@ -1,12 +1,12 @@
-describe("Validando a página de produto - Victor Hugp", () => {
-  beforeEach(() => {
+describe("[VICTOR HUGO] Validando a página de produto", () => {
+  beforeEach(function() {
     cy.viewport(1920, 1080);
     cy.intercept("**/google-analytics.com/**", { statusCode: 204 });
     cy.visit("https://www.victorhugo.com.br/", { setTimeout: 100000 });
+    
   });
   
-  it("Realizando a busca por produto", () => {
-
+  it("Realizando a busca por produto", function() {
     cy.get('[data-testid="search-header-button"]')
         .click()
 

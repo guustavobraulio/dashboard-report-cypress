@@ -7,12 +7,10 @@ Cypress.on('uncaught:exception', (err, runnable) => {
   }
   // Para todos os outros erros, permite que o Cypress falhe o teste
   return true;
-  
+
 }),
 
 Cypress.on('uncaught:exception', (err, runnable) => {
-  // Retornar false aqui impede o Cypress de falhar o teste
-  // por QUALQUER erro não tratado na aplicação.
-  return false
+    return false
+})
 
-})      
