@@ -1,4 +1,4 @@
-describe('[TESTE QA] Validação da Home page', () => {
+describe('[TESTE QA] Validação da Home page', function() {
     
     beforeEach(function() {
         cy.viewport(1920, 1080);

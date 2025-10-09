@@ -1,4 +1,4 @@
-describe("[VICTOR HUGO] Validando a página de produto", () => {
+describe("[VICTOR HUGO] Validando a página de produto", function() {
   beforeEach(function() {
     cy.viewport(1920, 1080);
     cy.intercept("**/google-analytics.com/**", { statusCode: 204 });

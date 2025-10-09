@@ -26,21 +26,24 @@ function getFailedScreenshotsPublicUrls() {
   );
 }
 
+/**
+ * 🔥 Extrai a marca do título do teste
+ */
 function extractBrandFromTitle(title) {
   if (!title) return 'Sem marca';
   
-  const bracketMatch = title.match(/^\[([^\]]+)\]/);
-  if (bracketMatch) return bracketMatch[1].trim();
+  // Lista de marcas conhecidas (adicione as suas aqui)
+  const brandKeywords = ['Victor Hugo', 'Marca A', 'Marca B', 'Marca C', 'TESTE QA'];
   
-  const dashMatch = title.match(/- ([^>]+)$/);
-  if (dashMatch) return dashMatch[1].trim();
-  
-  const brandKeywords = ['Victor Hugo', 'TESTE QA', 'Outro...']; 
   for (const brand of brandKeywords) {
     if (title.includes(brand)) {
       return brand;
     }
   }
+  
+  // Padrão: "- Marca" no final
+  const dashMatch = title.match(/- ([^>]+)$/);
+  if (dashMatch) return dashMatch[1].trim();
   
   return 'Sem marca';
 }
@@ -53,6 +56,31 @@ async function sendResultsToDashboard(results) {
 
   const execNumber = Math.floor(Date.now() / 1000) % 1000;
   const runId = `Test-${execNumber.toString().padStart(3, '0')}`;
+
+  // 🔥 Processa testes e extrai brands
+  const testsWithBrand = Array.isArray(results.runs)
+    ? results.runs.flatMap(run => (run.tests || []).map(t => {
+        const title = Array.isArray(t.title) ? t.title.join(' > ') : (t.title || 'spec');
+        const brand = extractBrandFromTitle(title);
+        
+        console.log(`  🏷️ "${title}" -> Brand: "${brand}"`);
+        
+        return {
+          title,
+          brand, // 🔥 CAMPO BRAND ADICIONADO!
+          state: t.state || (t.pass ? 'passed' : (t.fail ? 'failed' : 'unknown')),
+          duration: typeof t.duration === 'number' ? t.duration : 0,
+          error: t.displayError || ''
+        };
+      }))
+    : [];
+
+  // 🔥 Extrai a marca predominante (primeira marca encontrada ou "Sem marca")
+  const primaryBrand = testsWithBrand.find(t => t.brand !== 'Sem marca')?.brand || 'Sem marca';
+
+  const uniqueBrands = [...new Set(testsWithBrand.map(t => t.brand))];
+  console.log(`Marcas capturadas: ${uniqueBrands.join(', ')}`);
+  console.log(`Marca principal desta execução: ${primaryBrand}`);
 
   const payload = {
     runId,
@@ -68,24 +96,8 @@ async function sendResultsToDashboard(results) {
     githubRunUrl: process.env.GITHUB_RUN_ID
       ? `https://github.com/${process.env.GITHUB_REPOSITORY}/actions/runs/${process.env.GITHUB_RUN_ID}`
       : '',
-    tests: Array.isArray(results.runs)
-      ? results.runs.flatMap(run => (run.tests || []).map(t => {
-          const title = Array.isArray(t.title) ? t.title.join(' > ') : (t.title || 'spec');
-          
-          // 🔥 EXTRAI A BRAND DO TÍTULO DO TESTE
-          const brand = extractBrandFromTitle(title);
-          
-          console.log(`  🏷️ "${title}" -> Brand: "${brand}"`);
-          
-          return {
-            title,
-            brand, // 🔥 BRAND EXTRAÍDA!
-            state: t.state || (t.pass ? 'passed' : (t.fail ? 'failed' : 'unknown')),
-            duration: typeof t.duration === 'number' ? t.duration : 0,
-            error: t.displayError || ''
-          };
-        }))
-      : [],
+    brand: primaryBrand, // 🔥 BRAND PRINCIPAL DA EXECUÇÃO
+    tests: testsWithBrand, // 🔥 ARRAY DE TESTES COM BRAND
     logs: Array.isArray(results.runs)
       ? results.runs.flatMap(run => (run.tests || [])
           .filter(t => t.displayError)
@@ -93,10 +105,6 @@ async function sendResultsToDashboard(results) {
       : [],
     artifacts: getFailedScreenshotsPublicUrls(),
   };
-
-  // Log das marcas capturadas
-  const uniqueBrands = [...new Set(payload.tests.map(t => t.brand))];
-  console.log(`📊 Marcas capturadas: ${uniqueBrands.join(', ')}`);
 
   const headers = { 'Content-Type': 'application/json' };
   if (process.env.API_TOKEN) headers.Authorization = `Bearer ${process.env.API_TOKEN}`;
