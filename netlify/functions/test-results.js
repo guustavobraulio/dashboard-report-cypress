@@ -44,8 +44,8 @@ export async function handler(event) {
       author: data.author || '',
       commit: data.commit || '',
       github_run_url: data.githubRunUrl || '',
-      brand: brand, // 🔥 CAMPO BRAND NA COLUNA!
-      tests: Array.isArray(data.tests) ? data.tests : [], // Array de testes com brand individual
+      brand: brand, 
+      tests: Array.isArray(data.tests) ? data.tests : [], // Array com objetos de testes
       logs: Array.isArray(data.logs) ? data.logs : [],
       artifacts: Array.isArray(data.artifacts) ? data.artifacts : []
     };

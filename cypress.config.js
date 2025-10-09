@@ -29,22 +29,41 @@ function getFailedScreenshotsPublicUrls() {
 /**
  * 🔥 Extrai a marca do título do teste
  */
+/**
+ * 🔥 Extrai a marca do título do teste (VERSÃO MELHORADA)
+ */
 function extractBrandFromTitle(title) {
   if (!title) return 'Sem marca';
-  
-  // Lista de marcas conhecidas (adicione as suas aqui)
-  const brandKeywords = ['Victor Hugo', 'Marca A', 'Marca B', 'Marca C', 'TESTE QA'];
-  
+
+  // Padrão 1: [Marca] no início (case-insensitive)
+  const bracketMatch = title.match(/^\[([^\]]+)\]/i);
+  if (bracketMatch) {
+    return bracketMatch[1].trim();
+  }
+
+  // Padrão 2: "- Marca" no final
+  const dashMatch = title.match(/- ([^>]+)$/);
+  if (dashMatch) {
+    return dashMatch[1].trim();
+  }
+
+  // Padrão 3: Lista de marcas conhecidas (case-insensitive)
+  const brandKeywords = [
+    'VICTOR HUGO',
+    'Marca A',
+    'Marca B',
+    'Marca C',
+    'TESTE QA'
+  ];
+
+  // Busca case-insensitive
+  const titleUpper = title.toUpperCase();
   for (const brand of brandKeywords) {
-    if (title.includes(brand)) {
-      return brand;
+    if (titleUpper.includes(brand.toUpperCase())) {
+      return brand; // Retorna com capitalização correta
     }
   }
-  
-  // Padrão: "- Marca" no final
-  const dashMatch = title.match(/- ([^>]+)$/);
-  if (dashMatch) return dashMatch[1].trim();
-  
+
   return 'Sem marca';
 }
 
@@ -60,19 +79,19 @@ async function sendResultsToDashboard(results) {
   // 🔥 Processa testes e extrai brands
   const testsWithBrand = Array.isArray(results.runs)
     ? results.runs.flatMap(run => (run.tests || []).map(t => {
-        const title = Array.isArray(t.title) ? t.title.join(' > ') : (t.title || 'spec');
-        const brand = extractBrandFromTitle(title);
-        
-        console.log(`  🏷️ "${title}" -> Brand: "${brand}"`);
-        
-        return {
-          title,
-          brand, // 🔥 CAMPO BRAND ADICIONADO!
-          state: t.state || (t.pass ? 'passed' : (t.fail ? 'failed' : 'unknown')),
-          duration: typeof t.duration === 'number' ? t.duration : 0,
-          error: t.displayError || ''
-        };
-      }))
+      const title = Array.isArray(t.title) ? t.title.join(' > ') : (t.title || 'spec');
+      const brand = extractBrandFromTitle(title);
+
+      console.log(`  🏷️ "${title}" -> Brand: "${brand}"`);
+
+      return {
+        title,
+        brand, // 🔥 CAMPO BRAND ADICIONADO!
+        state: t.state || (t.pass ? 'passed' : (t.fail ? 'failed' : 'unknown')),
+        duration: typeof t.duration === 'number' ? t.duration : 0,
+        error: t.displayError || ''
+      };
+    }))
     : [];
 
   // 🔥 Extrai a marca predominante (primeira marca encontrada ou "Sem marca")
@@ -100,8 +119,8 @@ async function sendResultsToDashboard(results) {
     tests: testsWithBrand, // 🔥 ARRAY DE TESTES COM BRAND
     logs: Array.isArray(results.runs)
       ? results.runs.flatMap(run => (run.tests || [])
-          .filter(t => t.displayError)
-          .map(t => `[ERROR] ${(Array.isArray(t.title) ? t.title.join(' > ') : t.title) || 'spec'}\n${t.displayError}`))
+        .filter(t => t.displayError)
+        .map(t => `[ERROR] ${(Array.isArray(t.title) ? t.title.join(' > ') : t.title) || 'spec'}\n${t.displayError}`))
       : [],
     artifacts: getFailedScreenshotsPublicUrls(),
   };
@@ -127,14 +146,14 @@ module.exports = defineConfig({
     screenshotOnRunFailure: true,
     video: true,
     baseUrl: process.env.CYPRESS_baseUrl || 'https://dash-report-cy.netlify.app',
-    
+
     setupNodeEvents(on, config) {
       on('after:run', async (results) => {
         if (!results) {
           console.log('⚠️ Modo interativo - results não disponível');
           return;
         }
-        
+
         try {
           console.log('📊 Processando resultados com brands...');
           await sendResultsToDashboard(results);
@@ -142,7 +161,7 @@ module.exports = defineConfig({
           console.error('[dashboard] Erro no envio:', err?.message || err);
         }
       });
-      
+
       return config;
     },
   },
