@@ -1,15 +1,15 @@
-describe('[TESTE QA] Validação da Home page', function() {
-    
-    beforeEach(function() {
+describe('[Victor Hugo] Validação da Home page', function () {
+
+    beforeEach(function () {
         cy.viewport(1920, 1080);
         cy.intercept('**/google-analytics.com/**', { statusCode: 204 });
-        cy.visit('https://www.victorhugo.com.br/', {setTimeout: 100000});
-        
+        cy.visit('https://www.victorhugo.com.br/', { setTimeout: 100000 });
+
     });
-    
-    it('Validando categorias "Presentes" do header ', function() {
+
+    it('Validando categorias "Presentes" do header ', function () {
         cy.url()
-            .should('include','https://www.victorhugo.com.br')
+            .should('include', 'https://www.victorhugo.com.br')
 
         cy.get('#headlessui-popover-button-7')
             .should('be.visible')
@@ -17,22 +17,22 @@ describe('[TESTE QA] Validação da Home page', function() {
 
         cy.get('[class="grid py-16 grid-cols-2 gap-y-10 gap-x-8"]')
             .should('be.visible')
-            
-        cy.contains('Luxury')   
+
+        cy.contains('Luxury')
             .click()
-            
+
         cy.url()
-            .should('include','https://www.victorhugo.com.br/colecao/luxury')
+            .should('include', 'https://www.victorhugo.com.br/colecao/luxury')
     });
 
-    it('Validando o direcionamento do SHOP NOW', function() {
+    it('Validando o direcionamento do SHOP NOW', function () {
         cy.url()
-            .should('include','https://www.victorhugo.com.br')
+            .should('include', 'https://www.victorhugo.com.br')
 
         cy.get('[class="z-10 border px-8 py-2.5 text-xs md:max-w-md transition-colors duration-500 ease-in-out border-black hover:bg-black hover:text-white hover:border-white"]')
             .should('be.visible')
             .eq(1)
-            .click()        
+            .click()
 
     });
 

@@ -53,7 +53,8 @@ function extractBrandFromTitle(title) {
     'Marca A',
     'Marca B',
     'Marca C',
-    'TESTE QA'
+    'TESTE QA',
+    'Easy Commerce',
   ];
 
   // Busca case-insensitive
