@@ -147,6 +147,7 @@ module.exports = defineConfig({
     screenshotOnRunFailure: true,
     video: true,
     baseUrl: process.env.CYPRESS_baseUrl || 'https://dash-report-cy.netlify.app',
+    userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
 
     setupNodeEvents(on, config) {
       on('after:run', async (results) => {

@@ -1,4 +1,4 @@
-describe('[Easy Commerce] Validação da página de departamento', () => {
+describe('[Easy Commerce]Validação da página de departamento', () => {
 
     beforeEach(() => {
         let productURL = 'https://easycommerce.deco.site/ft---alimentacao';
