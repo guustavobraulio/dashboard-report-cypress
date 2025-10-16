@@ -14,6 +14,7 @@ Cypress.Commands.add("FechandoModalIdade", () => {
     '[class="px-2.5 py-1 text-white text-15 bg-red-600 rounded-5"]'
   ).click();
 }),
+
 Cypress.Commands.add("AcessandoPaginaProduto", () => {
   cy.scrollTo(0, 500);
 
@@ -106,6 +107,21 @@ Cypress.Commands.add("AumentandoQuantidadeProduto_Jasmine", () => {
     .should('be.visible')
     .should('have.value', '4')
 
+}),
+
+Cypress.Commands.add("AcessandoDepartamento_Jasmine", () => {
+  cy.viewport(1920, 1080)
+  cy.visit('https://www.loja.jasminealimentos.com')
+  
+  cy.get('[class="cy-category-card-image absolute -translate-x-1/2 left-1/2 -top-6 sm:-top-1/2 sm:w-full max-w-[150px] ipad-air:left-0.5 ipad-air:transform-none "]')
+      .first()
+      .click()
+
+  cy.url()
+      .should('include','/granolas?page=1')
+
+  cy.get('[class="max-w-fit bg-black/25 backdrop-blur pr-2.5 py-1.5 rounded ml-6 sm-tablet:ml-0"]')
+      .should('be.visible')
 })
 
 
