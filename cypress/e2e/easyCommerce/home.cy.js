@@ -1,19 +1,25 @@
+import locators from "../../support/locators";
+
 describe('[Easy Commerce] Validando componentes dentro do Header', () => {
     
+    let buscarProduto = 'óleo';
+    let msgCarrinhoVazio = 'Seu carrinho está vazio';
+
     beforeEach(() => {
-        cy.viewport(1920,1080)
-        cy.visit('https://easycommerce.deco.site/');
+        cy.viewport(Cypress.VIEWPORT.desktop.width, Cypress.VIEWPORT.desktop.height);
+        cy.visit(Cypress.URLS.easyCommerce_home);
     });
 
     it('Deve exibir o logo da empresa', () => {
-        cy.get('[data-cy="logo-desktop"]').should('be.visible');
+        cy.get(locators.easyCommerce_home.logoMarca)
+            .should('be.visible');
     });
 
     it('Validar o slide da vitrine', () => {
         
         cy.scrollTo(0, 300)
 
-        cy.get('[data-slide="next"]>svg>use')
+        cy.get(locators.easyCommerce_home.slideVitrine)
             .eq(1)
             .should('be.visible')
             .click()
@@ -21,25 +27,25 @@ describe('[Easy Commerce] Validando componentes dentro do Header', () => {
 
     it('Validar se as categorias estão presentes', () => {
         
-        cy.get('[class="flex gap-6"]')
+        cy.get(locators.easyCommerce_home.categoriasHeader)
             .should('be.visible')
 
-        cy.get('[data-cy="menu-Azeites e Vinagres"]')
+        cy.get(locators.easyCommerce_home.categorias.azeitesEVinagres)
             .should('be.visible')
 
-        cy.get('[data-cy="menu-Doces e Chocolates"]')
+        cy.get(locators.easyCommerce_home.categorias.docesEChocolates)
             .should('have.text', 'Doces e Chocolates')
             .should('be.visible')
-            
-        cy.get('[data-cy="menu-Mercearia"]')
+
+        cy.get(locators.easyCommerce_home.categorias.mercearia)
             .should('have.text', 'Mercearia')
             .should('be.visible')
 
-        cy.get('[data-cy="menu-Enlatados"]')
+        cy.get(locators.easyCommerce_home.categorias.enlatados)
             .should('have.text', 'Enlatados')
             .should('be.visible')
 
-        cy.get('[data-cy="menu-Ofertas"]')
+        cy.get(locators.easyCommerce_home.categorias.ofertas)
             .should('have.text', 'Ofertas')
             .should('be.visible')
 
@@ -47,18 +53,21 @@ describe('[Easy Commerce] Validando componentes dentro do Header', () => {
 
     it('Validando o campo de Busca', () => {
         
-        cy.get('[class="input input-bordered join-item flex-grow border-none focus:outline-none focus:ring-0 focus:border-none lg:px-0"]')
+        cy.get(locators.easyCommerce_home.inputBuscar)
             .first()
-            .type("óleo")
+            .type(buscarProduto)
             .type("{enter}")
 
-        cy.get('[class="card card-compact group text-sm lg:max-w-ft-210 border border-gray-15 rounded-lg h-full min-w-[160px] max-w-[300px]"]')
+        cy.url()
+            .should('include','/s?q=%C3%B3leo&page=1')
+
+        cy.get(locators.easyCommerce_departamento.modalProduto)
             .should('be.visible')   
     });
 
     it('Validar o ícone Minha Conta', () => {
         
-        cy.get('[class="flex items-center gap-8 relative max-w-[102px] w-full mx-auto"]>a')
+        cy.get(locators.easyCommerce_home.iconMinhaConta)
             .should('be.visible')
             .click()
 
@@ -70,27 +79,27 @@ describe('[Easy Commerce] Validando componentes dentro do Header', () => {
         
         cy.wait(1500)
 
-        cy.get('[class="btn btn-square btn-sm btn-ghost no-animation hover:bg-transparent"]')
+        cy.get(locators.easyCommerce_home.minicart.iconMinicart)
             .first()
             .should('be.visible')
             .click()
 
-        cy.get('#minicartdrawer')
+        cy.get(locators.easyCommerce_home.minicart.modalMinicart)
             .should('be.visible')
 
-        cy.contains('Seu carrinho está vazio')
+        cy.contains(msgCarrinhoVazio)
             .should('be.visible')
 
-        cy.get('[data-cy="add-products"]')
+        cy.get(locators.easyCommerce_home.minicart.btnAdicionarProduto)
             .should('be.visible')
             .click()
 
-        cy.get('#minicartdrawer')
+        cy.get(locators.easyCommerce_home.minicart.modalMinicart)
             .should('not.visible')
     });
 
-    it('Clicando em uma das categorias na vitrine - Oferatas', () => {
-        cy.get('[class="flex flex-col items-center text-center"]')
+    it('Clicando em uma das categorias na vitrine - Ofertas', () => {
+        cy.get(locators.easyCommerce_home.categoriaOfertas)
             .first()
             .should('be.visible')
             .click()
@@ -102,17 +111,17 @@ describe('[Easy Commerce] Validando componentes dentro do Header', () => {
 
         cy.wait(1500)
 
-        cy.get('[class="hover:opacity-70"]>use')
+        cy.get(locators.easyCommerce_home.btnAdicionarProdutoAoCarrinho)
             .first()
             .should('be.visible')
             .click()
 
-        cy.get('[class="btn btn-square btn-sm btn-ghost no-animation hover:bg-transparent"]')
+        cy.get(locators.easyCommerce_home.minicart.iconMinicart)
             .first()
             .should('be.visible')
             .click()
 
-        cy.get('[data-item-id="13"]')
+        cy.get(locators.easyCommerce_home.minicart.modalMinicart)
             .first()
             .should('be.visible')
     });
@@ -121,13 +130,13 @@ describe('[Easy Commerce] Validando componentes dentro do Header', () => {
         
         cy.scrollTo(0, 700)
 
-        cy.get('[class="md:hidden lg:flex max-w-ft-1130 h-[350px] object-cover"]')
+        cy.get(locators.easyCommerce_home.banners)
             .first()
             .should('be.visible')
 
         cy.scrollTo(0, 1200)
 
-        cy.get('[class="md:hidden lg:flex max-w-ft-1130 h-[350px] object-cover"]')
+        cy.get(locators.easyCommerce_home.banners)
             .last()
             .should('be.visible')
 
@@ -137,22 +146,24 @@ describe('[Easy Commerce] Validando componentes dentro do Header', () => {
         
         cy.scrollTo('bottom')
 
-        cy.get('[class="flex flex-col gap-y-3.5 bg-gray-9 w-full py-8 px-4 bg-gray-15 lg:h-[230px]"]')
+        cy.get(locators.easyCommerce_home.newsletter.modalNewsletter)
             .should('be.visible')   
 
-        cy.get('[class="w-full h-[38px] text-base-content outline-none px-3 placeholder:text-gray-20 bg-transparent border border-black-10 border-opacity-50 placeholder:text-xs font-black-10 placeholder:font-Poppins"]')
-            .first()
-            .type('Gustavo Test')
+        cy.fixture("users").then((users) => {
+            cy.get(locators.easyCommerce_home.newsletter.inputNome)
+                .first()
+                .type(users.user.nome)
 
-        cy.get('[class="w-full h-[38px] text-base-content outline-none px-3 placeholder:text-gray-20 bg-transparent border border-black-10 border-opacity-50 placeholder:text-xs font-black-10 placeholder:font-Poppins"]')
-            .last()
-            .type('g.teste@testeQA.com')
+            cy.get(locators.easyCommerce_home.newsletter.inputEmail)
+                .last()
+                .type(users.user.email)
+        })
 
-        cy.get('[class="check-aceite"]')
+        cy.get(locators.easyCommerce_home.newsletter.checkPoliticaPrivacidade)
             .last()
             .click()
 
-        cy.get('[class="disabled:loading h-10 min-h-10 font-normal text-xs rounded w-full bg-gray-25 text-white font-Poppins lg:max-w-ft-200 bg-gold-0 text-white-0"]')
+        cy.get(locators.easyCommerce_home.newsletter.btnEnviar)
             .click()
             
     });
@@ -160,7 +171,7 @@ describe('[Easy Commerce] Validando componentes dentro do Header', () => {
     it('Validando os modais com informações no footer', () => {
         cy.scrollTo('bottom')
 
-        cy.get('[class="w-full max-w-ft-1452 mx-auto grid grid-cols-4 gap-4 items-center"]')
+        cy.get(locators.easyCommerce_home.footerContainer)
             .should('be.visible')
             .should('have.length', 1)
     });

@@ -1,4 +1,5 @@
 import AcessandoDepartamento_Jasmine from "../../support/commands.js"
+import locators from "../../support/locators.js";
 
 describe('Validação da Página de Departamento', () => {
     
@@ -7,12 +8,11 @@ describe('Validação da Página de Departamento', () => {
     });
     
     it('Acessando a página de departamento - Granolas', () => {
-        
-
+    
         cy.url()
             .should('include','/granolas?page=1')
 
-        cy.get('[class="max-w-fit bg-black/25 backdrop-blur pr-2.5 py-1.5 rounded ml-6 sm-tablet:ml-0"]')
+        cy.get(locators.jasmine_departamento.breadcrumb)
             .should('be.visible')
     });
 
@@ -32,7 +32,7 @@ describe('Validação da Página de Departamento', () => {
 
         cy.wait(1500)
 
-        cy.get('[class="mx-auto sm:max-w-[343px] btn btn-ghost h-10 min-h-fit w-full rounded bg-primary font-medium text-white text-base/tight hover:bg-primary hover:border-none"]')
+        cy.get(locators.jasmine_departamento.btnVerMais)
             .should('be.visible')
             .click()
 
@@ -44,10 +44,10 @@ describe('Validação da Página de Departamento', () => {
         
         cy.scrollTo('bottom')
 
-        cy.get('[class="cy-footer bg-primary pl-5 pt-1.5 pr-2 pb-3.5 rounded-t-lg sm:py-10 sm:px-0"]')
+        cy.get(locators.jasmine_departamento.modalFooter)
             .should('be.visible')
 
-        cy.get('[class="cy-footer-managed-by-icon"]')
+        cy.get(locators.jasmine_departamento.logoSocial)
             .should('be.visible')
             .should('have.attr','alt','Social S.A.')
 
