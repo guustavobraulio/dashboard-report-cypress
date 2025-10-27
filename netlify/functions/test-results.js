@@ -12,9 +12,11 @@ async function sendToTeams(data, brand) {
     const TEAMS_WEBHOOK_URL = process.env.TEAMS_WEBHOOK_URL;
     
     if (!TEAMS_WEBHOOK_URL) {
-      console.log('⚠️ TEAMS_WEBHOOK_URL não configurado, pulando notificação');
+      console.log('⚠️ [teams] TEAMS_WEBHOOK_URL não configurado, pulando notificação');
       return;
     }
+
+    console.log('📤 [teams] Preparando notificação ao Teams...');
 
     // Prepara lista de testes aprovados e reprovados
     const passedList = (data.tests || [])
@@ -42,37 +44,49 @@ async function sendToTeams(data, brand) {
       timestamp: data.timestamp || new Date().toISOString(),
       passedList: passedList,
       failedList: failedList,
-      socialPanelUrl: process.env.URL || 'https://seu-painel.netlify.app',
+      socialPanelUrl: process.env.URL || 'https://dash-report-cy.netlify.app',
       author: data.author || 'Sistema Automático',
       githubRunUrl: data.githubRunUrl || ''
     };
 
-    console.log('📤 [test-results] Enviando notificação ao Teams...');
-    console.log('📊 Resumo:', {
+    console.log('📊 [teams] Resumo dos testes:', {
       client: brand,
       total: teamsPayload.totalTests,
       passed: teamsPayload.passedTests,
-      failed: teamsPayload.failedTests
+      failed: teamsPayload.failedTests,
+      duration: `${durationSeconds}s`
     });
 
-    // Chama a função send-teams-notification
-    const response = await fetch(`${process.env.URL}/.netlify/functions/send-teams-notification`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify(teamsPayload)
-    });
+    // Importa axios dinamicamente (compatível com ES modules)
+    const axios = (await import('axios')).default;
+    
+    const response = await axios.post(
+      `${process.env.URL}/.netlify/functions/send-teams-notification`,
+      teamsPayload,
+      {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        timeout: 15000 // 15 segundos
+      }
+    );
 
-    if (response.ok) {
-      console.log('✅ [test-results] Notificação enviada ao Teams com sucesso!');
+    if (response.status === 200) {
+      console.log('✅ [teams] Notificação enviada ao Teams com sucesso!');
     } else {
-      const error = await response.text();
-      console.warn('⚠️ [test-results] Falha ao enviar ao Teams:', error);
+      console.warn('⚠️ [teams] Resposta inesperada:', response.status);
     }
 
+    return response.data;
+
   } catch (error) {
-    console.warn('⚠️ [test-results] Erro ao enviar ao Teams (não crítico):', error.message);
+    console.warn('⚠️ [teams] Erro ao enviar notificação (não crítico):', error.message);
+    if (error.response) {
+      console.warn('⚠️ [teams] Detalhes:', {
+        status: error.response.status,
+        data: error.response.data
+      });
+    }
   }
 }
 
@@ -81,12 +95,16 @@ async function sendToTeams(data, brand) {
 // ==========================================
 export async function handler(event) {
   if (event.httpMethod !== 'POST') {
-    return { statusCode: 405, body: 'Method Not Allowed' };
+    return { 
+      statusCode: 405, 
+      body: JSON.stringify({ error: 'Method Not Allowed' })
+    };
   }
 
   try {
     const data = JSON.parse(event.body || '{}');
 
+    // Validação: runId é obrigatório
     if (!data.runId) {
       return {
         statusCode: 400,
@@ -98,10 +116,12 @@ export async function handler(event) {
       runId: data.runId,
       brand: data.brand,
       totalTests: data.totalTests,
+      totalPassed: data.totalPassed,
+      totalFailed: data.totalFailed,
       testsCount: data.tests?.length || 0
     });
 
-    // 🔥 Extrai o brand do payload
+    // Extrai o brand do payload
     const brand = data.brand || 'Sem marca';
     console.log(`🏷️ [test-results] Brand recebido: "${brand}"`);
 
@@ -124,7 +144,7 @@ export async function handler(event) {
       artifacts: Array.isArray(data.artifacts) ? data.artifacts : []
     };
 
-    console.log('💾 [test-results] Salvando no Supabase com brand:', brand);
+    console.log('💾 [test-results] Salvando no Supabase...');
 
     // Salva no Supabase
     const { error } = await supabase
@@ -149,13 +169,14 @@ export async function handler(event) {
     });
 
     // ==========================================
-    // 🚀 NOVO: Envia notificação ao Teams
+    // 🚀 Envia notificação ao Teams (background)
     // ==========================================
-    // Executa em background (não espera resposta)
-    sendToTeams(data, brand).catch(err => 
-      console.log('Aviso: Teams notification falhou (não crítico):', err.message)
-    );
+    // Executa sem esperar resposta (fire and forget)
+    sendToTeams(data, brand).catch(err => {
+      console.log('⚠️ [test-results] Teams notification falhou (não crítico):', err.message);
+    });
 
+    // Retorna sucesso imediatamente
     return {
       statusCode: 200,
       body: JSON.stringify({
@@ -163,16 +184,19 @@ export async function handler(event) {
         runId: data.runId,
         brand: brand,
         testsSaved: data.tests?.length || 0,
-        teamsNotificationQueued: true // Indica que notificação foi iniciada
+        teamsNotificationQueued: true,
+        timestamp: new Date().toISOString()
       })
     };
 
   } catch (e) {
-    console.error('❌ [test-results] Erro:', e);
+    console.error('❌ [test-results] Erro no handler:', e);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: e.message || 'Server error' })
+      body: JSON.stringify({ 
+        error: e.message || 'Server error',
+        stack: process.env.NODE_ENV === 'development' ? e.stack : undefined
+      })
     };
   }
-  
 }
