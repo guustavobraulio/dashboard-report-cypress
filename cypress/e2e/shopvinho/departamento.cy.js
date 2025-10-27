@@ -1,5 +1,7 @@
 
 import AcessandoProduto from "../../support/commands"
+import locators from "../../support/locators.js"
+
 describe('Validação da página departamento', () => {
     beforeEach(() => {
         cy.viewport(1920, 1080)
@@ -9,7 +11,7 @@ describe('Validação da página departamento', () => {
 
     it('Acessando a página de departamento - Vinhos', () => {
 
-        cy.get('[class="navbar-menu divide-y w-full md:flex md:divide-y-0 md:space-x-4"]>li')
+        cy.get(locators.shopvinho_departamento.categVinhos)
             .first()
             .click()
 
@@ -21,7 +23,7 @@ describe('Validação da página departamento', () => {
         
         cy.AcessandoDepartamento()
 
-        cy.get('[class="p-5 text-gray-20"]')
+        cy.get(locators.shopvinho_departamento.txtProdutosEncontrados)
             .should('be.visible')
     });
 
@@ -42,7 +44,7 @@ describe('Validação da página departamento', () => {
 
         cy.scrollTo('bottom')
         
-        cy.get('[class="join-item"]')
+        cy.get(locators.shopvinho_departamento.verMais)
             .last()
             .click()
 
@@ -54,7 +56,7 @@ describe('Validação da página departamento', () => {
         
         cy.AcessandoDepartamento()
 
-        cy.get('[class="flex flex-row items-center lg:p-0"]')
+        cy.get(locators.shopvinho_departamento.breadcrumb)
             .should('be.visible')
 
     });

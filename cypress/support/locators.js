@@ -116,6 +116,51 @@ const locators = {
 
 
 
+    },
+
+    ////////////////
+    // SHOPVINHO // 
+    //////////////
+
+    shopvinho_departamento: {
+
+        categVinhos: '[class="navbar-menu divide-y w-full md:flex md:divide-y-0 md:space-x-4"]>li',
+        txtProdutosEncontrados: '[class="p-5 text-gray-20"]',
+        verMais: '[class="join-item"]',
+        breadcrumb: '[class="flex flex-row items-center lg:p-0"]'
+    }, 
+
+    shopvinho_home: {
+        modalIdade: '[class="modal-box w-[300px] h-fit border border-[#de1d49]"]',
+        fechandoModalIdade: '[class="px-2.5 py-1 text-white text-15 bg-red-600 rounded-5"]',
+        btnAdicionarAoCarrinho: '[class="transaction-colors duration-75 bg-complementary-1 active:bg-complementary-1-dark rounded-tl-10 rounded-bl-md rounded-br-10 flex items-center justify-center w-31/2 h-21/2"]',
+        infoCards: '[class="carousel carousel-start gap-4 lg:gap-8 sm:ml-1/25 lg:ml-0 justify-between"]',
+        abaCategorias: '[class="flex flex-col w-full items-center"]',
+        tiposCategorias: '[class="carousel carousel-center w-full gap-9/2 max-sm:px-4 max-lg:px-6 lg:ml-0 justify-center"]',
+        modalCarrinho: '[class="fixed top-0 w-full right-0 h-full md:w-[475px] flex flex-col bg-white rounded-10 overflow-y-auto"]',
+        modalProdutoNoCarrinho:'[class="flex gap-[10px] py-5 px-0 w-full md:w-[390px] relative border-b-[1px] border-[#D4D4D4]"]',
+        newsletter: {
+            inputEmail: '[name="email"]',
+            checkPrivacidade: '#input',
+            btnEnviar: '[class="rounded-[20px] bg-[#2d2d2c] h-9 w-[100px] ln-normal disabled:opacity-75 disabled:cursor-not-allowed"]',
+            txtSucesso: 'Inscrito com sucesso!',
+        },
+        logosFooter:'[class="partners-item"]',
+        imgProduto: '[class="bg-base-100 col-span-full row-span-full rounded w-full duration-100 transition-scale scale-100 lg:group-hover:scale-125"]',
+        breadcrumbPDP: '[class="breadcrumbs p-0 mb-5 my-12 lg:mb-12"]',   
+    },
+
+    shopvino_pdp: {
+        modalImagensProduto: '[class="flex justify-center sm:justify-start gap-x-3.5 items-center sm:mt-5 lg:mt-0 lg:mr-5 lg:order-1 lg:flex-col"]',
+        aumentandoQuantidade: '.quantity > :nth-child(3)',
+        quantidadeDeProdutos: '[value="1"]',
+        btnAdicionarProduto: '[class="text-lg sm:text-base font-medium py-2.5 sm:py-0 sm:h-12 flex justify-center items-center rounded-5 sm:rounded-l-none sm:rounded-r-10 border-[#21BC72] bg-[#21BC72] w-full leading-none text-white"]',
+        quantidadeProdutoCarrinho: '[class="text-center bg-transparent text-xl font-medium max-w-[30px]"]',
+        diminuirAQuantidadeDeProduto: '[class="text-3xl font-light px-4 h-9 sm:h-12"]',
+        especificacaoProduto: '[class="text-xl text-[#8e8e93] flex items-center justify-between mb-4"]',
+        
+
+
     }
 
 
