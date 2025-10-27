@@ -1,10 +1,6 @@
 const axios = require('axios');
 
-// ==========================================
-// Função para enviar notificação ao Teams
-// ==========================================
 exports.handler = async (event, context) => {
-  // Configuração CORS
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -12,16 +8,10 @@ exports.handler = async (event, context) => {
     'Content-Type': 'application/json'
   };
 
-  // Responde OPTIONS para CORS preflight
   if (event.httpMethod === 'OPTIONS') {
-    return {
-      statusCode: 200,
-      headers,
-      body: ''
-    };
+    return { statusCode: 200, headers, body: '' };
   }
 
-  // Apenas aceita POST
   if (event.httpMethod !== 'POST') {
     return {
       statusCode: 405,
@@ -31,79 +21,33 @@ exports.handler = async (event, context) => {
   }
 
   try {
-    console.log('📬 [send-teams] Iniciando envio de notificação ao Teams...');
+    console.log('📬 [send-teams] Iniciando envio...');
     
-    // Parse do body
     const data = JSON.parse(event.body);
-    console.log('📊 [send-teams] Dados recebidos:', {
-      client: data.client,
-      totalTests: data.totalTests,
-      passedTests: data.passedTests,
-      failedTests: data.failedTests
-    });
-
     const {
-      executionId,
-      client,
-      branch,
-      environment,
-      totalTests,
-      passedTests,
-      failedTests,
-      duration,
-      timestamp,
-      passedList = [],
-      failedList = [],
-      socialPanelUrl,
-      author,
-      githubRunUrl
+      client, branch, environment, totalTests, passedTests, failedTests,
+      duration, timestamp, passedList = [], failedList = [], socialPanelUrl, author
     } = data;
 
-    // Validação básica
     if (totalTests === undefined || passedTests === undefined || failedTests === undefined) {
-      throw new Error('Dados incompletos. Necessário: totalTests, passedTests, failedTests');
+      throw new Error('Dados incompletos');
     }
 
-    // URL do Webhook do Teams (da variável de ambiente)
     const TEAMS_WEBHOOK_URL = process.env.TEAMS_WEBHOOK_URL;
     
     if (!TEAMS_WEBHOOK_URL) {
-      console.warn('⚠️ [send-teams] TEAMS_WEBHOOK_URL não configurado');
       return {
         statusCode: 400,
         headers,
-        body: JSON.stringify({ 
-          success: false, 
-          error: 'TEAMS_WEBHOOK_URL não configurado nas variáveis de ambiente' 
-        })
+        body: JSON.stringify({ error: 'TEAMS_WEBHOOK_URL não configurado' })
       };
     }
 
-    // Calcula taxa de sucesso
-    const successRate = totalTests > 0 
-      ? ((passedTests / totalTests) * 100).toFixed(1) 
-      : 0;
-
-    // Define emoji baseado no resultado
+    const successRate = totalTests > 0 ? ((passedTests / totalTests) * 100).toFixed(1) : 0;
     const statusEmoji = failedTests === 0 ? '✅' : '⚠️';
+    const formattedDuration = duration >= 60 ? `${Math.floor(duration / 60)}m ${duration % 60}s` : `${duration}s`;
+    const formattedTime = timestamp ? new Date(timestamp).toLocaleString('pt-BR') : new Date().toLocaleString('pt-BR');
 
-    // Formata duração
-    const formattedDuration = duration >= 60 
-      ? `${Math.floor(duration / 60)}m ${duration % 60}s`
-      : `${duration}s`;
-
-    // Formata timestamp
-    const formattedTime = timestamp 
-      ? new Date(timestamp).toLocaleString('pt-BR', { 
-          dateStyle: 'short', 
-          timeStyle: 'short' 
-        })
-      : new Date().toLocaleString('pt-BR', { 
-          dateStyle: 'short', 
-          timeStyle: 'short' 
-        });
-
-    // Identifica qual horário da execução automática
     const hour = new Date().getHours();
     let scheduleLabel = '🔄 Execução Manual';
     if (hour >= 7 && hour < 10) scheduleLabel = '🌅 Execução Matinal (08h)';
@@ -111,127 +55,90 @@ exports.handler = async (event, context) => {
     else if (hour >= 15 && hour < 17) scheduleLabel = '🌤️ Execução Tarde (16h)';
     else if (hour >= 18 && hour < 21) scheduleLabel = '🌆 Execução Noite (19h)';
 
-    // ==========================================
-    // Monta a mensagem para Teams (Adaptive Card)
-    // ==========================================
+    // ⭐ FORMATO CORRETO: Adaptive Card direto, sem wrapper
     const teamsMessage = {
-      "type": "message",
-      "attachments": [{
-        "contentType": "application/vnd.microsoft.card.adaptive",
-        "content": {
-          "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
-          "type": "AdaptiveCard",
-          "version": "1.4",
-          "body": [
+      "type": "AdaptiveCard",
+      "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
+      "version": "1.4",
+      "body": [
+        {
+          "type": "TextBlock",
+          "text": `${statusEmoji} Relatório de Testes - ${client || 'Cypress'}`,
+          "size": "Large",
+          "weight": "Bolder",
+          "color": failedTests === 0 ? "Good" : "Warning"
+        },
+        {
+          "type": "TextBlock",
+          "text": scheduleLabel,
+          "size": "Medium",
+          "weight": "Bolder",
+          "spacing": "None"
+        },
+        {
+          "type": "FactSet",
+          "facts": [
+            { "title": "Branch:", "value": branch || 'main' },
+            { "title": "Ambiente:", "value": environment || 'production' },
+            { "title": "Data/Hora:", "value": formattedTime },
+            { "title": "Duração:", "value": formattedDuration },
+            { "title": "Executado por:", "value": author || 'Sistema' }
+          ]
+        },
+        {
+          "type": "ColumnSet",
+          "columns": [
             {
-              "type": "TextBlock",
-              "text": `${statusEmoji} Relatório de Testes - ${client || 'Cypress'}`,
-              "size": "Large",
-              "weight": "Bolder",
-              "color": failedTests === 0 ? "Good" : "Warning"
-            },
-            {
-              "type": "TextBlock",
-              "text": scheduleLabel,
-              "size": "Medium",
-              "weight": "Bolder",
-              "spacing": "None"
-            },
-            {
-              "type": "FactSet",
-              "facts": [
-                { "title": "Branch:", "value": branch || 'main' },
-                { "title": "Ambiente:", "value": environment || 'production' },
-                { "title": "Data/Hora:", "value": formattedTime },
-                { "title": "Duração:", "value": formattedDuration },
-                { "title": "Executado por:", "value": author || 'Sistema' }
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                { "type": "TextBlock", "text": "📊 Total", "weight": "Bolder" },
+                { "type": "TextBlock", "text": `${totalTests}`, "size": "ExtraLarge" }
               ]
             },
             {
-              "type": "ColumnSet",
-              "columns": [
-                {
-                  "type": "Column",
-                  "width": "stretch",
-                  "items": [
-                    {
-                      "type": "TextBlock",
-                      "text": "📊 Total",
-                      "weight": "Bolder"
-                    },
-                    {
-                      "type": "TextBlock",
-                      "text": `${totalTests}`,
-                      "size": "ExtraLarge"
-                    }
-                  ]
-                },
-                {
-                  "type": "Column",
-                  "width": "stretch",
-                  "items": [
-                    {
-                      "type": "TextBlock",
-                      "text": "✅ Aprovados",
-                      "weight": "Bolder"
-                    },
-                    {
-                      "type": "TextBlock",
-                      "text": `${passedTests}\n(${successRate}%)`,
-                      "size": "ExtraLarge",
-                      "color": "Good"
-                    }
-                  ]
-                },
-                {
-                  "type": "Column",
-                  "width": "stretch",
-                  "items": [
-                    {
-                      "type": "TextBlock",
-                      "text": "❌ Reprovados",
-                      "weight": "Bolder"
-                    },
-                    {
-                      "type": "TextBlock",
-                      "text": `${failedTests}`,
-                      "size": "ExtraLarge",
-                      "color": "Attention"
-                    }
-                  ]
-                }
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                { "type": "TextBlock", "text": "✅ Aprovados", "weight": "Bolder" },
+                { "type": "TextBlock", "text": `${passedTests}\n(${successRate}%)`, "size": "ExtraLarge", "color": "Good" }
+              ]
+            },
+            {
+              "type": "Column",
+              "width": "stretch",
+              "items": [
+                { "type": "TextBlock", "text": "❌ Reprovados", "weight": "Bolder" },
+                { "type": "TextBlock", "text": `${failedTests}`, "size": "ExtraLarge", "color": "Attention" }
               ]
             }
-          ],
-          "actions": []
+          ]
         }
-      }]
+      ],
+      "actions": []
     };
 
-    // Adiciona seção de testes aprovados (máximo 10)
+    // Adiciona testes aprovados
     if (passedList.length > 0) {
-      const passedDisplay = passedList.slice(0, 10);
-      const morePassedCount = passedList.length - 10;
-      
-      teamsMessage.attachments[0].content.body.push({
+      const display = passedList.slice(0, 10);
+      const more = passedList.length - 10;
+      teamsMessage.body.push({
         "type": "TextBlock",
         "text": "✅ **Testes Aprovados**",
         "weight": "Bolder",
         "size": "Medium",
         "spacing": "Large"
       });
-      
-      teamsMessage.attachments[0].content.body.push({
+      teamsMessage.body.push({
         "type": "TextBlock",
-        "text": passedDisplay.map(test => `• ${test}`).join('\n') +
-                (morePassedCount > 0 ? `\n\n*...e mais ${morePassedCount} teste(s)*` : ''),
+        "text": display.map(t => `• ${t}`).join('\n') + (more > 0 ? `\n\n*...e mais ${more}*` : ''),
         "wrap": true
       });
     }
 
-    // Adiciona seção de testes reprovados (todos)
+    // Adiciona testes reprovados
     if (failedList.length > 0) {
-      teamsMessage.attachments[0].content.body.push({
+      teamsMessage.body.push({
         "type": "TextBlock",
         "text": "❌ **Testes Reprovados**",
         "weight": "Bolder",
@@ -239,77 +146,44 @@ exports.handler = async (event, context) => {
         "spacing": "Large",
         "color": "Attention"
       });
-      
-      teamsMessage.attachments[0].content.body.push({
+      teamsMessage.body.push({
         "type": "TextBlock",
-        "text": failedList.map(test => `• ${test}`).join('\n'),
+        "text": failedList.map(t => `• ${t}`).join('\n'),
         "wrap": true,
         "color": "Attention"
       });
     }
 
-    // Adiciona botão para o dashboard
+    // Adiciona botão
     if (socialPanelUrl) {
-      teamsMessage.attachments[0].content.actions.push({
+      teamsMessage.actions.push({
         "type": "Action.OpenUrl",
         "title": "📊 Ver Dashboard Completo",
         "url": socialPanelUrl
       });
     }
 
-    // Adiciona botão para GitHub (se disponível)
-    if (githubRunUrl) {
-      teamsMessage.attachments[0].content.actions.push({
-        "type": "Action.OpenUrl",
-        "title": "🔗 Ver Execução no GitHub",
-        "url": githubRunUrl
-      });
-    }
+    console.log('📤 [send-teams] Enviando...');
 
-    // ==========================================
-    // Envia para o Teams via Webhook
-    // ==========================================
-    console.log('📤 [send-teams] Enviando para Teams...');
-    
-    const response = await axios.post(TEAMS_WEBHOOK_URL, teamsMessage, {
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      timeout: 10000 // 10 segundos timeout
+    await axios.post(TEAMS_WEBHOOK_URL, teamsMessage, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 10000
     });
 
-    console.log('✅ [send-teams] Notificação enviada ao Teams com sucesso!');
-    console.log('📬 [send-teams] Status:', response.status);
+    console.log('✅ [send-teams] Enviado!');
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ 
-        success: true, 
-        message: 'Notificação enviada ao Microsoft Teams com sucesso!',
-        timestamp: new Date().toISOString()
-      })
+      body: JSON.stringify({ success: true, message: 'Enviado ao Teams!' })
     };
 
   } catch (error) {
-    console.error('❌ [send-teams] Erro ao enviar notificação:', error.message);
-    
-    // Log detalhado do erro
-    if (error.response) {
-      console.error('❌ [send-teams] Resposta do erro:', {
-        status: error.response.status,
-        data: error.response.data
-      });
-    }
-
+    console.error('❌ [send-teams] Erro:', error.message);
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ 
-        success: false, 
-        error: error.message,
-        details: error.response ? error.response.data : null
-      })
+      body: JSON.stringify({ success: false, error: error.message })
     };
   }
 };
