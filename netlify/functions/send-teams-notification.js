@@ -55,120 +55,45 @@ exports.handler = async (event, context) => {
     else if (hour >= 15 && hour < 17) scheduleLabel = '🌤️ Execução Tarde (16h)';
     else if (hour >= 18 && hour < 21) scheduleLabel = '🌆 Execução Noite (19h)';
 
-    // Cria o Adaptive Card
-    const adaptiveCard = {
-      "type": "AdaptiveCard",
-      "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
-      "version": "1.4",
+    // Monta texto formatado para o Teams
+    let messageText = `${statusEmoji} **${scheduleLabel}**\n\n`;
+    messageText += `**Cliente:** ${client || 'Cypress'}\n`;
+    messageText += `**Branch:** ${branch || 'main'}\n`;
+    messageText += `**Ambiente:** ${environment || 'production'}\n`;
+    messageText += `**Data/Hora:** ${formattedTime}\n`;
+    messageText += `**Duração:** ${formattedDuration}\n`;
+    messageText += `**Executado por:** ${author || 'Sistema'}\n\n`;
+    messageText += `📊 **Total:** ${totalTests} | ✅ **Aprovados:** ${passedTests} (${successRate}%) | ❌ **Reprovados:** ${failedTests}\n\n`;
+    
+    if (passedList.length > 0) {
+      messageText += `✅ **Testes Aprovados:**\n`;
+      passedList.slice(0, 10).forEach(t => messageText += `• ${t}\n`);
+      if (passedList.length > 10) messageText += `\n*...e mais ${passedList.length - 10} teste(s)*\n`;
+      messageText += `\n`;
+    }
+    
+    if (failedList.length > 0) {
+      messageText += `❌ **Testes Reprovados:**\n`;
+      failedList.forEach(t => messageText += `• ${t}\n`);
+      messageText += `\n`;
+    }
+    
+    if (socialPanelUrl) {
+      messageText += `\n📊 [Ver Dashboard Completo](${socialPanelUrl})`;
+    }
+
+    // ⭐ FORMATO SIMPLES: Apenas texto, conforme documentação
+    const teamsMessage = {
       "body": [
         {
           "type": "TextBlock",
-          "text": `${statusEmoji} Relatório de Testes - ${client || 'Cypress'}`,
-          "size": "Large",
-          "weight": "Bolder",
-          "color": failedTests === 0 ? "Good" : "Warning"
-        },
-        {
-          "type": "TextBlock",
-          "text": scheduleLabel,
-          "size": "Medium",
-          "weight": "Bolder",
-          "spacing": "None"
-        },
-        {
-          "type": "FactSet",
-          "facts": [
-            { "title": "Branch:", "value": branch || 'main' },
-            { "title": "Ambiente:", "value": environment || 'production' },
-            { "title": "Data/Hora:", "value": formattedTime },
-            { "title": "Duração:", "value": formattedDuration },
-            { "title": "Executado por:", "value": author || 'Sistema' }
-          ]
-        },
-        {
-          "type": "ColumnSet",
-          "columns": [
-            {
-              "type": "Column",
-              "width": "stretch",
-              "items": [
-                { "type": "TextBlock", "text": "📊 Total", "weight": "Bolder" },
-                { "type": "TextBlock", "text": `${totalTests}`, "size": "ExtraLarge" }
-              ]
-            },
-            {
-              "type": "Column",
-              "width": "stretch",
-              "items": [
-                { "type": "TextBlock", "text": "✅ Aprovados", "weight": "Bolder" },
-                { "type": "TextBlock", "text": `${passedTests}\n(${successRate}%)`, "size": "ExtraLarge", "color": "Good" }
-              ]
-            },
-            {
-              "type": "Column",
-              "width": "stretch",
-              "items": [
-                { "type": "TextBlock", "text": "❌ Reprovados", "weight": "Bolder" },
-                { "type": "TextBlock", "text": `${failedTests}`, "size": "ExtraLarge", "color": "Attention" }
-              ]
-            }
-          ]
+          "text": messageText
         }
-      ],
-      "actions": []
+      ]
     };
 
-    // Adiciona testes aprovados
-    if (passedList.length > 0) {
-      const display = passedList.slice(0, 10);
-      const more = passedList.length - 10;
-      adaptiveCard.body.push({
-        "type": "TextBlock",
-        "text": "✅ **Testes Aprovados**",
-        "weight": "Bolder",
-        "size": "Medium",
-        "spacing": "Large"
-      });
-      adaptiveCard.body.push({
-        "type": "TextBlock",
-        "text": display.map(t => `• ${t}`).join('\n') + (more > 0 ? `\n\n*...e mais ${more}*` : ''),
-        "wrap": true
-      });
-    }
-
-    // Adiciona testes reprovados
-    if (failedList.length > 0) {
-      adaptiveCard.body.push({
-        "type": "TextBlock",
-        "text": "❌ **Testes Reprovados**",
-        "weight": "Bolder",
-        "size": "Medium",
-        "spacing": "Large",
-        "color": "Attention"
-      });
-      adaptiveCard.body.push({
-        "type": "TextBlock",
-        "text": failedList.map(t => `• ${t}`).join('\n'),
-        "wrap": true,
-        "color": "Attention"
-      });
-    }
-
-    // Adiciona botão
-    if (socialPanelUrl) {
-      adaptiveCard.actions.push({
-        "type": "Action.OpenUrl",
-        "title": "📊 Ver Dashboard Completo",
-        "url": socialPanelUrl
-      });
-    }
-
-    // ⭐ CORREÇÃO FINAL: Envia DIRETO o array, sem wrapper
-    const teamsMessage = {
-      "attachments": [adaptiveCard]
-    };
-
-    console.log('📤 [send-teams] Enviando...');
+    console.log('📤 [send-teams] Enviando formato simplificado...');
+    console.log('📦 [send-teams] Payload:', JSON.stringify(teamsMessage).substring(0, 200));
 
     await axios.post(TEAMS_WEBHOOK_URL, teamsMessage, {
       headers: { 'Content-Type': 'application/json' },
@@ -186,7 +111,8 @@ exports.handler = async (event, context) => {
   } catch (error) {
     console.error('❌ [send-teams] Erro:', error.message);
     if (error.response) {
-      console.error('❌ [send-teams] Resposta:', error.response.data);
+      console.error('❌ [send-teams] Status:', error.response.status);
+      console.error('❌ [send-teams] Data:', JSON.stringify(error.response.data));
     }
     return {
       statusCode: 500,
