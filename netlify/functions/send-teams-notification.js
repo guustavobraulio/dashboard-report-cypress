@@ -16,7 +16,7 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 405,
       headers,
-      body: JSON.stringify({ error: 'Método não permitido' })
+      body: JSON.stringify({ error: 'Método não permitido. Use POST.' })
     };
   }
 
@@ -55,7 +55,7 @@ exports.handler = async (event, context) => {
     else if (hour >= 15 && hour < 17) scheduleLabel = '🌤️ Execução Tarde (16h)';
     else if (hour >= 18 && hour < 21) scheduleLabel = '🌆 Execução Noite (19h)';
 
-    // Monta texto formatado para o Teams
+    // Monta mensagem formatada
     let messageText = `${statusEmoji} **${scheduleLabel}**\n\n`;
     messageText += `**Cliente:** ${client || 'Cypress'}\n`;
     messageText += `**Branch:** ${branch || 'main'}\n`;
@@ -82,25 +82,28 @@ exports.handler = async (event, context) => {
       messageText += `\n📊 [Ver Dashboard Completo](${socialPanelUrl})`;
     }
 
-    // ⭐ FORMATO SIMPLES: Apenas texto, conforme documentação
+    // Formato correto para o workflow do Teams
     const teamsMessage = {
-      "body": [
+      "attachments": [
         {
-          "type": "TextBlock",
-          "text": messageText
+          "body": [
+            {
+              "type": "TextBlock",
+              "text": messageText
+            }
+          ]
         }
       ]
     };
 
-    console.log('📤 [send-teams] Enviando formato simplificado...');
-    console.log('📦 [send-teams] Payload:', JSON.stringify(teamsMessage).substring(0, 200));
+    console.log('📤 [send-teams] Enviando...');
 
     await axios.post(TEAMS_WEBHOOK_URL, teamsMessage, {
       headers: { 'Content-Type': 'application/json' },
       timeout: 10000
     });
 
-    console.log('✅ [send-teams] Enviado!');
+    console.log('✅ [send-teams] Enviado com sucesso!');
 
     return {
       statusCode: 200,
