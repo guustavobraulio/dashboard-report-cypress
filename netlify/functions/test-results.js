@@ -4,9 +4,6 @@ const SUPABASE_URL = process.env.SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
 
-// ==========================================
-// Função auxiliar para enviar ao Teams
-// ==========================================
 async function sendToTeams(data, brand) {
   try {
     const TEAMS_WEBHOOK_URL = process.env.TEAMS_WEBHOOK_URL;
@@ -51,33 +48,55 @@ async function sendToTeams(data, brand) {
       failed: teamsPayload.failedTests
     });
 
-    // ⭐ IMPORTANTE: Dynamic import do axios
+    // ⭐ ADICIONADO: Logs detalhados
+    const functionUrl = `${process.env.URL}/.netlify/functions/send-teams-notification`;
+    console.log('🔗 [teams] URL da função:', functionUrl);
+    console.log('📦 [teams] Payload size:', JSON.stringify(teamsPayload).length, 'bytes');
+
     const axios = (await import('axios')).default;
+    console.log('✅ [teams] Axios importado');
+    
+    console.log('🚀 [teams] Enviando requisição...');
     
     const response = await axios.post(
-      `${process.env.URL}/.netlify/functions/send-teams-notification`,
+      functionUrl,
       teamsPayload,
       {
         headers: { 'Content-Type': 'application/json' },
-        timeout: 15000
+        timeout: 20000 // Aumentado para 20 segundos
       }
     );
 
+    console.log('📬 [teams] Resposta recebida:', {
+      status: response.status,
+      data: response.data
+    });
+
     if (response.status === 200) {
-      console.log('✅ [teams] Notificação enviada!');
+      console.log('✅ [teams] Notificação enviada com sucesso!');
+    } else {
+      console.warn('⚠️ [teams] Status inesperado:', response.status);
     }
 
+    return response.data;
+
   } catch (error) {
-    console.warn('⚠️ [teams] Erro ao enviar:', error.message);
+    console.error('❌ [teams] ERRO CAPTURADO:', error.message);
+    console.error('❌ [teams] Stack:', error.stack);
+    
     if (error.response) {
-      console.warn('⚠️ [teams] Detalhes:', error.response.data);
+      console.error('❌ [teams] Response status:', error.response.status);
+      console.error('❌ [teams] Response data:', JSON.stringify(error.response.data));
     }
+    
+    if (error.code) {
+      console.error('❌ [teams] Error code:', error.code);
+    }
+    
+    throw error; // Re-lança para ver no log principal
   }
 }
 
-// ==========================================
-// Handler principal
-// ==========================================
 export async function handler(event) {
   if (event.httpMethod !== 'POST') {
     return { 
@@ -143,21 +162,17 @@ export async function handler(event) {
       };
     }
 
-    console.log('✅ [test-results] Dados salvos!', {
-      runId: data.runId,
-      brand: brand,
-      tests: data.tests?.length || 0
-    });
-
-    // ==========================================
-    // 🚀 IMPORTANTE: Chama o Teams em background
-    // ==========================================
+    console.log('✅ [test-results] Dados salvos!');
     console.log('🔔 [test-results] Iniciando envio ao Teams...');
     
-    // NÃO use await aqui - deixa rodar em background
-    sendToTeams(data, brand).catch(err => {
-      console.log('⚠️ [test-results] Teams falhou:', err.message);
-    });
+    // ⭐ MUDANÇA: Aguardar a conclusão com try/catch
+    try {
+      await sendToTeams(data, brand);
+      console.log('✅ [test-results] Teams concluído!');
+    } catch (teamsError) {
+      console.error('❌ [test-results] Erro no Teams:', teamsError.message);
+      // Continua mesmo se Teams falhar
+    }
 
     return {
       statusCode: 200,

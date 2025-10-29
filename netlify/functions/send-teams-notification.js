@@ -163,11 +163,9 @@ exports.handler = async (event, context) => {
       });
     }
 
-    // ⭐ FORMATO CORRETO: Conforme documentação do Confluence
+    // ⭐ CORREÇÃO FINAL: Envia DIRETO o array, sem wrapper
     const teamsMessage = {
-      "body": {
-        "attachments": [adaptiveCard]
-      }
+      "attachments": [adaptiveCard]
     };
 
     console.log('📤 [send-teams] Enviando...');
