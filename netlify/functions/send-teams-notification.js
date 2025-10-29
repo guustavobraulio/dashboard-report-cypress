@@ -16,12 +16,12 @@ exports.handler = async (event, context) => {
     return {
       statusCode: 405,
       headers,
-      body: JSON.stringify({ error: 'Método não permitido. Use POST.' })
+      body: JSON.stringify({ error: 'Método não permitido' })
     };
   }
 
   try {
-    console.log('📬 [send-teams] Iniciando envio...');
+    console.log('📬 [send-teams] Iniciando...');
     
     const data = JSON.parse(event.body);
     const {
@@ -55,7 +55,7 @@ exports.handler = async (event, context) => {
     else if (hour >= 15 && hour < 17) scheduleLabel = '🌤️ Execução Tarde (16h)';
     else if (hour >= 18 && hour < 21) scheduleLabel = '🌆 Execução Noite (19h)';
 
-    // Monta o Adaptive Card
+    // Cria o Adaptive Card
     const adaptiveCard = {
       "type": "AdaptiveCard",
       "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
@@ -163,7 +163,7 @@ exports.handler = async (event, context) => {
       });
     }
 
-    // ⭐ CORRIGIDO: Formato esperado pelo workflow "Send each adaptive card"
+    // ⭐ FORMATO CORRETO: Conforme documentação do Confluence
     const teamsMessage = {
       "body": {
         "attachments": [adaptiveCard]
@@ -177,7 +177,7 @@ exports.handler = async (event, context) => {
       timeout: 10000
     });
 
-    console.log('✅ [send-teams] Enviado com sucesso!');
+    console.log('✅ [send-teams] Enviado!');
 
     return {
       statusCode: 200,
@@ -188,7 +188,7 @@ exports.handler = async (event, context) => {
   } catch (error) {
     console.error('❌ [send-teams] Erro:', error.message);
     if (error.response) {
-      console.error('❌ [send-teams] Detalhes:', error.response.data);
+      console.error('❌ [send-teams] Resposta:', error.response.data);
     }
     return {
       statusCode: 500,
