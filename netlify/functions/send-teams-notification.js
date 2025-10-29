@@ -55,8 +55,8 @@ exports.handler = async (event, context) => {
     else if (hour >= 15 && hour < 17) scheduleLabel = '🌤️ Execução Tarde (16h)';
     else if (hour >= 18 && hour < 21) scheduleLabel = '🌆 Execução Noite (19h)';
 
-    // ⭐ FORMATO CORRETO: Adaptive Card direto, sem wrapper
-    const teamsMessage = {
+    // Monta o Adaptive Card
+    const adaptiveCard = {
       "type": "AdaptiveCard",
       "$schema": "http://adaptivecards.io/schemas/adaptive-card.json",
       "version": "1.4",
@@ -122,14 +122,14 @@ exports.handler = async (event, context) => {
     if (passedList.length > 0) {
       const display = passedList.slice(0, 10);
       const more = passedList.length - 10;
-      teamsMessage.body.push({
+      adaptiveCard.body.push({
         "type": "TextBlock",
         "text": "✅ **Testes Aprovados**",
         "weight": "Bolder",
         "size": "Medium",
         "spacing": "Large"
       });
-      teamsMessage.body.push({
+      adaptiveCard.body.push({
         "type": "TextBlock",
         "text": display.map(t => `• ${t}`).join('\n') + (more > 0 ? `\n\n*...e mais ${more}*` : ''),
         "wrap": true
@@ -138,7 +138,7 @@ exports.handler = async (event, context) => {
 
     // Adiciona testes reprovados
     if (failedList.length > 0) {
-      teamsMessage.body.push({
+      adaptiveCard.body.push({
         "type": "TextBlock",
         "text": "❌ **Testes Reprovados**",
         "weight": "Bolder",
@@ -146,7 +146,7 @@ exports.handler = async (event, context) => {
         "spacing": "Large",
         "color": "Attention"
       });
-      teamsMessage.body.push({
+      adaptiveCard.body.push({
         "type": "TextBlock",
         "text": failedList.map(t => `• ${t}`).join('\n'),
         "wrap": true,
@@ -156,12 +156,19 @@ exports.handler = async (event, context) => {
 
     // Adiciona botão
     if (socialPanelUrl) {
-      teamsMessage.actions.push({
+      adaptiveCard.actions.push({
         "type": "Action.OpenUrl",
         "title": "📊 Ver Dashboard Completo",
         "url": socialPanelUrl
       });
     }
+
+    // ⭐ CORRIGIDO: Formato esperado pelo workflow "Send each adaptive card"
+    const teamsMessage = {
+      "body": {
+        "attachments": [adaptiveCard]
+      }
+    };
 
     console.log('📤 [send-teams] Enviando...');
 
@@ -170,7 +177,7 @@ exports.handler = async (event, context) => {
       timeout: 10000
     });
 
-    console.log('✅ [send-teams] Enviado!');
+    console.log('✅ [send-teams] Enviado com sucesso!');
 
     return {
       statusCode: 200,
@@ -180,6 +187,9 @@ exports.handler = async (event, context) => {
 
   } catch (error) {
     console.error('❌ [send-teams] Erro:', error.message);
+    if (error.response) {
+      console.error('❌ [send-teams] Detalhes:', error.response.data);
+    }
     return {
       statusCode: 500,
       headers,
