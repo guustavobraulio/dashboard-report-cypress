@@ -12,13 +12,12 @@ async function sendToTeams(data, brand) {
     const TEAMS_WEBHOOK_URL = process.env.TEAMS_WEBHOOK_URL;
     
     if (!TEAMS_WEBHOOK_URL) {
-      console.log('⚠️ [teams] TEAMS_WEBHOOK_URL não configurado, pulando notificação');
+      console.log('⚠️ [teams] TEAMS_WEBHOOK_URL não configurado');
       return;
     }
 
-    console.log('📤 [teams] Preparando notificação ao Teams...');
+    console.log('📤 [teams] Preparando notificação...');
 
-    // Prepara lista de testes aprovados e reprovados
     const passedList = (data.tests || [])
       .filter(t => t.status === 'passed' || t.state === 'passed')
       .map(t => t.name || t.title)
@@ -28,12 +27,9 @@ async function sendToTeams(data, brand) {
       .filter(t => t.status === 'failed' || t.state === 'failed')
       .map(t => t.name || t.title);
 
-    // Calcula duração em segundos
     const durationSeconds = Math.floor((data.totalDuration || 0) / 1000);
 
-    // Monta payload para a função de Teams
     const teamsPayload = {
-      executionId: data.runId,
       client: brand,
       branch: data.branch || 'main',
       environment: data.environment || 'production',
@@ -42,50 +38,39 @@ async function sendToTeams(data, brand) {
       failedTests: data.totalFailed || 0,
       duration: durationSeconds,
       timestamp: data.timestamp || new Date().toISOString(),
-      passedList: passedList,
-      failedList: failedList,
+      passedList,
+      failedList,
       socialPanelUrl: process.env.URL || 'https://dash-report-cy.netlify.app',
-      author: data.author || 'Sistema Automático',
-      githubRunUrl: data.githubRunUrl || ''
+      author: data.author || 'Sistema'
     };
 
-    console.log('📊 [teams] Resumo dos testes:', {
+    console.log('📊 [teams] Resumo:', {
       client: brand,
       total: teamsPayload.totalTests,
       passed: teamsPayload.passedTests,
-      failed: teamsPayload.failedTests,
-      duration: `${durationSeconds}s`
+      failed: teamsPayload.failedTests
     });
 
-    // Importa axios dinamicamente (compatível com ES modules)
+    // ⭐ IMPORTANTE: Dynamic import do axios
     const axios = (await import('axios')).default;
     
     const response = await axios.post(
       `${process.env.URL}/.netlify/functions/send-teams-notification`,
       teamsPayload,
       {
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        timeout: 15000 // 15 segundos
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 15000
       }
     );
 
     if (response.status === 200) {
-      console.log('✅ [teams] Notificação enviada ao Teams com sucesso!');
-    } else {
-      console.warn('⚠️ [teams] Resposta inesperada:', response.status);
+      console.log('✅ [teams] Notificação enviada!');
     }
 
-    return response.data;
-
   } catch (error) {
-    console.warn('⚠️ [teams] Erro ao enviar notificação (não crítico):', error.message);
+    console.warn('⚠️ [teams] Erro ao enviar:', error.message);
     if (error.response) {
-      console.warn('⚠️ [teams] Detalhes:', {
-        status: error.response.status,
-        data: error.response.data
-      });
+      console.warn('⚠️ [teams] Detalhes:', error.response.data);
     }
   }
 }
@@ -104,7 +89,6 @@ export async function handler(event) {
   try {
     const data = JSON.parse(event.body || '{}');
 
-    // Validação: runId é obrigatório
     if (!data.runId) {
       return {
         statusCode: 400,
@@ -121,11 +105,9 @@ export async function handler(event) {
       testsCount: data.tests?.length || 0
     });
 
-    // Extrai o brand do payload
     const brand = data.brand || 'Sem marca';
-    console.log(`🏷️ [test-results] Brand recebido: "${brand}"`);
+    console.log(`🏷️ [test-results] Brand: "${brand}"`);
 
-    // Monta o objeto para salvar no Supabase
     const row = {
       id: data.runId,
       timestamp: data.timestamp || new Date().toISOString(),
@@ -146,37 +128,37 @@ export async function handler(event) {
 
     console.log('💾 [test-results] Salvando no Supabase...');
 
-    // Salva no Supabase
     const { error } = await supabase
       .from('tabela_runs')
       .upsert(row, { onConflict: 'id' });
 
     if (error) {
-      console.error('❌ [test-results] Erro ao salvar no Supabase:', error);
+      console.error('❌ [test-results] Erro ao salvar:', error);
       return {
         statusCode: 500,
         body: JSON.stringify({
-          error: 'Erro ao salvar no banco de dados',
+          error: 'Erro ao salvar no banco',
           details: error.message
         })
       };
     }
 
-    console.log('✅ [test-results] Dados salvos com sucesso!', {
+    console.log('✅ [test-results] Dados salvos!', {
       runId: data.runId,
       brand: brand,
       tests: data.tests?.length || 0
     });
 
     // ==========================================
-    // 🚀 Envia notificação ao Teams (background)
+    // 🚀 IMPORTANTE: Chama o Teams em background
     // ==========================================
-    // Executa sem esperar resposta (fire and forget)
+    console.log('🔔 [test-results] Iniciando envio ao Teams...');
+    
+    // NÃO use await aqui - deixa rodar em background
     sendToTeams(data, brand).catch(err => {
-      console.log('⚠️ [test-results] Teams notification falhou (não crítico):', err.message);
+      console.log('⚠️ [test-results] Teams falhou:', err.message);
     });
 
-    // Retorna sucesso imediatamente
     return {
       statusCode: 200,
       body: JSON.stringify({
@@ -190,12 +172,11 @@ export async function handler(event) {
     };
 
   } catch (e) {
-    console.error('❌ [test-results] Erro no handler:', e);
+    console.error('❌ [test-results] Erro:', e);
     return {
       statusCode: 500,
       body: JSON.stringify({ 
-        error: e.message || 'Server error',
-        stack: process.env.NODE_ENV === 'development' ? e.stack : undefined
+        error: e.message || 'Server error'
       })
     };
   }
