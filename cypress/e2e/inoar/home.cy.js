@@ -1,4 +1,4 @@
-describe('Validação da página Home', () => {
+describe('[Inoar] Validação da página Home', () => {
     
     beforeEach(() => {
         cy.viewport(1920, 1080)
@@ -38,7 +38,7 @@ describe('Validação da página Home', () => {
 
     });
 
-    it.only('Clicando em algum produto e levando para página de produto', () => {
+    it('Clicando em algum produto e levando para página de produto', () => {
         
         cy.scrollTo(0, 500)
 
@@ -53,7 +53,7 @@ describe('Validação da página Home', () => {
             .should('be.visible')   
     });
 
-    it.only('Validar se o slide da vitrine de produtos funciona', () => {
+    it('Validar se o slide da vitrine de produtos funciona', () => {
         
         cy.scrollTo('bottom')
 

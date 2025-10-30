@@ -106,7 +106,7 @@ describe('[ShopVinho] Validação da página home', () => {
             .should('length', 2)
     });
 
-    it.only('Entrando na página de produto', () => {
+    it('Entrando na página de produto', () => {
         
         cy.FechandoModalIdade()
 

@@ -3,7 +3,7 @@ import AdicionandoProdutoNoCarrinho_Jasmine from "../../support/commands.js"
 import AumentandoQuantidadeProduto_Jasmine from "../../support/commands.js"
 import locators from "../../support/locators";
 
-describe('Validação da página de produto', () => {
+describe('[Jasmine] Validação da página de produto', () => {
     
     beforeEach(() => {
         cy.AcessandoPaginaProduto_Jasmine()

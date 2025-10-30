@@ -1,4 +1,4 @@
-describe('Validação da página Home', () => {
+describe('[Shopmulti] Validação da página Home', () => {
     
     beforeEach(() => {
         

@@ -3,7 +3,7 @@ import AcesanAcessandoPaginaProdutodo from '../../support/commands.js'
 import locators from '../../support/locators.js';
 
 
-describe('[ShopVinho]Validação da página de produto', () => {
+describe('[ShopVinho] Validação da página de produto', () => {
     
     beforeEach(() => {
         cy.viewport(1920, 1080)

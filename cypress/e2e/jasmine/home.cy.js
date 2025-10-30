@@ -121,7 +121,7 @@ describe('[JASMINE] Validação da página home Jasmine', () => {
             .should('be.visible')
     });
 
-    it.only('Enviando a newsletter', () => {
+    it('Enviando a newsletter', () => {
         
         cy.scrollTo('bottom')
         

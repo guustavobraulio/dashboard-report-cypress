@@ -2,7 +2,7 @@
 import AcessandoProduto from "../../support/commands"
 import locators from "../../support/locators.js"
 
-describe('Validação da página departamento', () => {
+describe('[Shopvinho] Validação da página departamento', () => {
     beforeEach(() => {
         cy.viewport(1920, 1080)
         cy.visit('https://www.shopvinho.com.br/')

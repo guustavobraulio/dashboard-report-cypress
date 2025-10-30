@@ -1,7 +1,7 @@
 import AcessandoDepartamento_Jasmine from "../../support/commands.js"
 import locators from "../../support/locators.js";
 
-describe('Validação da Página de Departamento', () => {
+describe('[Jasmine] Validação da Página de Departamento', () => {
     
     beforeEach(() => {
         cy.AcessandoDepartamento_Jasmine()
