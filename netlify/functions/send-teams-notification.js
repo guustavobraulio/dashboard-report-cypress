@@ -1,102 +1,112 @@
-// 🔥 N8N Function Node - Monta MessageCard com cores dinâmicas
+const axios = require('axios');
 
-const data = $input.first().json;
+exports.handler = async (event, context) => {
+  const headers = {
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Content-Type': 'application/json'
+  };
 
-// 📊 Array de facts (campos informativos)
-const facts = [
-  {
-    name: '📊 Total de Testes',
-    value: data.totalTests.toString()
-  },
-  {
-    name: '✅ Testes Aprovados',
-    value: `${data.passedTests} (${((data.passedTests / data.totalTests) * 100).toFixed(1)}%)`
+  if (event.httpMethod === 'OPTIONS') {
+    return { statusCode: 200, headers, body: '' };
   }
-];
 
-// 🔥 SÓ ADICIONA A LINHA VERMELHA SE HOUVER FALHAS
-if (data.failedTests > 0) {
-  facts.push({
-    name: '❌ Testes Reprovados',
-    value: data.failedTests.toString()
-  });
-}
+  if (event.httpMethod !== 'POST') {
+    return {
+      statusCode: 405,
+      headers,
+      body: JSON.stringify({ error: 'Método não permitido' })
+    };
+  }
 
-// 🔥 SEMPRE MOSTRA IGNORADOS
-facts.push({
-  name: '⏭️ Ignorados/Pendentes',
-  value: data.skippedTests.toString()
-});
-
-facts.push({
-  name: '⏱️ Duração',
-  value: `${data.duration}s`
-});
-
-facts.push({
-  name: '👤 Executado por',
-  value: data.author
-});
-
-facts.push({
-  name: '📅 Data/Hora',
-  value: new Date(data.timestamp).toLocaleString('pt-BR')
-});
-
-// 🎨 COR DINÂMICA: Vermelho se falhas, Verde se OK
-const themeColor = data.failedTests > 0 ? "ff0000" : "00aa00";
-
-// 🎨 CARD PRINCIPAL COM MELHOR LAYOUT
-const messageCard = {
-  "@type": "MessageCard",
-  "@context": "https://schema.org/extensions",
-  "summary": `Relatório de Testes - ${data.client}`,
-  "themeColor": themeColor,
-  "title": "⚠️ Relatório de Testes",
-  "sections": [
-    {
-      "activityTitle": `${data.client} - ${data.branch} | ${data.environment}`,
-      "activitySubtitle": `Branch: ${data.branch} | Ambiente: ${data.environment}`,
-      "facts": facts,
-      "markdown": true
+  try {
+    const data = JSON.parse(event.body);
+    
+    // 🔍 Validação de entrada
+    if (!data.client || !data.totalTests) {
+      console.error('[teams] Payload inválido:', { client: data.client, totalTests: data.totalTests });
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'Payload inválido: faltam campos obrigatórios' })
+      };
     }
-  ],
-  "potentialAction": [
-    {
-      "@type": "OpenUri",
-      "name": "📈 Ver Dashboard Completo",
-      "targets": [
-        {
-          "os": "default",
-          "uri": `${data.socialPanelUrl}?client=${data.client}&branch=${data.branch}`
-        }
-      ]
+
+    console.log('[teams] ========== Iniciando notificação ==========');
+    console.log('[teams] Cliente:', data.client);
+    console.log('[teams] Total de Testes:', data.totalTests);
+    console.log('[teams] Passados:', data.passedTests);
+    console.log('[teams] Falhados:', data.failedTests);
+    console.log('[teams] Ignorados:', data.skippedTests);
+    
+    const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
+    
+    if (!N8N_WEBHOOK_URL) {
+      console.error('[teams] ❌ N8N_WEBHOOK_URL não configurado');
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: 'N8N_WEBHOOK_URL não configurado' })
+      };
     }
-  ]
+
+    // 🔥 PAYLOAD PARA N8N (Repassa exatamente o que recebeu)
+    const payload = {
+      client: data.client,
+      branch: data.branch || 'main',
+      environment: data.environment || 'production',
+      totalTests: data.totalTests,
+      passedTests: data.passedTests || 0,
+      failedTests: data.failedTests || 0,
+      skippedTests: data.skippedTests || 0,
+      duration: data.duration || 0,
+      timestamp: data.timestamp,
+      author: data.author || 'Sistema',
+      failedList: Array.isArray(data.failedList) ? data.failedList : [],
+      passedList: Array.isArray(data.passedList) ? data.passedList : [],
+      skippedList: Array.isArray(data.skippedList) ? data.skippedList : [],
+      socialPanelUrl: data.socialPanelUrl || ''
+    };
+
+    console.log('[teams] 📤 Enviando para N8N...');
+    console.log('[teams] N8N URL:', N8N_WEBHOOK_URL.substring(0, 50) + '...');
+
+    const response = await axios.post(N8N_WEBHOOK_URL, payload, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 30000 // 🔥 30 segundos
+    });
+
+    console.log('[teams] ✅ Enviado com sucesso! Status:', response.status);
+
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify({ 
+        success: true, 
+        message: 'Notificação enviada para Teams via N8N',
+        testedBy: data.author,
+        timestamp: new Date().toISOString()
+      })
+    };
+  } catch (error) {
+    console.error('[teams] ❌ ERRO GERAL:', error.message);
+    
+    if (error.response) {
+      console.error('[teams] ❌ Status HTTP:', error.response.status);
+      console.error('[teams] ❌ Resposta:', JSON.stringify(error.response.data));
+    } else if (error.request) {
+      console.error('[teams] ❌ Nenhuma resposta do servidor');
+    }
+
+    return {
+      statusCode: error.response?.status || 500,
+      headers,
+      body: JSON.stringify({ 
+        success: false, 
+        error: error.message,
+        timestamp: new Date().toISOString()
+      })
+    };
+  }
 };
-
-// 🔥 SE HOUVER TESTES REPROVADOS, ADICIONA SEÇÃO SEPARADA COM LISTA
-if (data.failedList && data.failedList.length > 0) {
-  messageCard.sections.push({
-    "activityTitle": "❌ Testes que Falharam",
-    "text": data.failedList
-      .slice(0, 15)
-      .map((test, i) => `${i + 1}. ${test}`)
-      .join("\n\n"),
-    "markdown": true
-  });
-}
-
-// 🔥 SE HOUVER TESTES IGNORADOS E LISTA, ADICIONA SEÇÃO
-if (data.skippedList && data.skippedList.length > 0) {
-  messageCard.sections.push({
-    "activityTitle": "⏭️ Testes Ignorados/Pendentes",
-    "text": data.skippedList
-      .slice(0, 10)
-      .map((test, i) => `${i + 1}. ${test}`)
-      .join("\n\n"),
-    "markdown": true
-  });
-}
-
-return { messageCard };

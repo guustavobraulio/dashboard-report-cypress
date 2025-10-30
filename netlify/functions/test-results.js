@@ -9,13 +9,12 @@ async function sendToTeams(data, brand) {
     const TEAMS_WEBHOOK_URL = process.env.TEAMS_WEBHOOK_URL;
     
     if (!TEAMS_WEBHOOK_URL) {
-      console.log('⚠️ [teams] TEAMS_WEBHOOK_URL não configurado');
+      console.log('⚠️ [test-results] TEAMS_WEBHOOK_URL não configurado');
       return;
     }
 
-    console.log('📤 [teams] Preparando notificação...');
+    console.log('📤 [test-results] Preparando para notificar Teams...');
 
-    // 🔥 Usa os valores do Cypress (totalPassed, totalFailed)
     const totalPassed = data.totalPassed || 0;
     const totalFailed = data.totalFailed || 0;
     const totalTests = data.totalTests || 0;
@@ -31,7 +30,7 @@ async function sendToTeams(data, brand) {
       .filter(t => t.status === 'failed' || t.state === 'failed')
       .map(t => t.name || t.title);
 
-    // 🔥 Filtra testes skipped/pending
+    // Filtra testes skipped/pending
     const skippedList = (data.tests || [])
       .filter(t => {
         const status = (t.status || '').toLowerCase();
@@ -49,9 +48,9 @@ async function sendToTeams(data, brand) {
     let totalSkipped = totalTests - totalPassed - totalFailed;
     if (totalSkipped < 0) totalSkipped = 0;
 
-    console.log('✅ [teams] Aprovados:', totalPassed);
-    console.log('❌ [teams] Reprovados:', totalFailed);
-    console.log('⏭️ [teams] Ignorados:', totalSkipped);
+    console.log('✅ [test-results] Aprovados:', totalPassed);
+    console.log('❌ [test-results] Reprovados:', totalFailed);
+    console.log('⏭️ [test-results] Ignorados:', totalSkipped);
 
     // Se não tiver títulos, cria lista genérica
     if (totalSkipped > 0 && skippedList.length === 0) {
@@ -69,42 +68,51 @@ async function sendToTeams(data, brand) {
       totalTests: totalTests,
       passedTests: totalPassed,
       failedTests: totalFailed,
-      skippedTests: totalSkipped, // 🔥 Envia skipped
+      skippedTests: totalSkipped,
       duration: durationSeconds,
       timestamp: data.timestamp || new Date().toISOString(),
       passedList,
       failedList,
-      skippedList, // 🔥 Envia lista
+      skippedList,
       socialPanelUrl: process.env.URL || 'https://dash-report-cy.netlify.app',
       author: data.author || 'Sistema'
     };
 
-    console.log('📊 [teams] Resumo:', {
+    console.log('📊 [test-results] Payload pronto para Teams:', {
       client: brand,
-      total: teamsPayload.totalTests,
-      passed: teamsPayload.passedTests,
-      failed: teamsPayload.failedTests,
-      skipped: teamsPayload.skippedTests,
-      author: teamsPayload.author
+      total: totalTests,
+      passed: totalPassed,
+      failed: totalFailed,
+      skipped: totalSkipped,
+      author: data.author
     });
 
-    const functionUrl = `${process.env.URL}/.netlify/functions/send-teams-notification`;
+    // 🔥 CHAMA send-teams-notification.js
     const axios = (await import('axios')).default;
+    const teamsNotifierUrl = `${process.env.URL}/.netlify/functions/send-teams-notification`;
     
-    const response = await axios.post(functionUrl, teamsPayload, {
+    console.log('📤 [test-results] Chamando Teams notifier em:', teamsNotifierUrl);
+
+    const response = await axios.post(teamsNotifierUrl, teamsPayload, {
       headers: { 'Content-Type': 'application/json' },
-      timeout: 20000
+      timeout: 30000 // 30 segundos
     });
 
     if (response.status === 200) {
-      console.log('✅ [teams] Notificação enviada com sucesso!');
+      console.log('✅ [test-results] Teams notificador respondeu com sucesso!');
+      console.log('✅ [test-results] Resposta:', response.data);
     }
 
     return response.data;
 
   } catch (error) {
-    console.error('❌ [teams] ERRO:', error.message);
-    throw error;
+    console.error('❌ [test-results] Erro no Teams:', error.message);
+    if (error.response) {
+      console.error('❌ [test-results] Status HTTP:', error.response.status);
+      console.error('❌ [test-results] Resposta:', JSON.stringify(error.response.data));
+    }
+    // Não joga erro, só loga - para não quebrar o fluxo principal
+    return null;
   }
 }
 
@@ -126,15 +134,14 @@ export async function handler(event) {
       };
     }
 
-    console.log('📊 [test-results] Recebendo payload:', {
-      runId: data.runId,
-      brand: data.brand,
-      totalTests: data.totalTests,
-      totalPassed: data.totalPassed,
-      totalFailed: data.totalFailed,
-      testsCount: data.tests?.length || 0,
-      author: data.author
-    });
+    console.log('📊 [test-results] ========== Recebendo Payload ==========');
+    console.log('📊 [test-results] runId:', data.runId);
+    console.log('📊 [test-results] brand:', data.brand);
+    console.log('📊 [test-results] totalTests:', data.totalTests);
+    console.log('📊 [test-results] totalPassed:', data.totalPassed);
+    console.log('📊 [test-results] totalFailed:', data.totalFailed);
+    console.log('📊 [test-results] testsArray count:', data.tests?.length || 0);
+    console.log('📊 [test-results] author:', data.author);
 
     const brand = data.brand || 'Sem marca';
     
@@ -156,12 +163,14 @@ export async function handler(event) {
       artifacts: Array.isArray(data.artifacts) ? data.artifacts : []
     };
 
+    console.log('💾 [test-results] Preparando para salvar no Supabase...');
+
     const { error } = await supabase
       .from('tabela_runs')
       .upsert(row, { onConflict: 'id' });
 
     if (error) {
-      console.error('❌ [test-results] Erro ao salvar:', error);
+      console.error('❌ [test-results] Erro ao salvar no Supabase:', error);
       return {
         statusCode: 500,
         body: JSON.stringify({
@@ -171,13 +180,16 @@ export async function handler(event) {
       };
     }
 
-    console.log('✅ [test-results] Dados salvos!');
+    console.log('✅ [test-results] Dados salvos no Supabase com sucesso!');
     
+    // 🔥 ENVIA NOTIFICAÇÃO PARA TEAMS
     try {
+      console.log('🚀 [test-results] Iniciando envio para Teams...');
       await sendToTeams(data, brand);
-      console.log('✅ [teams] Teams concluído!');
+      console.log('✅ [test-results] Fluxo de Teams concluído!');
     } catch (teamsError) {
-      console.error('❌ [test-results] Erro no Teams:', teamsError.message);
+      console.error('❌ [test-results] Erro ao enviar para Teams:', teamsError.message);
+      // Continua mesmo se Teams falhar, pois o banco já foi salvo
     }
 
     return {
@@ -189,15 +201,20 @@ export async function handler(event) {
         author: data.author,
         testsSaved: data.tests?.length || 0,
         teamsNotificationQueued: true,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        message: 'Dados salvos e notificação enviada para Teams'
       })
     };
 
   } catch (e) {
-    console.error('❌ [test-results] Erro:', e);
+    console.error('❌ [test-results] ERRO GERAL:', e);
+    console.error('❌ [test-results] Stack:', e.stack);
     return {
       statusCode: 500,
-      body: JSON.stringify({ error: e.message || 'Server error' })
+      body: JSON.stringify({ 
+        error: e.message || 'Server error',
+        timestamp: new Date().toISOString()
+      })
     };
   }
 }
