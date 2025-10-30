@@ -14,20 +14,24 @@ async function sendToTeams(data, brand) {
     }
 
     console.log('📤 [teams] Preparando notificação...');
-    console.log('📊 [teams] Total de testes no payload:', data.tests?.length || 0);
 
-    // Filtra testes aprovados
+    // 🔥 Usa os valores do Cypress (totalPassed, totalFailed) em vez de contar manualmente
+    const totalPassed = data.totalPassed || 0;
+    const totalFailed = data.totalFailed || 0;
+    const totalTests = data.totalTests || 0;
+
+    // Filtra testes aprovados (para pegar os títulos)
     const passedList = (data.tests || [])
       .filter(t => t.status === 'passed' || t.state === 'passed')
       .map(t => t.name || t.title)
       .slice(0, 10);
 
-    // Filtra testes reprovados
+    // Filtra testes reprovados (para pegar os títulos)
     const failedList = (data.tests || [])
       .filter(t => t.status === 'failed' || t.state === 'failed')
       .map(t => t.name || t.title);
 
-    // 🔥 ATUALIZADO: Filtra testes skipped/pending
+    // Filtra testes skipped/pending (para pegar os títulos)
     const skippedList = (data.tests || [])
       .filter(t => {
         const status = (t.status || '').toLowerCase();
@@ -35,37 +39,27 @@ async function sendToTeams(data, brand) {
         
         return status === 'skipped' || 
                status === 'pending' || 
-               status === 'skip' ||
                state === 'skipped' ||
                state === 'pending' ||
-               state === 'skip' ||
-               t.pending === true ||
-               t.skipped === true;
+               t.pending === true;
       })
       .map(t => t.name || t.title);
 
-    // 🔥 Calcula total de skipped
-    const totalSkipped = skippedList.length;
+    // 🔥 Calcula skipped pela diferença (mais confiável)
+    let totalSkipped = totalTests - totalPassed - totalFailed;
+    
+    // Garante que não seja negativo
+    if (totalSkipped < 0) totalSkipped = 0;
 
-    console.log('✅ [teams] Aprovados:', passedList.length);
-    console.log('❌ [teams] Reprovados:', failedList.length);
+    console.log('✅ [teams] Aprovados:', totalPassed);
+    console.log('❌ [teams] Reprovados:', totalFailed);
     console.log('⏭️ [teams] Ignorados:', totalSkipped);
 
-    // 🔥 Se houver diferença, mostra quais testes não foram contabilizados
-    const totalCounted = passedList.length + failedList.length + totalSkipped;
-    const totalReceived = data.tests?.length || 0;
-    
-    if (totalCounted !== totalReceived) {
-      console.warn('⚠️ [teams] ATENÇÃO: Diferença na contabilização!');
-      console.warn(`   Recebidos: ${totalReceived}`);
-      console.warn(`   Contados: ${totalCounted} (${passedList.length} + ${failedList.length} + ${totalSkipped})`);
-      console.warn(`   Faltam: ${totalReceived - totalCounted} testes`);
-      
-      // 🔥 Mostra status únicos para debug
-      const uniqueStatuses = [...new Set(
-        (data.tests || []).map(t => `${t.status || 'no-status'}/${t.state || 'no-state'}`)
-      )];
-      console.warn('   Status únicos encontrados:', uniqueStatuses);
+    // Se não tiver títulos de skipped mas tiver skipped calculado, cria lista genérica
+    if (totalSkipped > 0 && skippedList.length === 0) {
+      for (let i = 0; i < Math.min(totalSkipped, 10); i++) {
+        skippedList.push(`Teste ignorado/pendente ${i + 1}`);
+      }
     }
 
     const durationSeconds = Math.floor((data.totalDuration || 0) / 1000);
@@ -74,15 +68,15 @@ async function sendToTeams(data, brand) {
       client: brand,
       branch: data.branch || 'main',
       environment: data.environment || 'production',
-      totalTests: data.totalTests || 0,
-      passedTests: data.totalPassed || 0,
-      failedTests: data.totalFailed || 0,
-      skippedTests: totalSkipped, // 🔥 ENVIA O TOTAL CALCULADO
+      totalTests: totalTests,
+      passedTests: totalPassed, // 🔥 USA O VALOR DO CYPRESS
+      failedTests: totalFailed, // 🔥 USA O VALOR DO CYPRESS
+      skippedTests: totalSkipped, // 🔥 USA O VALOR CALCULADO
       duration: durationSeconds,
       timestamp: data.timestamp || new Date().toISOString(),
       passedList,
       failedList,
-      skippedList, // 🔥 ENVIA A LISTA
+      skippedList,
       socialPanelUrl: process.env.URL || 'https://dash-report-cy.netlify.app',
       author: data.author || 'Sistema'
     };
@@ -92,15 +86,13 @@ async function sendToTeams(data, brand) {
       total: teamsPayload.totalTests,
       passed: teamsPayload.passedTests,
       failed: teamsPayload.failedTests,
-      skipped: teamsPayload.skippedTests, // 🔥 LOG
+      skipped: teamsPayload.skippedTests,
       author: teamsPayload.author
     });
 
     const functionUrl = `${process.env.URL}/.netlify/functions/send-teams-notification`;
     
     const axios = (await import('axios')).default;
-    
-    console.log('🚀 [teams] Enviando para:', functionUrl);
     
     const response = await axios.post(
       functionUrl,
@@ -111,8 +103,6 @@ async function sendToTeams(data, brand) {
       }
     );
 
-    console.log('📬 [teams] Resposta:', response.status);
-
     if (response.status === 200) {
       console.log('✅ [teams] Notificação enviada com sucesso!');
     }
@@ -121,9 +111,6 @@ async function sendToTeams(data, brand) {
 
   } catch (error) {
     console.error('❌ [teams] ERRO:', error.message);
-    if (error.response) {
-      console.error('❌ [teams] Response:', error.response.status, error.response.data);
-    }
     throw error;
   }
 }
@@ -198,7 +185,7 @@ export async function handler(event) {
     
     try {
       await sendToTeams(data, brand);
-      console.log('✅ [test-results] Teams concluído!');
+      console.log('✅ [teams] Teams concluído!');
     } catch (teamsError) {
       console.error('❌ [test-results] Erro no Teams:', teamsError.message);
     }
