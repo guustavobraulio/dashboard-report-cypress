@@ -1,11 +1,7 @@
-// netlify/functions/get-results.js
 import { createClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
-
 const READ_KEY = process.env.SUPABASE_ANON_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-// Cria cliente do Supabase com url e chave apropriada
 const supabase = createClient(SUPABASE_URL, READ_KEY);
 
 export async function handler(event) {
@@ -21,7 +17,6 @@ export async function handler(event) {
 
     if (error) {
       console.error('[fn:get-results] supabase select error:', error);
-      // return { statusCode: 500, body: 'DB error' };
       return { statusCode: 500, body: JSON.stringify(error) };
     }
 

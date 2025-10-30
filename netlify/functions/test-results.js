@@ -15,23 +15,23 @@ async function sendToTeams(data, brand) {
 
     console.log('📤 [teams] Preparando notificação...');
 
-    // 🔥 Usa os valores do Cypress (totalPassed, totalFailed) em vez de contar manualmente
+    // 🔥 Usa os valores do Cypress (totalPassed, totalFailed)
     const totalPassed = data.totalPassed || 0;
     const totalFailed = data.totalFailed || 0;
     const totalTests = data.totalTests || 0;
 
-    // Filtra testes aprovados (para pegar os títulos)
+    // Filtra testes aprovados
     const passedList = (data.tests || [])
       .filter(t => t.status === 'passed' || t.state === 'passed')
       .map(t => t.name || t.title)
       .slice(0, 10);
 
-    // Filtra testes reprovados (para pegar os títulos)
+    // Filtra testes reprovados
     const failedList = (data.tests || [])
       .filter(t => t.status === 'failed' || t.state === 'failed')
       .map(t => t.name || t.title);
 
-    // Filtra testes skipped/pending (para pegar os títulos)
+    // 🔥 Filtra testes skipped/pending
     const skippedList = (data.tests || [])
       .filter(t => {
         const status = (t.status || '').toLowerCase();
@@ -45,17 +45,15 @@ async function sendToTeams(data, brand) {
       })
       .map(t => t.name || t.title);
 
-    // 🔥 Calcula skipped pela diferença (mais confiável)
+    // 🔥 Calcula skipped pela diferença (confiável)
     let totalSkipped = totalTests - totalPassed - totalFailed;
-    
-    // Garante que não seja negativo
     if (totalSkipped < 0) totalSkipped = 0;
 
     console.log('✅ [teams] Aprovados:', totalPassed);
     console.log('❌ [teams] Reprovados:', totalFailed);
     console.log('⏭️ [teams] Ignorados:', totalSkipped);
 
-    // Se não tiver títulos de skipped mas tiver skipped calculado, cria lista genérica
+    // Se não tiver títulos, cria lista genérica
     if (totalSkipped > 0 && skippedList.length === 0) {
       for (let i = 0; i < Math.min(totalSkipped, 10); i++) {
         skippedList.push(`Teste ignorado/pendente ${i + 1}`);
@@ -69,19 +67,19 @@ async function sendToTeams(data, brand) {
       branch: data.branch || 'main',
       environment: data.environment || 'production',
       totalTests: totalTests,
-      passedTests: totalPassed, // 🔥 USA O VALOR DO CYPRESS
-      failedTests: totalFailed, // 🔥 USA O VALOR DO CYPRESS
-      skippedTests: totalSkipped, // 🔥 USA O VALOR CALCULADO
+      passedTests: totalPassed,
+      failedTests: totalFailed,
+      skippedTests: totalSkipped, // 🔥 Envia skipped
       duration: durationSeconds,
       timestamp: data.timestamp || new Date().toISOString(),
       passedList,
       failedList,
-      skippedList,
+      skippedList, // 🔥 Envia lista
       socialPanelUrl: process.env.URL || 'https://dash-report-cy.netlify.app',
       author: data.author || 'Sistema'
     };
 
-    console.log('📊 [teams] Resumo que será enviado:', {
+    console.log('📊 [teams] Resumo:', {
       client: brand,
       total: teamsPayload.totalTests,
       passed: teamsPayload.passedTests,
@@ -91,17 +89,12 @@ async function sendToTeams(data, brand) {
     });
 
     const functionUrl = `${process.env.URL}/.netlify/functions/send-teams-notification`;
-    
     const axios = (await import('axios')).default;
     
-    const response = await axios.post(
-      functionUrl,
-      teamsPayload,
-      {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 20000
-      }
-    );
+    const response = await axios.post(functionUrl, teamsPayload, {
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 20000
+    });
 
     if (response.status === 200) {
       console.log('✅ [teams] Notificação enviada com sucesso!');
@@ -163,8 +156,6 @@ export async function handler(event) {
       artifacts: Array.isArray(data.artifacts) ? data.artifacts : []
     };
 
-    console.log('💾 [test-results] Salvando no Supabase...');
-
     const { error } = await supabase
       .from('tabela_runs')
       .upsert(row, { onConflict: 'id' });
@@ -181,7 +172,6 @@ export async function handler(event) {
     }
 
     console.log('✅ [test-results] Dados salvos!');
-    console.log('🔔 [test-results] Iniciando envio ao Teams...');
     
     try {
       await sendToTeams(data, brand);
@@ -207,9 +197,7 @@ export async function handler(event) {
     console.error('❌ [test-results] Erro:', e);
     return {
       statusCode: 500,
-      body: JSON.stringify({ 
-        error: e.message || 'Server error'
-      })
+      body: JSON.stringify({ error: e.message || 'Server error' })
     };
   }
 }
