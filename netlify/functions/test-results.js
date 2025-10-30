@@ -14,30 +14,59 @@ async function sendToTeams(data, brand) {
     }
 
     console.log('📤 [teams] Preparando notificação...');
+    console.log('📊 [teams] Total de testes no payload:', data.tests?.length || 0);
 
-    // ✅ Extrai títulos reais dos testes aprovados
+    // Filtra testes aprovados
     const passedList = (data.tests || [])
       .filter(t => t.status === 'passed' || t.state === 'passed')
-      .map(t => t.name || t.title)  // 🔥 Títulos reais!
+      .map(t => t.name || t.title)
       .slice(0, 10);
 
-    // ✅ Extrai títulos reais dos testes reprovados
+    // Filtra testes reprovados
     const failedList = (data.tests || [])
       .filter(t => t.status === 'failed' || t.state === 'failed')
-      .map(t => t.name || t.title);  // 🔥 Títulos reais!
+      .map(t => t.name || t.title);
 
-    // 🆕 Extrai títulos reais dos testes ignorados/pendentes
+    // 🔥 ATUALIZADO: Filtra testes skipped/pending
     const skippedList = (data.tests || [])
-      .filter(t => 
-        t.status === 'skipped' || 
-        t.state === 'skipped' || 
-        t.status === 'pending' || 
-        t.state === 'pending'
-      )
-      .map(t => t.name || t.title);  // 🔥 Títulos reais!
+      .filter(t => {
+        const status = (t.status || '').toLowerCase();
+        const state = (t.state || '').toLowerCase();
+        
+        return status === 'skipped' || 
+               status === 'pending' || 
+               status === 'skip' ||
+               state === 'skipped' ||
+               state === 'pending' ||
+               state === 'skip' ||
+               t.pending === true ||
+               t.skipped === true;
+      })
+      .map(t => t.name || t.title);
 
-    // 🆕 Contabiliza skipped
+    // 🔥 Calcula total de skipped
     const totalSkipped = skippedList.length;
+
+    console.log('✅ [teams] Aprovados:', passedList.length);
+    console.log('❌ [teams] Reprovados:', failedList.length);
+    console.log('⏭️ [teams] Ignorados:', totalSkipped);
+
+    // 🔥 Se houver diferença, mostra quais testes não foram contabilizados
+    const totalCounted = passedList.length + failedList.length + totalSkipped;
+    const totalReceived = data.tests?.length || 0;
+    
+    if (totalCounted !== totalReceived) {
+      console.warn('⚠️ [teams] ATENÇÃO: Diferença na contabilização!');
+      console.warn(`   Recebidos: ${totalReceived}`);
+      console.warn(`   Contados: ${totalCounted} (${passedList.length} + ${failedList.length} + ${totalSkipped})`);
+      console.warn(`   Faltam: ${totalReceived - totalCounted} testes`);
+      
+      // 🔥 Mostra status únicos para debug
+      const uniqueStatuses = [...new Set(
+        (data.tests || []).map(t => `${t.status || 'no-status'}/${t.state || 'no-state'}`)
+      )];
+      console.warn('   Status únicos encontrados:', uniqueStatuses);
+    }
 
     const durationSeconds = Math.floor((data.totalDuration || 0) / 1000);
 
@@ -48,33 +77,30 @@ async function sendToTeams(data, brand) {
       totalTests: data.totalTests || 0,
       passedTests: data.totalPassed || 0,
       failedTests: data.totalFailed || 0,
-      skippedTests: totalSkipped, // 🆕 ADICIONA skipped
+      skippedTests: totalSkipped, // 🔥 ENVIA O TOTAL CALCULADO
       duration: durationSeconds,
       timestamp: data.timestamp || new Date().toISOString(),
-      passedList,   // ✅ Lista com títulos reais
-      failedList,   // ✅ Lista com títulos reais
-      skippedList,  // 🆕 Lista com títulos reais
+      passedList,
+      failedList,
+      skippedList, // 🔥 ENVIA A LISTA
       socialPanelUrl: process.env.URL || 'https://dash-report-cy.netlify.app',
-      author: data.author || 'Sistema'  // ✅ Author do GitHub
+      author: data.author || 'Sistema'
     };
 
-    console.log('📊 [teams] Resumo:', {
+    console.log('📊 [teams] Resumo que será enviado:', {
       client: brand,
       total: teamsPayload.totalTests,
       passed: teamsPayload.passedTests,
       failed: teamsPayload.failedTests,
-      skipped: teamsPayload.skippedTests, // 🆕 LOG
-      author: teamsPayload.author // ✅ LOG do author
+      skipped: teamsPayload.skippedTests, // 🔥 LOG
+      author: teamsPayload.author
     });
 
     const functionUrl = `${process.env.URL}/.netlify/functions/send-teams-notification`;
-    console.log('🔗 [teams] URL da função:', functionUrl);
-    console.log('📦 [teams] Payload size:', JSON.stringify(teamsPayload).length, 'bytes');
-
-    const axios = (await import('axios')).default;
-    console.log('✅ [teams] Axios importado');
     
-    console.log('🚀 [teams] Enviando requisição...');
+    const axios = (await import('axios')).default;
+    
+    console.log('🚀 [teams] Enviando para:', functionUrl);
     
     const response = await axios.post(
       functionUrl,
@@ -85,32 +111,19 @@ async function sendToTeams(data, brand) {
       }
     );
 
-    console.log('📬 [teams] Resposta recebida:', {
-      status: response.status,
-      data: response.data
-    });
+    console.log('📬 [teams] Resposta:', response.status);
 
     if (response.status === 200) {
       console.log('✅ [teams] Notificação enviada com sucesso!');
-    } else {
-      console.warn('⚠️ [teams] Status inesperado:', response.status);
     }
 
     return response.data;
 
   } catch (error) {
-    console.error('❌ [teams] ERRO CAPTURADO:', error.message);
-    console.error('❌ [teams] Stack:', error.stack);
-    
+    console.error('❌ [teams] ERRO:', error.message);
     if (error.response) {
-      console.error('❌ [teams] Response status:', error.response.status);
-      console.error('❌ [teams] Response data:', JSON.stringify(error.response.data));
+      console.error('❌ [teams] Response:', error.response.status, error.response.data);
     }
-    
-    if (error.code) {
-      console.error('❌ [teams] Error code:', error.code);
-    }
-    
     throw error;
   }
 }
@@ -140,13 +153,11 @@ export async function handler(event) {
       totalPassed: data.totalPassed,
       totalFailed: data.totalFailed,
       testsCount: data.tests?.length || 0,
-      author: data.author  // ✅ LOG do author
+      author: data.author
     });
 
     const brand = data.brand || 'Sem marca';
-    console.log(`🏷️ [test-results] Brand: "${brand}"`);
-    console.log(`👤 [test-results] Author: "${data.author}"`); // ✅ LOG
-
+    
     const row = {
       id: data.runId,
       timestamp: data.timestamp || new Date().toISOString(),
@@ -156,7 +167,7 @@ export async function handler(event) {
       total_failed: data.totalFailed ?? 0,
       branch: data.branch || '',
       environment: data.environment || '',
-      author: data.author || '',  // ✅ Salva author no Supabase
+      author: data.author || '',
       commit: data.commit || '',
       github_run_url: data.githubRunUrl || '',
       brand: brand,
@@ -198,7 +209,7 @@ export async function handler(event) {
         ok: true,
         runId: data.runId,
         brand: brand,
-        author: data.author,  // ✅ Retorna author
+        author: data.author,
         testsSaved: data.tests?.length || 0,
         teamsNotificationQueued: true,
         timestamp: new Date().toISOString()
