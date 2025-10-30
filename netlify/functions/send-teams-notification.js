@@ -1,9 +1,4 @@
 const axios = require('axios');
-const { createClient } = require('@supabase/supabase-js');
-
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 exports.handler = async (event, context) => {
   const headers = {
@@ -28,12 +23,12 @@ exports.handler = async (event, context) => {
   try {
     const data = JSON.parse(event.body);
     
-    console.log('[teams] Dados recebidos:', {
-      client: data.client,
-      runId: data.runId,
-      totalTests: data.totalTests,
-      failedTests: data.failedTests
-    });
+    console.log('[teams] ========== Dados Recebidos ==========');
+    console.log('[teams] Client:', data.client);
+    console.log('[teams] Total Tests:', data.totalTests);
+    console.log('[teams] Failed Tests:', data.failedTests);
+    console.log('[teams] Failed List:', data.failedList);
+    console.log('[teams] Author:', data.author);
     
     const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
     
@@ -46,55 +41,32 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // 🔥 BUSCA OS TESTES REAIS DO SUPABASE
-    let failedList = [];
-    let passedList = [];
-    
-    if (data.runId) {
-      console.log('[teams] Buscando testes do Supabase...');
-      
-      const { data: runData, error } = await supabase
-        .from('tabela_runs')
-        .select('tests')
-        .eq('id', data.runId)
-        .single();
-      
-      if (error) {
-        console.error('[teams] Erro ao buscar do Supabase:', error);
-      } else if (runData && runData.tests) {
-        console.log('[teams] Testes encontrados:', runData.tests.length);
-        
-        // Extrai os títulos dos testes que falharam
-        failedList = runData.tests
-          .filter(test => test.state === 'failed' || test.error)
-          .map(test => test.title || test.name || 'Teste sem título');
-        
-        // Extrai os títulos dos testes que passaram
-        passedList = runData.tests
-          .filter(test => test.state === 'passed' && !test.error)
-          .map(test => test.title || test.name || 'Teste sem título');
-        
-        console.log('[teams] Testes reprovados:', failedList.length);
-        console.log('[teams] Testes aprovados:', passedList.length);
-      }
-    }
-
-    // Monta o payload com os títulos reais
+    // ✅ SIMPLESMENTE USA OS DADOS QUE JÁ VIERAM DO test-results.js
+    // Não precisa buscar novamente do Supabase!
     const payload = {
-      ...data,
-      failedList: failedList,
-      passedList: passedList
+      client: data.client || 'Cypress',
+      branch: data.branch || 'main',
+      environment: data.environment || 'production',
+      totalTests: data.totalTests || 0,
+      passedTests: data.passedTests || 0,
+      failedTests: data.failedTests || 0,
+      duration: data.duration || 0,
+      timestamp: data.timestamp,
+      author: data.author || 'Sistema',
+      failedList: data.failedList || [],  // ✅ Usa a lista que já vem com os títulos reais!
+      passedList: data.passedList || [],
+      socialPanelUrl: data.socialPanelUrl || ''
     };
 
     console.log('[teams] Enviando para N8N...');
-    console.log('[teams] Testes reprovados que serão enviados:', failedList);
+    console.log('[teams] Payload:', JSON.stringify(payload, null, 2));
 
     const response = await axios.post(N8N_WEBHOOK_URL, payload, {
       headers: { 'Content-Type': 'application/json' },
       timeout: 15000
     });
 
-    console.log('[teams] Sucesso! Status:', response.status);
+    console.log('[teams] ✅ Enviado com sucesso! Status:', response.status);
 
     return {
       statusCode: 200,
@@ -102,15 +74,14 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({ 
         success: true, 
         message: 'Enviado via N8N!',
-        failedTests: failedList.length,
-        passedTests: passedList.length
+        failedTests: payload.failedList.length
       })
     };
   } catch (error) {
-    console.error('[teams] Erro:', error.message);
+    console.error('[teams] ❌ Erro:', error.message);
     if (error.response) {
-      console.error('[teams] Status:', error.response.status);
-      console.error('[teams] Data:', error.response.data);
+      console.error('[teams] Response status:', error.response.status);
+      console.error('[teams] Response data:', error.response.data);
     }
     return {
       statusCode: 500,
