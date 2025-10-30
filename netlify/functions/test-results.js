@@ -211,6 +211,7 @@ export async function handler(event) {
       body: JSON.stringify({ 
         error: e.message || 'Server error'
       })
+      
     };
   }
 }
