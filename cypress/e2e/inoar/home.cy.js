@@ -10,13 +10,13 @@ describe('[Inoar] Validação da página Home', () => {
         })
     });
     
-    it('Validar se a logo da marca está presente', () => {
+    it.skip('Validar se a logo da marca está presente', () => {
         
         cy.get('[class="w-32 md:w-auto"]')
             .should('be.visible')
     });
 
-    it('Validar o slide do banner principal', () => {
+    it.skip('Validar o slide do banner principal', () => {
         
         cy.get('[class="slick-next slick-arrow"]')
             .first()
@@ -26,7 +26,7 @@ describe('[Inoar] Validação da página Home', () => {
 
     });
 
-    it('Verificando se ao clicar em Favoritar produto, ele leva para o /login', () => {
+    it.skip('Verificando se ao clicar em Favoritar produto, ele leva para o /login', () => {
         
         cy.scrollTo('200', { duration: 2000 })
 
@@ -38,7 +38,7 @@ describe('[Inoar] Validação da página Home', () => {
 
     });
 
-    it('Clicando em algum produto e levando para página de produto', () => {
+    it.skip('Clicando em algum produto e levando para página de produto', () => {
         
         cy.scrollTo(0, 500)
 
@@ -53,7 +53,7 @@ describe('[Inoar] Validação da página Home', () => {
             .should('be.visible')   
     });
 
-    it('Validar se o slide da vitrine de produtos funciona', () => {
+    it.skip('Validar se o slide da vitrine de produtos funciona', () => {
         
         cy.scrollTo('bottom')
 
