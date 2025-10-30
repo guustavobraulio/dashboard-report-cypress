@@ -15,14 +15,29 @@ async function sendToTeams(data, brand) {
 
     console.log('📤 [teams] Preparando notificação...');
 
+    // Filtra testes aprovados
     const passedList = (data.tests || [])
       .filter(t => t.status === 'passed' || t.state === 'passed')
       .map(t => t.name || t.title)
       .slice(0, 10);
 
+    // Filtra testes reprovados
     const failedList = (data.tests || [])
       .filter(t => t.status === 'failed' || t.state === 'failed')
       .map(t => t.name || t.title);
+
+    // 🆕 Filtra testes skipped/pending
+    const skippedList = (data.tests || [])
+      .filter(t => 
+        t.status === 'skipped' || 
+        t.state === 'skipped' || 
+        t.status === 'pending' || 
+        t.state === 'pending'
+      )
+      .map(t => t.name || t.title);
+
+    // 🆕 Contabiliza os skipped
+    const totalSkipped = skippedList.length;
 
     const durationSeconds = Math.floor((data.totalDuration || 0) / 1000);
 
@@ -33,10 +48,12 @@ async function sendToTeams(data, brand) {
       totalTests: data.totalTests || 0,
       passedTests: data.totalPassed || 0,
       failedTests: data.totalFailed || 0,
+      skippedTests: totalSkipped, // 🆕 ADICIONAR
       duration: durationSeconds,
       timestamp: data.timestamp || new Date().toISOString(),
       passedList,
       failedList,
+      skippedList, // 🆕 ADICIONAR
       socialPanelUrl: process.env.URL || 'https://dash-report-cy.netlify.app',
       author: data.author || 'Sistema'
     };
@@ -45,10 +62,11 @@ async function sendToTeams(data, brand) {
       client: brand,
       total: teamsPayload.totalTests,
       passed: teamsPayload.passedTests,
-      failed: teamsPayload.failedTests
+      failed: teamsPayload.failedTests,
+      skipped: teamsPayload.skippedTests // 🆕 LOG
     });
 
-    // ⭐ ADICIONADO: Logs detalhados
+    // Log detalhado da URL e payload
     const functionUrl = `${process.env.URL}/.netlify/functions/send-teams-notification`;
     console.log('🔗 [teams] URL da função:', functionUrl);
     console.log('📦 [teams] Payload size:', JSON.stringify(teamsPayload).length, 'bytes');
@@ -63,7 +81,7 @@ async function sendToTeams(data, brand) {
       teamsPayload,
       {
         headers: { 'Content-Type': 'application/json' },
-        timeout: 20000 // Aumentado para 20 segundos
+        timeout: 20000 // 20 segundos
       }
     );
 
@@ -165,7 +183,7 @@ export async function handler(event) {
     console.log('✅ [test-results] Dados salvos!');
     console.log('🔔 [test-results] Iniciando envio ao Teams...');
     
-    // ⭐ MUDANÇA: Aguardar a conclusão com try/catch
+    // Aguarda a conclusão com try/catch
     try {
       await sendToTeams(data, brand);
       console.log('✅ [test-results] Teams concluído!');
