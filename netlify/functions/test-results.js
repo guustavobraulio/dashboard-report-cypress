@@ -15,18 +15,18 @@ async function sendToTeams(data, brand) {
 
     console.log('📤 [teams] Preparando notificação...');
 
-    // Filtra testes aprovados
+    // ✅ Extrai títulos reais dos testes aprovados
     const passedList = (data.tests || [])
       .filter(t => t.status === 'passed' || t.state === 'passed')
-      .map(t => t.name || t.title)
+      .map(t => t.name || t.title)  // 🔥 Títulos reais!
       .slice(0, 10);
 
-    // Filtra testes reprovados
+    // ✅ Extrai títulos reais dos testes reprovados
     const failedList = (data.tests || [])
       .filter(t => t.status === 'failed' || t.state === 'failed')
-      .map(t => t.name || t.title);
+      .map(t => t.name || t.title);  // 🔥 Títulos reais!
 
-    // 🆕 Filtra testes skipped/pending
+    // 🆕 Extrai títulos reais dos testes ignorados/pendentes
     const skippedList = (data.tests || [])
       .filter(t => 
         t.status === 'skipped' || 
@@ -34,9 +34,9 @@ async function sendToTeams(data, brand) {
         t.status === 'pending' || 
         t.state === 'pending'
       )
-      .map(t => t.name || t.title);
+      .map(t => t.name || t.title);  // 🔥 Títulos reais!
 
-    // 🆕 Contabiliza os skipped
+    // 🆕 Contabiliza skipped
     const totalSkipped = skippedList.length;
 
     const durationSeconds = Math.floor((data.totalDuration || 0) / 1000);
@@ -48,14 +48,14 @@ async function sendToTeams(data, brand) {
       totalTests: data.totalTests || 0,
       passedTests: data.totalPassed || 0,
       failedTests: data.totalFailed || 0,
-      skippedTests: totalSkipped, // 🆕 ADICIONAR
+      skippedTests: totalSkipped, // 🆕 ADICIONA skipped
       duration: durationSeconds,
       timestamp: data.timestamp || new Date().toISOString(),
-      passedList,
-      failedList,
-      skippedList, // 🆕 ADICIONAR
+      passedList,   // ✅ Lista com títulos reais
+      failedList,   // ✅ Lista com títulos reais
+      skippedList,  // 🆕 Lista com títulos reais
       socialPanelUrl: process.env.URL || 'https://dash-report-cy.netlify.app',
-      author: data.author || 'Sistema'
+      author: data.author || 'Sistema'  // ✅ Author do GitHub
     };
 
     console.log('📊 [teams] Resumo:', {
@@ -63,10 +63,10 @@ async function sendToTeams(data, brand) {
       total: teamsPayload.totalTests,
       passed: teamsPayload.passedTests,
       failed: teamsPayload.failedTests,
-      skipped: teamsPayload.skippedTests // 🆕 LOG
+      skipped: teamsPayload.skippedTests, // 🆕 LOG
+      author: teamsPayload.author // ✅ LOG do author
     });
 
-    // Log detalhado da URL e payload
     const functionUrl = `${process.env.URL}/.netlify/functions/send-teams-notification`;
     console.log('🔗 [teams] URL da função:', functionUrl);
     console.log('📦 [teams] Payload size:', JSON.stringify(teamsPayload).length, 'bytes');
@@ -81,7 +81,7 @@ async function sendToTeams(data, brand) {
       teamsPayload,
       {
         headers: { 'Content-Type': 'application/json' },
-        timeout: 20000 // 20 segundos
+        timeout: 20000
       }
     );
 
@@ -111,7 +111,7 @@ async function sendToTeams(data, brand) {
       console.error('❌ [teams] Error code:', error.code);
     }
     
-    throw error; // Re-lança para ver no log principal
+    throw error;
   }
 }
 
@@ -139,11 +139,13 @@ export async function handler(event) {
       totalTests: data.totalTests,
       totalPassed: data.totalPassed,
       totalFailed: data.totalFailed,
-      testsCount: data.tests?.length || 0
+      testsCount: data.tests?.length || 0,
+      author: data.author  // ✅ LOG do author
     });
 
     const brand = data.brand || 'Sem marca';
     console.log(`🏷️ [test-results] Brand: "${brand}"`);
+    console.log(`👤 [test-results] Author: "${data.author}"`); // ✅ LOG
 
     const row = {
       id: data.runId,
@@ -154,7 +156,7 @@ export async function handler(event) {
       total_failed: data.totalFailed ?? 0,
       branch: data.branch || '',
       environment: data.environment || '',
-      author: data.author || '',
+      author: data.author || '',  // ✅ Salva author no Supabase
       commit: data.commit || '',
       github_run_url: data.githubRunUrl || '',
       brand: brand,
@@ -183,13 +185,11 @@ export async function handler(event) {
     console.log('✅ [test-results] Dados salvos!');
     console.log('🔔 [test-results] Iniciando envio ao Teams...');
     
-    // Aguarda a conclusão com try/catch
     try {
       await sendToTeams(data, brand);
       console.log('✅ [test-results] Teams concluído!');
     } catch (teamsError) {
       console.error('❌ [test-results] Erro no Teams:', teamsError.message);
-      // Continua mesmo se Teams falhar
     }
 
     return {
@@ -198,6 +198,7 @@ export async function handler(event) {
         ok: true,
         runId: data.runId,
         brand: brand,
+        author: data.author,  // ✅ Retorna author
         testsSaved: data.tests?.length || 0,
         teamsNotificationQueued: true,
         timestamp: new Date().toISOString()
@@ -211,7 +212,6 @@ export async function handler(event) {
       body: JSON.stringify({ 
         error: e.message || 'Server error'
       })
-      
     };
   }
 }
