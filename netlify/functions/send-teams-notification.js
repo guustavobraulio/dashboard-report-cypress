@@ -26,8 +26,9 @@ exports.handler = async (event, context) => {
     console.log('[teams] ========== Dados Recebidos ==========');
     console.log('[teams] Client:', data.client);
     console.log('[teams] Total Tests:', data.totalTests);
+    console.log('[teams] Passed Tests:', data.passedTests);
     console.log('[teams] Failed Tests:', data.failedTests);
-    console.log('[teams] Failed List:', data.failedList);
+    console.log('[teams] Skipped Tests:', data.skippedTests); // 🔥 ADICIONAR LOG
     console.log('[teams] Author:', data.author);
     
     const N8N_WEBHOOK_URL = process.env.N8N_WEBHOOK_URL;
@@ -41,8 +42,7 @@ exports.handler = async (event, context) => {
       };
     }
 
-    // ✅ SIMPLESMENTE USA OS DADOS QUE JÁ VIERAM DO test-results.js
-    // Não precisa buscar novamente do Supabase!
+    // ✅ AGORA INCLUI skippedTests E skippedList
     const payload = {
       client: data.client || 'Cypress',
       branch: data.branch || 'main',
@@ -50,16 +50,22 @@ exports.handler = async (event, context) => {
       totalTests: data.totalTests || 0,
       passedTests: data.passedTests || 0,
       failedTests: data.failedTests || 0,
+      skippedTests: data.skippedTests || 0, // 🔥 ADICIONAR
       duration: data.duration || 0,
       timestamp: data.timestamp,
       author: data.author || 'Sistema',
-      failedList: data.failedList || [],  // ✅ Usa a lista que já vem com os títulos reais!
+      failedList: data.failedList || [],
       passedList: data.passedList || [],
+      skippedList: data.skippedList || [], // 🔥 ADICIONAR
       socialPanelUrl: data.socialPanelUrl || ''
     };
 
     console.log('[teams] Enviando para N8N...');
     console.log('[teams] Payload:', JSON.stringify(payload, null, 2));
+    console.log('[teams] 📊 Resumo - Total:', payload.totalTests, 
+                '| Passou:', payload.passedTests, 
+                '| Falhou:', payload.failedTests, 
+                '| Ignorados:', payload.skippedTests); // 🔥 LOG RESUMIDO
 
     const response = await axios.post(N8N_WEBHOOK_URL, payload, {
       headers: { 'Content-Type': 'application/json' },
@@ -74,7 +80,8 @@ exports.handler = async (event, context) => {
       body: JSON.stringify({ 
         success: true, 
         message: 'Enviado via N8N!',
-        failedTests: payload.failedList.length
+        failedTests: payload.failedList.length,
+        skippedTests: payload.skippedList.length // 🔥 ADICIONAR
       })
     };
   } catch (error) {
