@@ -1,6 +1,6 @@
 import locators from "../../support/locators";
 
-describe('[JASMINE] Validação da página home Jasmine', () => {
+describe('[Jasmine] Validação da página home Jasmine', () => {
     beforeEach(() => {
         cy.viewport(Cypress.VIEWPORT.desktop.width, Cypress.VIEWPORT.desktop.height)
         cy.visit(Cypress.URLS.jasmine_home)

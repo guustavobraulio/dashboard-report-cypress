@@ -9,7 +9,7 @@ describe('[Shopvinho] Validação da página departamento', () => {
         cy.FechandoModalIdade()
     });
 
-    it('Acessando a página de departamento - Vinhos', () => {
+    it('Acessando a página de departamento Vinhos', () => {
 
         cy.get(locators.shopvinho_departamento.categVinhos)
             .first()

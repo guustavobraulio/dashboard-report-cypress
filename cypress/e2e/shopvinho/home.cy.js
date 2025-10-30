@@ -1,7 +1,7 @@
 import FechandoModalIdade from '../../support/commands.js'
 import locators from '../../support/locators.js';
 
-describe('[ShopVinho] Validação da página home', () => {
+describe('[Shopvinho] Validação da página home', () => {
     
     let email = 'teste@qa.com.br'
 
