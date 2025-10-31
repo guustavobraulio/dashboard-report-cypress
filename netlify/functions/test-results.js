@@ -61,6 +61,25 @@ async function sendToTeams(data, brand) {
 
     const durationSeconds = Math.floor((data.totalDuration || 0) / 1000);
 
+    // 🔥 FORMATA DATA E HORA
+    const timestamp = data.timestamp || new Date().toISOString();
+    const dateObj = new Date(timestamp);
+    
+    // Opção 1: Formato brasileiro (recomendado)
+    const formattedDate = dateObj.toLocaleString('pt-BR', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    });
+
+    // Opção 2: Formato ISO (se preferir)
+    // const formattedDate = dateObj.toISOString();
+
+    console.log('📅 [test-results] Data/Hora formatada:', formattedDate);
+
     const teamsPayload = {
       client: brand,
       branch: data.branch || 'main',
@@ -70,7 +89,8 @@ async function sendToTeams(data, brand) {
       failedTests: totalFailed,
       skippedTests: totalSkipped,
       duration: durationSeconds,
-      timestamp: data.timestamp || new Date().toISOString(),
+      timestamp: timestamp, // timestamp original (ISO)
+      formattedDate: formattedDate, // 🔥 NOVO: Data/hora formatada
       passedList,
       failedList,
       skippedList,
@@ -84,7 +104,8 @@ async function sendToTeams(data, brand) {
       passed: totalPassed,
       failed: totalFailed,
       skipped: totalSkipped,
-      author: data.author
+      author: data.author,
+      formattedDate: formattedDate // 🔥 NOVO
     });
 
     // 🔥 CHAMA send-teams-notification.js
