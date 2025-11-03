@@ -11,6 +11,12 @@ on:
         type: choice
         default: staging
         options: [dev, staging, prod]
+
+  schedule: 
+    - cron: '0 11 * * *'  # 08:00 AM Brasil
+    - cron: '0 15 * * *'  # 12:00 PM Brasil (meio-dia)
+    - cron: '0 19 * * *'  # 04:00 PM Brasil
+    - cron: '0 23 * * *'  # 08:00 PM Brasil
 env:
   DASHBOARD_API_URL: ${{ secrets.DASHBOARD_URL }}
   ENVIRONMENT:       ${{ github.event.inputs.environment || 'Produção' }}
