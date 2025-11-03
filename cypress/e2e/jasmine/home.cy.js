@@ -36,6 +36,8 @@ describe('[Jasmine] Validação da página home Jasmine', () => {
 
     it('Validar o minicart vazio ', () => {
 
+        cy.wait(2500)
+
         cy.get(locators.jasmine_home.header.iconMinicart)
             .click()
         
@@ -123,16 +125,17 @@ describe('[Jasmine] Validação da página home Jasmine', () => {
 
     it('Enviando a newsletter', () => {
         
+        cy.wait(4500)
         cy.scrollTo('bottom')
         
-        cy.fixtures("users").then((users) => {
+        cy.fixture("users").then((users) => {
             cy.get(locators.jasmine_home.newsletter.inputNome)
                 .first()
                 .type(users.user.nome)
 
             cy.get(locators.jasmine_home.newsletter.inputEmail)
                 .last()
-                .type(users.use.email)
+                .type(users.user.email)
 
         })
 

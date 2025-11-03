@@ -19,7 +19,7 @@ describe("[Victor Hugo] Validando a página de produto", function() {
         .click()
 
     cy.url()
-        .should('include','https://www.victorhugo.com.br/produto/bolsa-charli-vh-elos-002')
+        .should('include','https://www.victorhugo.com.br/produto/bolsa-charli-vh-elos-006')
 
     cy.get('[class="w-full flex items-center h-12 justify-center bg-black text-sm text-white uppercase border hover:bg-white hover:text-black rounded"]')
         .click()
