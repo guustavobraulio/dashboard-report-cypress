@@ -1,13 +1,17 @@
 describe('[Inoar] Validação da página Home', () => {
     
     beforeEach(() => {
+
+        cy.intercept('**/google-analytics.com/**', { statusCode: 200, body: {} });
+        cy.intercept('**/googletagmanager.com/**', { statusCode: 200, body: {} });
+        cy.intercept('**/facebook.com/**', { statusCode: 200, body: {} });
+        cy.intercept('**/google.com/recaptcha/**', { statusCode: 200, body: {} });
+        
         cy.viewport(1920, 1080)
-        cy.intercept('**/google-analytics.com/**', { statusCode: 200, body: {} })
-        cy.intercept('**/googletagmanager.com/**', { statusCode: 200, body: {} })
-        cy.visit('https://www.loja.inoar.com.br', {timeout: 120000}, {
-            onBeforeLoad: (win) => {
-            }
-        })
+        cy.visit('https://www.loja.inoar.com.br', {
+            timeout:100000,
+            failtOnStatusCode: false
+        });
     });
     
     it.skip('Validar se a logo da marca está presente', () => {
