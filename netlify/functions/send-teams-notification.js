@@ -15,41 +15,53 @@ exports.handler = async (event, context) => {
 
     if (!WEBHOOK_URL) throw new Error('URL do Webhook não configurada.');
 
-    // 1. TRATAMENTO DE DURAÇÃO (Correção aqui!)
-    // O test-results.js já manda em SEGUNDOS (ex: 362).
+    // 1. TRATAMENTO DE DURAÇÃO
     const durationTotalSeconds = data.duration || 0;
-    
-    // Formata para "Xm Ys"
     const minutes = Math.floor(durationTotalSeconds / 60);
     const seconds = Math.floor(durationTotalSeconds % 60);
     
     let durationFormatted = `${seconds}s`;
     if (minutes > 0) {
-        durationFormatted = `${minutes}m ${seconds}s`;
-    }
-    // Se tiver horas (raro em testes, mas possível)
-    const hours = Math.floor(minutes / 60);
-    if (hours > 0) {
-        const remainingMinutes = minutes % 60;
-        durationFormatted = `${hours}h ${remainingMinutes}m ${seconds}s`;
+        const hours = Math.floor(minutes / 60);
+        if (hours > 0) {
+            const remainingMinutes = minutes % 60;
+            durationFormatted = `${hours}h ${remainingMinutes}m ${seconds}s`;
+        } else {
+            durationFormatted = `${minutes}m ${seconds}s`;
+        }
     }
 
+    // 2. TRATAMENTO DE DATA (Correção do +3h)
+    // Se data.formattedDate vier, tentamos usar. Se parecer errado ou não vier, calculamos aqui.
+    // Melhor abordagem: Calcular agora usando Intl para forçar America/Sao_Paulo
+    const getBrasiliaTime = () => {
+        return new Intl.DateTimeFormat('pt-BR', {
+            timeZone: 'America/Sao_Paulo',
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour12: false
+        }).format(new Date());
+    };
+    const displayDate = getBrasiliaTime();
 
-    // 2. DADOS GERAIS
+    // 3. DADOS GERAIS
     const stats = {
       total: data.totalTests || 0,
       passed: data.passedTests || 0,
       failed: data.failedTests || 0,
       skipped: data.skippedTests || 0,
-      duration: durationFormatted, // Usando a variável formatada acima
+      duration: durationFormatted,
       environment: data.environment || 'Produção',
       author: data.author || 'Sistema',
       client: data.client || 'Projeto',
-      // Se formattedDate vier no payload, usa. Senão, gera agora.
-      date: data.formattedDate || new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
+      date: displayDate 
     };
 
-    // 3. CORES DO CABEÇALHO
+    // 4. LISTA DE LOJAS
+    const storesList = (data.stores && data.stores.length > 0) ? data.stores : [stats.client];
+    const storesString = storesList.join(' • '); 
+
+    // 5. CORES DO CABEÇALHO
     let headerStyle = "Good";
     let headerIcon = "✅";
     let headerText = "SUCESSO";
@@ -64,7 +76,7 @@ exports.handler = async (event, context) => {
       headerText = "ATENÇÃO";
     }
 
-    // 4. HELPER PARA LISTAS (Proteção contra payload gigante)
+    // 6. HELPER PARA LISTAS (Proteção contra limite)
     const MAX_ERRORS_TO_SHOW = 40;
     const createErrorList = (list) => {
       const safeList = (list || []).slice(0, MAX_ERRORS_TO_SHOW);
@@ -88,7 +100,6 @@ exports.handler = async (event, context) => {
 
     const failedItems = createErrorList(data.failedList);
 
-    // Adiciona aviso se cortou erros
     if ((data.failedList || []).length > MAX_ERRORS_TO_SHOW) {
         failedItems.push({
              type: "TextBlock",
@@ -100,7 +111,7 @@ exports.handler = async (event, context) => {
         });
     }
 
-    // 5. ADAPTIVE CARD (Igual ao anterior)
+    // 7. ADAPTIVE CARD
     const adaptiveCard = {
       type: "AdaptiveCard",
       $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
@@ -128,7 +139,8 @@ exports.handler = async (event, context) => {
           ],
           bleed: true
         },
-        // Dashboard Metricas
+        
+        // Dashboard Métricas
         {
           type: "Container",
           spacing: "Medium",
@@ -145,12 +157,32 @@ exports.handler = async (event, context) => {
             }
           ]
         },
+
+        // 🔥 SEÇÃO DAS LOJAS TESTADAS
+        {
+            type: "Container",
+            spacing: "Small",
+            items: [
+                {
+                    type: "TextBlock",
+                    text: `🏪 Lojas: ${storesString}`, 
+                    wrap: true,
+                    size: "Small",
+                    color: "Accent",
+                    weight: "Bolder",
+                    horizontalAlignment: "Center"
+                }
+            ]
+        },
+        
+        // Separador
+        { type: "Container", items: [], style: "default", bleed: true, height: "1px", separator: true },
+
         // Lista de Erros
         ...(failedItems.length > 0 ? [
             {
                 type: "Container",
                 spacing: "Medium",
-                separator: true,
                 items: [
                     { type: "TextBlock", text: `📋 Detalhes dos Erros (${stats.failed})`, weight: "Bolder", size: "Medium", spacing: "Medium" },
                     ...failedItems
