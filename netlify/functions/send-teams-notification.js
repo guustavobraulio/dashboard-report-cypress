@@ -15,21 +15,41 @@ exports.handler = async (event, context) => {
 
     if (!WEBHOOK_URL) throw new Error('URL do Webhook não configurada.');
 
-    // 1. DADOS
+    // 1. TRATAMENTO DE DURAÇÃO (Correção aqui!)
+    // O test-results.js já manda em SEGUNDOS (ex: 362).
+    const durationTotalSeconds = data.duration || 0;
+    
+    // Formata para "Xm Ys"
+    const minutes = Math.floor(durationTotalSeconds / 60);
+    const seconds = Math.floor(durationTotalSeconds % 60);
+    
+    let durationFormatted = `${seconds}s`;
+    if (minutes > 0) {
+        durationFormatted = `${minutes}m ${seconds}s`;
+    }
+    // Se tiver horas (raro em testes, mas possível)
+    const hours = Math.floor(minutes / 60);
+    if (hours > 0) {
+        const remainingMinutes = minutes % 60;
+        durationFormatted = `${hours}h ${remainingMinutes}m ${seconds}s`;
+    }
+
+
+    // 2. DADOS GERAIS
     const stats = {
       total: data.totalTests || 0,
       passed: data.passedTests || 0,
       failed: data.failedTests || 0,
       skipped: data.skippedTests || 0,
-      duration: ((data.duration || 0) / 1000).toFixed(1) + "s",
+      duration: durationFormatted, // Usando a variável formatada acima
       environment: data.environment || 'Produção',
       author: data.author || 'Sistema',
       client: data.client || 'Projeto',
-      // Adicionando Data que faltava no seu código
-      date: new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }) 
+      // Se formattedDate vier no payload, usa. Senão, gera agora.
+      date: data.formattedDate || new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
     };
 
-    // 2. CORES
+    // 3. CORES DO CABEÇALHO
     let headerStyle = "Good";
     let headerIcon = "✅";
     let headerText = "SUCESSO";
@@ -44,11 +64,9 @@ exports.handler = async (event, context) => {
       headerText = "ATENÇÃO";
     }
 
-    // 3. HELPER PARA LISTAS (Com limite de segurança!)
-    const MAX_ERRORS_TO_SHOW = 40; // Limite seguro para evitar erro de envio
-    
+    // 4. HELPER PARA LISTAS (Proteção contra payload gigante)
+    const MAX_ERRORS_TO_SHOW = 40;
     const createErrorList = (list) => {
-      // Proteção: Pega no máximo 40 itens
       const safeList = (list || []).slice(0, MAX_ERRORS_TO_SHOW);
       
       return safeList.map(test => {
@@ -70,7 +88,7 @@ exports.handler = async (event, context) => {
 
     const failedItems = createErrorList(data.failedList);
 
-    // Se cortou itens, adiciona aviso no final
+    // Adiciona aviso se cortou erros
     if ((data.failedList || []).length > MAX_ERRORS_TO_SHOW) {
         failedItems.push({
              type: "TextBlock",
@@ -82,14 +100,14 @@ exports.handler = async (event, context) => {
         });
     }
 
-    // 4. ADAPTIVE CARD
+    // 5. ADAPTIVE CARD (Igual ao anterior)
     const adaptiveCard = {
       type: "AdaptiveCard",
       $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
       version: "1.4",
       msteams: { width: "Full" },
       body: [
-        // CABEÇALHO
+        // Cabeçalho
         {
           type: "Container",
           style: headerStyle,
@@ -110,7 +128,7 @@ exports.handler = async (event, context) => {
           ],
           bleed: true
         },
-        // DASHBOARD
+        // Dashboard Metricas
         {
           type: "Container",
           spacing: "Medium",
@@ -122,18 +140,17 @@ exports.handler = async (event, context) => {
                 { type: "Column", width: "stretch", items: [{ type: "TextBlock", text: "Total", isSubtle: true, size: "Small", horizontalAlignment: "Center" }, { type: "TextBlock", text: stats.total.toString(), weight: "Bolder", size: "Large", horizontalAlignment: "Center" }] },
                 { type: "Column", width: "stretch", items: [{ type: "TextBlock", text: "Passou", color: "Good", size: "Small", horizontalAlignment: "Center" }, { type: "TextBlock", text: stats.passed.toString(), color: "Good", weight: "Bolder", size: "Large", horizontalAlignment: "Center" }] },
                 { type: "Column", width: "stretch", items: [{ type: "TextBlock", text: "Falhou", color: "Attention", size: "Small", horizontalAlignment: "Center" }, { type: "TextBlock", text: stats.failed.toString(), color: "Attention", weight: "Bolder", size: "Large", horizontalAlignment: "Center" }] },
-                 // Adicionando Coluna Ignorados que faltava no seu código
                 { type: "Column", width: "stretch", items: [{ type: "TextBlock", text: "Ignorados", color: "Warning", size: "Small", horizontalAlignment: "Center" }, { type: "TextBlock", text: stats.skipped.toString(), color: "Warning", weight: "Bolder", size: "Large", horizontalAlignment: "Center" }] }
               ]
             }
           ]
         },
-        // LISTA DE ERROS
+        // Lista de Erros
         ...(failedItems.length > 0 ? [
             {
                 type: "Container",
                 spacing: "Medium",
-                separator: true, // Linha separadora importante
+                separator: true,
                 items: [
                     { type: "TextBlock", text: `📋 Detalhes dos Erros (${stats.failed})`, weight: "Bolder", size: "Medium", spacing: "Medium" },
                     ...failedItems
@@ -152,23 +169,12 @@ exports.handler = async (event, context) => {
     };
 
     console.log(`[teams] Enviando payload (${JSON.stringify(payload).length} bytes)...`);
-    
-    const response = await axios.post(WEBHOOK_URL, payload, {
-        headers: { 'Content-Type': 'application/json' },
-        timeout: 15000 // Timeout aumentado
-    });
-    
-    console.log('[teams] Sucesso:', response.status);
+    await axios.post(WEBHOOK_URL, payload, { headers: { 'Content-Type': 'application/json' }, timeout: 15000 });
 
     return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
 
   } catch (error) {
-    // Log detalhado para você ver o erro real no console da AWS/Lambda
-    console.error('[teams] ERRO FATAL:', error.message);
-    if (error.response) {
-        console.error('[teams] Status:', error.response.status);
-        console.error('[teams] Data:', JSON.stringify(error.response.data));
-    }
+    console.error('[teams] Erro:', error.message);
     return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
   }
 };
