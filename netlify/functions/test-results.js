@@ -65,7 +65,10 @@ async function sendToTeams(data, brand) {
     const timestamp = data.timestamp || new Date().toISOString();
     const dateObj = new Date(timestamp);
     
-    // Opção 1: Formato brasileiro (recomendado)
+    // Correção: Subtrai 3 horas (o servidor está somando indevidamente)
+    dateObj.setTime(dateObj.getTime() - (3 * 60 * 60 * 1000));
+    
+    // Agora formata a data corrigida
     const formattedDate = dateObj.toLocaleString('pt-BR', {
       year: 'numeric',
       month: '2-digit',
@@ -74,9 +77,6 @@ async function sendToTeams(data, brand) {
       minute: '2-digit',
       second: '2-digit'
     });
-
-    // Opção 2: Formato ISO (se preferir)
-    // const formattedDate = dateObj.toISOString();
 
     console.log('📅 [test-results] Data/Hora formatada:', formattedDate);
 
