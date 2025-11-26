@@ -15,21 +15,25 @@ exports.handler = async (event, context) => {
 
     if (!WEBHOOK_URL) throw new Error('URL do Webhook não configurada.');
 
-    // 1. TRATAMENTO DE DURAÇÃO
+    // 1. TRATAMENTO DE DURAÇÃO (Correção aqui!)
+    // O test-results.js já manda em SEGUNDOS (ex: 362).
     const durationTotalSeconds = data.duration || 0;
+    
+    // Formata para "Xm Ys"
     const minutes = Math.floor(durationTotalSeconds / 60);
     const seconds = Math.floor(durationTotalSeconds % 60);
     
     let durationFormatted = `${seconds}s`;
     if (minutes > 0) {
-        const hours = Math.floor(minutes / 60);
-        if (hours > 0) {
-            const remainingMinutes = minutes % 60;
-            durationFormatted = `${hours}h ${remainingMinutes}m ${seconds}s`;
-        } else {
-            durationFormatted = `${minutes}m ${seconds}s`;
-        }
+        durationFormatted = `${minutes}m ${seconds}s`;
     }
+    // Se tiver horas (raro em testes, mas possível)
+    const hours = Math.floor(minutes / 60);
+    if (hours > 0) {
+        const remainingMinutes = minutes % 60;
+        durationFormatted = `${hours}h ${remainingMinutes}m ${seconds}s`;
+    }
+
 
     // 2. DADOS GERAIS
     const stats = {
@@ -37,19 +41,15 @@ exports.handler = async (event, context) => {
       passed: data.passedTests || 0,
       failed: data.failedTests || 0,
       skipped: data.skippedTests || 0,
-      duration: durationFormatted,
+      duration: durationFormatted, // Usando a variável formatada acima
       environment: data.environment || 'Produção',
       author: data.author || 'Sistema',
       client: data.client || 'Projeto',
+      // Se formattedDate vier no payload, usa. Senão, gera agora.
       date: data.formattedDate || new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' })
     };
 
-    // 3. LISTA DE LOJAS (Vinda do test-results.js)
-    // Se vier vazia, usa o nome do cliente como fallback
-    const storesList = (data.stores && data.stores.length > 0) ? data.stores : [stats.client];
-    const storesString = storesList.join(' • '); // Junta com bullet point
-
-    // 4. CORES DO CABEÇALHO
+    // 3. CORES DO CABEÇALHO
     let headerStyle = "Good";
     let headerIcon = "✅";
     let headerText = "SUCESSO";
@@ -64,7 +64,7 @@ exports.handler = async (event, context) => {
       headerText = "ATENÇÃO";
     }
 
-    // 5. HELPER PARA LISTAS
+    // 4. HELPER PARA LISTAS (Proteção contra payload gigante)
     const MAX_ERRORS_TO_SHOW = 40;
     const createErrorList = (list) => {
       const safeList = (list || []).slice(0, MAX_ERRORS_TO_SHOW);
@@ -88,6 +88,7 @@ exports.handler = async (event, context) => {
 
     const failedItems = createErrorList(data.failedList);
 
+    // Adiciona aviso se cortou erros
     if ((data.failedList || []).length > MAX_ERRORS_TO_SHOW) {
         failedItems.push({
              type: "TextBlock",
@@ -99,7 +100,7 @@ exports.handler = async (event, context) => {
         });
     }
 
-    // 6. ADAPTIVE CARD
+    // 5. ADAPTIVE CARD (Igual ao anterior)
     const adaptiveCard = {
       type: "AdaptiveCard",
       $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
@@ -127,8 +128,7 @@ exports.handler = async (event, context) => {
           ],
           bleed: true
         },
-        
-        // Dashboard Métricas
+        // Dashboard Metricas
         {
           type: "Container",
           spacing: "Medium",
@@ -145,32 +145,12 @@ exports.handler = async (event, context) => {
             }
           ]
         },
-
-        // 🔥 SEÇÃO DAS LOJAS TESTADAS (Texto Centralizado)
-        {
-            type: "Container",
-            spacing: "Small", // Espaço curto para ficar próximo do dashboard
-            items: [
-                {
-                    type: "TextBlock",
-                    text: `🏪 Lojas: ${storesString}`, 
-                    wrap: true,
-                    size: "Small",
-                    color: "Accent", // Azul
-                    weight: "Bolder",
-                    horizontalAlignment: "Center"
-                }
-            ]
-        },
-        
-        // Separador
-        { type: "Container", items: [], style: "default", bleed: true, height: "1px", separator: true },
-
         // Lista de Erros
         ...(failedItems.length > 0 ? [
             {
                 type: "Container",
                 spacing: "Medium",
+                separator: true,
                 items: [
                     { type: "TextBlock", text: `📋 Detalhes dos Erros (${stats.failed})`, weight: "Bolder", size: "Medium", spacing: "Medium" },
                     ...failedItems
