@@ -3,10 +3,12 @@ const axios = require('axios');
 exports.handler = async (event, context) => {
   const headers = {
     'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Content-Type': 'application/json'
   };
 
-  // Tratamento para preflight OPTIONS
+  // Tratamento para preflight OPTIONS (CORS)
   if (event.httpMethod === 'OPTIONS') {
     return { statusCode: 200, headers, body: '' };
   }
@@ -22,123 +24,221 @@ exports.handler = async (event, context) => {
   try {
     const data = JSON.parse(event.body);
     
-    // Configuração da URL (Pode vir do ambiente ou do payload se necessário)
-    // IMPORTANTE: Certifique-se que esta variavel aponta para a URL do WORKFLOW do Teams
-    const TEAMS_WEBHOOK_URL = process.env.TEAMS_WEBHOOK_URL || process.env.N8N_WEBHOOK_URL;
+    console.log('[teams] ========== Dados Recebidos ==========');
+    console.log(`[teams] Client: ${data.client} | Total: ${data.totalTests}`);
+
+    // 1. CONFIGURAÇÃO DA URL DO WEBHOOK
+    // Tenta pegar TEAMS_WEBHOOK_URL, se não tiver, tenta N8N_WEBHOOK_URL
+    const WEBHOOK_URL = process.env.TEAMS_WEBHOOK_URL || process.env.N8N_WEBHOOK_URL;
     
-    if (!TEAMS_WEBHOOK_URL) {
-      throw new Error('URL do Webhook não configurada (TEAMS_WEBHOOK_URL)');
+    if (!WEBHOOK_URL) {
+      console.error('[teams] ❌ URL do Webhook não configurada!');
+      return {
+        statusCode: 500,
+        headers,
+        body: JSON.stringify({ error: 'Webhook URL não configurada no servidor.' })
+      };
     }
 
-    // Normalização dos dados
+    // 2. NORMALIZAÇÃO DOS DADOS
     const stats = {
       total: data.totalTests || 0,
       passed: data.passedTests || 0,
       failed: data.failedTests || 0,
       skipped: data.skippedTests || 0,
       duration: data.duration || 0,
-      environment: data.environment || 'N/A',
-      author: data.author || 'Sistema'
+      environment: data.environment || 'Produção',
+      author: data.author || 'Sistema',
+      client: data.client || 'Projeto'
     };
 
-    // Definição de Cor e Status
-    let statusColor = "Good"; // Verde
-    let statusText = "Sucesso ✅";
-    
+    // 3. LÓGICA DE CORES E ÍCONES
+    let headerStyle = "Good"; // Verde (Sucesso)
+    let headerIcon = "✅";
+    let headerText = "SUCESSO";
+    let metricsColor = "Good";
+
     if (stats.failed > 0) {
-      statusColor = "Attention"; // Vermelho
-      statusText = "Falha ❌";
+      headerStyle = "Attention"; // Vermelho (Falha)
+      headerIcon = "❌";
+      headerText = "FALHA";
+      metricsColor = "Attention";
     } else if (stats.skipped > 0 && stats.passed === 0) {
-      statusColor = "Warning"; // Amarelo
-      statusText = "Ignorado ⚠️";
+      headerStyle = "Warning"; // Amarelo (Atenção)
+      headerIcon = "⚠️";
+      headerText = "ATENÇÃO";
+      metricsColor = "Warning";
     }
 
-    // Montagem da Lista de Falhas (se houver)
-    const failedItems = (data.failedList || []).map(test => ({
-      type: "TextBlock",
-      text: `❌ **${test.title || test}**`,
-      wrap: true,
-      color: "Attention",
-      size: "Small"
-    }));
+    // 4. FORMATAÇÃO DA LISTA DE ERROS (Design Limpo)
+    const failedItems = (data.failedList || []).map(test => {
+      // Tenta extrair "Suite > Teste" para separar visualmente
+      const fullTitle = test.title || test;
+      const parts = typeof fullTitle === 'string' ? fullTitle.split(' > ') : [fullTitle];
+      
+      const testName = parts.length > 1 ? parts[parts.length - 1] : fullTitle;
+      const suiteName = parts.length > 1 ? parts.slice(0, -1).join(' > ') : 'Teste Geral';
 
-    // Construção do Adaptive Card
+      return {
+        type: "Container",
+        spacing: "Small",
+        items: [
+            {
+                type: "TextBlock",
+                text: `🔴 ${testName}`, 
+                wrap: true,
+                weight: "Bolder",
+                size: "Small",
+                color: "Attention"
+            },
+            {
+                type: "TextBlock",
+                text: suiteName,
+                wrap: true,
+                isSubtle: true, // Texto cinza claro
+                size: "Small",
+                spacing: "None",
+                fontStyle: "Italic"
+            }
+        ]
+      };
+    });
+
+    // 5. CONSTRUÇÃO DO ADAPTIVE CARD
     const adaptiveCard = {
       type: "AdaptiveCard",
       $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
       version: "1.4",
       body: [
+        // --- CABEÇALHO ---
         {
           type: "Container",
+          style: headerStyle, // Cor de fundo dinâmica
           items: [
             {
-              type: "TextBlock",
-              text: `Relatório de Testes Cypress - ${data.client || 'Projeto'}`,
-              weight: "Bolder",
-              size: "Medium"
-            },
-            {
-              type: "TextBlock",
-              text: `Status: ${statusText}`,
-              weight: "Bolder",
-              size: "Default",
-              color: statusColor
+              type: "ColumnSet",
+              columns: [
+                {
+                  type: "Column",
+                  width: "auto",
+                  items: [{ type: "TextBlock", text: headerIcon, size: "Large" }]
+                },
+                {
+                  type: "Column",
+                  width: "stretch",
+                  verticalAxisAlignment: "Center",
+                  items: [
+                    {
+                      type: "TextBlock",
+                      text: `${stats.client} - ${headerText}`,
+                      weight: "Bolder",
+                      size: "Medium",
+                      color: "Light", // Texto Branco
+                      wrap: true
+                    },
+                    {
+                      type: "TextBlock",
+                      text: `Ambiente: ${stats.environment} | Autor: ${stats.author}`,
+                      size: "Small",
+                      color: "Light",
+                      isSubtle: true,
+                      wrap: true,
+                      spacing: "None"
+                    }
+                  ]
+                }
+              ]
             }
-          ]
+          ],
+          bleed: true
         },
+        // --- DASHBOARD DE MÉTRICAS ---
         {
-          type: "FactSet",
-          facts: [
-            { title: "Ambiente", value: stats.environment },
-            { title: "Autor", value: stats.author },
-            { title: "Duração", value: `${(stats.duration / 1000).toFixed(2)}s` }
-          ]
-        },
-        {
-          type: "FactSet",
-          facts: [
-            { title: "Total", value: stats.total.toString() },
-            { title: "Passou", value: stats.passed.toString() },
-            { title: "Falhou", value: stats.failed.toString() },
-            { title: "Ignorados", value: stats.skipped.toString() }
+          type: "Container",
+          spacing: "Medium",
+          items: [
+            {
+              type: "ColumnSet",
+              columns: [
+                {
+                  type: "Column",
+                  width: "stretch",
+                  items: [
+                    { type: "TextBlock", text: "⏱️ Tempo", isSubtle: true, size: "Small", horizontalAlignment: "Center" },
+                    { type: "TextBlock", text: `${(stats.duration / 1000).toFixed(1)}s`, weight: "Bolder", size: "Large", horizontalAlignment: "Center" }
+                  ]
+                },
+                {
+                  type: "Column",
+                  width: "stretch",
+                  items: [
+                    { type: "TextBlock", text: "Total", isSubtle: true, size: "Small", horizontalAlignment: "Center" },
+                    { type: "TextBlock", text: stats.total.toString(), weight: "Bolder", size: "Large", horizontalAlignment: "Center" }
+                  ]
+                },
+                {
+                  type: "Column",
+                  width: "stretch",
+                  items: [
+                    { type: "TextBlock", text: "Passou", color: "Good", size: "Small", horizontalAlignment: "Center" },
+                    { type: "TextBlock", text: stats.passed.toString(), color: "Good", weight: "Bolder", size: "Large", horizontalAlignment: "Center" }
+                  ]
+                },
+                {
+                  type: "Column",
+                  width: "stretch",
+                  items: [
+                    { type: "TextBlock", text: "Falhou", color: "Attention", size: "Small", horizontalAlignment: "Center" },
+                    { type: "TextBlock", text: stats.failed.toString(), color: "Attention", weight: "Bolder", size: "Large", horizontalAlignment: "Center" }
+                  ]
+                }
+              ]
+            }
           ]
         }
       ],
       actions: [
         {
           type: "Action.OpenUrl",
-          title: "Ver Relatório Completo",
-          url: data.socialPanelUrl || "https://seu-ci-cd-url.com" // Fallback se não tiver URL
+          title: "🔍 Ver Relatório Detalhado",
+          url: data.socialPanelUrl || "https://seu-dashboard-ci.com", // Fallback URL
+          style: "positive"
         }
       ]
     };
 
-    // Se houver falhas, adiciona a lista no card
+    // --- INSERÇÃO DINÂMICA DA LISTA DE ERROS ---
     if (failedItems.length > 0) {
       adaptiveCard.body.push({
         type: "Container",
         spacing: "Large",
+        separator: true,
         items: [
           {
             type: "TextBlock",
-            text: "Detalhamento das Falhas:",
-            weight: "Bolder"
+            text: `📋 Detalhes dos Erros (${stats.failed})`,
+            weight: "Bolder",
+            size: "Medium",
+            spacing: "Medium"
           },
-          ...failedItems.slice(0, 10) // Limita a 10 para não estourar o tamanho
+          ...failedItems.slice(0, 10) // Limite de 10 itens para não quebrar o card
         ]
       });
-      
+
       if (failedItems.length > 10) {
-         adaptiveCard.body.push({
-            type: "TextBlock",
-            text: `... e mais ${failedItems.length - 10} erros.`,
-            isSubtle: true,
-            size: "Small"
-         });
+        adaptiveCard.body.push({
+          type: "TextBlock",
+          text: `... e mais ${failedItems.length - 10} falhas não listadas.`,
+          isSubtle: true,
+          italic: true,
+          size: "Small",
+          horizontalAlignment: "Center",
+          spacing: "Medium"
+        });
       }
     }
 
-    // Payload formato para Workflows (Importante: estrutura específica)
+    // 6. PREPARAÇÃO DO PAYLOAD (Importante para Workflows!)
     const payload = {
       type: "message",
       attachments: [
@@ -149,30 +249,39 @@ exports.handler = async (event, context) => {
       ]
     };
 
+    // 7. ENVIO
     console.log('[teams] Enviando Adaptive Card...');
-    
-    const response = await axios.post(TEAMS_WEBHOOK_URL, payload, {
+    const response = await axios.post(WEBHOOK_URL, payload, {
       headers: { 'Content-Type': 'application/json' },
       timeout: 10000
     });
 
-    console.log('[teams] ✅ Enviado! Status:', response.status);
+    console.log('[teams] ✅ Sucesso! Status:', response.status);
 
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ success: true, message: 'Relatório enviado ao Teams' })
+      body: JSON.stringify({ 
+        success: true, 
+        message: 'Relatório enviado com sucesso',
+        stats: { passed: stats.passed, failed: stats.failed }
+      })
     };
 
   } catch (error) {
     console.error('[teams] ❌ Erro:', error.message);
     if (error.response) {
-        console.error('[teams] Detalhes:', JSON.stringify(error.response.data));
+      console.error('[teams] Resposta do Teams:', JSON.stringify(error.response.data));
     }
+    
     return {
       statusCode: 500,
       headers,
-      body: JSON.stringify({ success: false, error: error.message })
+      body: JSON.stringify({ 
+        success: false, 
+        error: error.message,
+        details: error.response ? error.response.data : null
+      })
     };
   }
 };
