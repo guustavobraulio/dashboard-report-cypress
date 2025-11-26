@@ -28,7 +28,6 @@ exports.handler = async (event, context) => {
     console.log(`[teams] Client: ${data.client} | Total: ${data.totalTests}`);
 
     // 1. CONFIGURAÇÃO DA URL DO WEBHOOK
-    // Tenta pegar TEAMS_WEBHOOK_URL, se não tiver, tenta N8N_WEBHOOK_URL
     const WEBHOOK_URL = process.env.TEAMS_WEBHOOK_URL || process.env.N8N_WEBHOOK_URL;
     
     if (!WEBHOOK_URL) {
@@ -109,6 +108,7 @@ exports.handler = async (event, context) => {
       type: "AdaptiveCard",
       $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
       version: "1.4",
+      msteams: { width: "Full" }, // Tenta usar largura total
       body: [
         // --- CABEÇALHO ---
         {
@@ -207,7 +207,9 @@ exports.handler = async (event, context) => {
       ]
     };
 
-    // --- INSERÇÃO DINÂMICA DA LISTA DE ERROS ---
+    // --- INSERÇÃO DINÂMICA DA LISTA DE ERROS (COM LIMITE DE SEGURANÇA) ---
+    const MAX_ITEMS = 50; // Limite alto para evitar erro 413 (Payload Too Large)
+
     if (failedItems.length > 0) {
       adaptiveCard.body.push({
         type: "Container",
@@ -221,16 +223,17 @@ exports.handler = async (event, context) => {
             size: "Medium",
             spacing: "Medium"
           },
-          ...failedItems.slice(0, 10) // Limite de 10 itens para não quebrar o card
+          ...failedItems.slice(0, MAX_ITEMS) // Exibe até 50 erros
         ]
       });
 
-      if (failedItems.length > 10) {
+      // Aviso se ultrapassar o limite de segurança
+      if (failedItems.length > MAX_ITEMS) {
         adaptiveCard.body.push({
           type: "TextBlock",
-          text: `... e mais ${failedItems.length - 10} falhas não listadas.`,
+          text: `⚠️ Exibindo apenas os primeiros ${MAX_ITEMS} erros para não exceder o limite do Teams.`,
           isSubtle: true,
-          italic: true,
+          color: "Warning",
           size: "Small",
           horizontalAlignment: "Center",
           spacing: "Medium"
@@ -238,7 +241,7 @@ exports.handler = async (event, context) => {
       }
     }
 
-    // 6. PREPARAÇÃO DO PAYLOAD (Importante para Workflows!)
+    // 6. PREPARAÇÃO DO PAYLOAD (Formato Workflows)
     const payload = {
       type: "message",
       attachments: [
@@ -253,7 +256,7 @@ exports.handler = async (event, context) => {
     console.log('[teams] Enviando Adaptive Card...');
     const response = await axios.post(WEBHOOK_URL, payload, {
       headers: { 'Content-Type': 'application/json' },
-      timeout: 10000
+      timeout: 15000
     });
 
     console.log('[teams] ✅ Sucesso! Status:', response.status);
