@@ -8,19 +8,17 @@ describe('[Inoar] Validação da página Home', () => {
         cy.intercept('**/google.com/recaptcha/**', { statusCode: 200, body: {} });
         
         cy.viewport(1920, 1080)
-        cy.visit('https://www.loja.inoar.com.br', {
-            timeout:100000,
-            failtOnStatusCode: false
-        });
-    });
+        cy.visit('https://www.loja.inoar.com.br')
+
+    })
     
-    it.skip('Validar se a logo da marca está presente', () => {
+    it('Validar se a logo da marca está presente', () => {
         
         cy.get('[class="w-32 md:w-auto"]')
             .should('be.visible')
     });
 
-    it.skip('Validar o slide do banner principal', () => {
+    it('Validar o slide do banner principal', () => {
         
         cy.get('[class="slick-next slick-arrow"]')
             .first()
@@ -30,7 +28,7 @@ describe('[Inoar] Validação da página Home', () => {
 
     });
 
-    it.skip('Verificando se ao clicar em Favoritar produto, ele leva para o /login', () => {
+    it('Verificando se ao clicar em Favoritar produto, ele leva para o /login', () => {
         
         cy.scrollTo('200', { duration: 2000 })
 
