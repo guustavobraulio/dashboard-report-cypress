@@ -1,119 +1,89 @@
 const axios = require('axios');
 
 exports.handler = async (event, context) => {
+  // ... (Headers e Verificações de Método igual ao anterior) ...
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Content-Type',
-    'Access-Control-Allow-Methods': 'POST, OPTIONS',
     'Content-Type': 'application/json'
   };
 
-  // Tratamento para preflight OPTIONS (CORS)
-  if (event.httpMethod === 'OPTIONS') {
-    return { statusCode: 200, headers, body: '' };
-  }
-
-  if (event.httpMethod !== 'POST') {
-    return {
-      statusCode: 405,
-      headers,
-      body: JSON.stringify({ error: 'Método não permitido' })
-    };
-  }
+  if (event.httpMethod === 'OPTIONS') return { statusCode: 200, headers, body: '' };
+  if (event.httpMethod !== 'POST') return { statusCode: 405, headers, body: JSON.stringify({ error: 'Method not allowed' }) };
 
   try {
     const data = JSON.parse(event.body);
-    
-    console.log('[teams] ========== Dados Recebidos ==========');
-    console.log(`[teams] Client: ${data.client} | Total: ${data.totalTests}`);
-
-    // 1. CONFIGURAÇÃO DA URL DO WEBHOOK
     const WEBHOOK_URL = process.env.TEAMS_WEBHOOK_URL || process.env.N8N_WEBHOOK_URL;
-    
-    if (!WEBHOOK_URL) {
-      console.error('[teams] ❌ URL do Webhook não configurada!');
-      return {
-        statusCode: 500,
-        headers,
-        body: JSON.stringify({ error: 'Webhook URL não configurada no servidor.' })
-      };
-    }
 
-    // 2. NORMALIZAÇÃO DOS DADOS
+    if (!WEBHOOK_URL) throw new Error('Webhook URL não configurada.');
+
+    // 1. CÁLCULOS E FORMATAÇÃO
+    const total = data.totalTests || 0;
+    const passed = data.passedTests || 0;
+    const failed = data.failedTests || 0;
+    const skipped = data.skippedTests || 0;
+    
+    // Porcentagem de Aprovação
+    const passRate = total > 0 ? ((passed / total) * 100).toFixed(1) : 0;
+    
+    // Data Formatada (DD/MM/YYYY, HH:mm:ss)
+    const now = new Date();
+    const dateString = now.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' }); // Ajuste o TimeZone se necessário
+
+    // Duração (converte ms para s)
+    const durationSeconds = ((data.duration || 0) / 1000).toFixed(0) + "s";
+
     const stats = {
-      total: data.totalTests || 0,
-      passed: data.passedTests || 0,
-      failed: data.failedTests || 0,
-      skipped: data.skippedTests || 0,
-      duration: data.duration || 0,
+      total, passed, failed, skipped, passRate, durationSeconds, dateString,
       environment: data.environment || 'Produção',
       author: data.author || 'Sistema',
       client: data.client || 'Projeto'
     };
 
-    // 3. LÓGICA DE CORES E ÍCONES
-    let headerStyle = "Good"; // Verde (Sucesso)
+    // 2. LÓGICA DE CORES
+    let headerStyle = "Good"; 
     let headerIcon = "✅";
     let headerText = "SUCESSO";
-    let metricsColor = "Good";
 
-    if (stats.failed > 0) {
-      headerStyle = "Attention"; // Vermelho (Falha)
+    if (failed > 0) {
+      headerStyle = "Attention"; // Vermelho
       headerIcon = "❌";
       headerText = "FALHA";
-      metricsColor = "Attention";
-    } else if (stats.skipped > 0 && stats.passed === 0) {
-      headerStyle = "Warning"; // Amarelo (Atenção)
+    } else if (skipped > 0 && passed === 0) {
+      headerStyle = "Warning"; // Amarelo
       headerIcon = "⚠️";
       headerText = "ATENÇÃO";
-      metricsColor = "Warning";
     }
 
-    // 4. FORMATAÇÃO DA LISTA DE ERROS (Design Limpo)
-    const failedItems = (data.failedList || []).map(test => {
-      // Tenta extrair "Suite > Teste" para separar visualmente
-      const fullTitle = test.title || test;
-      const parts = typeof fullTitle === 'string' ? fullTitle.split(' > ') : [fullTitle];
-      
-      const testName = parts.length > 1 ? parts[parts.length - 1] : fullTitle;
-      const suiteName = parts.length > 1 ? parts.slice(0, -1).join(' > ') : 'Teste Geral';
+    // 3. HELPER PARA LISTAS (Falhas e Ignorados)
+    const createListItems = (list, icon, color) => {
+      return (list || []).map((test, index) => {
+        const fullTitle = test.title || test;
+        // Remove prefixos comuns se quiser limpar, ou mantém original
+        return {
+          type: "TextBlock",
+          text: `${index + 1}. ${fullTitle}`, // Lista Numerada
+          wrap: true,
+          size: "Small",
+          color: color, // "Attention" (Vermelho) ou "Accent" (Azul/Roxo para ignorados)
+          spacing: "Small"
+        };
+      });
+    };
 
-      return {
-        type: "Container",
-        spacing: "Small",
-        items: [
-            {
-                type: "TextBlock",
-                text: `🔴 ${testName}`, 
-                wrap: true,
-                weight: "Bolder",
-                size: "Small",
-                color: "Attention"
-            },
-            {
-                type: "TextBlock",
-                text: suiteName,
-                wrap: true,
-                isSubtle: true, // Texto cinza claro
-                size: "Small",
-                spacing: "None",
-                fontStyle: "Italic"
-            }
-        ]
-      };
-    });
+    const failedItems = createListItems(data.failedList, "❌", "Attention");
+    const skippedItems = createListItems(data.skippedList, "⏭️", "Accent"); // Accent geralmente é azul/roxo no Teams
 
-    // 5. CONSTRUÇÃO DO ADAPTIVE CARD
+    // 4. CONSTRUÇÃO DO ADAPTIVE CARD
     const adaptiveCard = {
       type: "AdaptiveCard",
       $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
       version: "1.4",
-      msteams: { width: "Full" }, // Tenta usar largura total
+      msteams: { width: "Full" },
       body: [
         // --- CABEÇALHO ---
         {
           type: "Container",
-          style: headerStyle, // Cor de fundo dinâmica
+          style: headerStyle,
           items: [
             {
               type: "ColumnSet",
@@ -133,12 +103,12 @@ exports.handler = async (event, context) => {
                       text: `${stats.client} - ${headerText}`,
                       weight: "Bolder",
                       size: "Medium",
-                      color: "Light", // Texto Branco
+                      color: "Light",
                       wrap: true
                     },
                     {
                       type: "TextBlock",
-                      text: `Ambiente: ${stats.environment} | Autor: ${stats.author}`,
+                      text: `Ambiente: ${stats.environment}`,
                       size: "Small",
                       color: "Light",
                       isSubtle: true,
@@ -152,139 +122,99 @@ exports.handler = async (event, context) => {
           ],
           bleed: true
         },
-        // --- DASHBOARD DE MÉTRICAS ---
+        
+        // --- INFO GERAL (Lista Vertical como na imagem) ---
         {
           type: "Container",
           spacing: "Medium",
           items: [
-            {
-              type: "ColumnSet",
-              columns: [
-                {
-                  type: "Column",
-                  width: "stretch",
-                  items: [
-                    { type: "TextBlock", text: "⏱️ Tempo", isSubtle: true, size: "Small", horizontalAlignment: "Center" },
-                    { type: "TextBlock", text: `${(stats.duration / 1000).toFixed(1)}s`, weight: "Bolder", size: "Large", horizontalAlignment: "Center" }
-                  ]
-                },
-                {
-                  type: "Column",
-                  width: "stretch",
-                  items: [
-                    { type: "TextBlock", text: "Total", isSubtle: true, size: "Small", horizontalAlignment: "Center" },
-                    { type: "TextBlock", text: stats.total.toString(), weight: "Bolder", size: "Large", horizontalAlignment: "Center" }
-                  ]
-                },
-                {
-                  type: "Column",
-                  width: "stretch",
-                  items: [
-                    { type: "TextBlock", text: "Passou", color: "Good", size: "Small", horizontalAlignment: "Center" },
-                    { type: "TextBlock", text: stats.passed.toString(), color: "Good", weight: "Bolder", size: "Large", horizontalAlignment: "Center" }
-                  ]
-                },
-                {
-                  type: "Column",
-                  width: "stretch",
-                  items: [
-                    { type: "TextBlock", text: "Falhou", color: "Attention", size: "Small", horizontalAlignment: "Center" },
-                    { type: "TextBlock", text: stats.failed.toString(), color: "Attention", weight: "Bolder", size: "Large", horizontalAlignment: "Center" }
-                  ]
-                }
-              ]
-            }
+             // Linha 1: Total e Aprovação
+             {
+                type: "FactSet",
+                facts: [
+                    { title: "📊 Total:", value: `${stats.total}` },
+                    { title: "✅ Aprovados:", value: `${stats.passed} (${stats.passRate}%)` },
+                    { title: "❌ Falhados:", value: `${stats.failed}` },
+                    { title: "⏭️ Ignorados:", value: `${stats.skipped}` }
+                ]
+             },
+             // Linha 2: Metadados
+             {
+                type: "FactSet",
+                facts: [
+                    { title: "⏱️ Duração:", value: stats.durationSeconds },
+                    { title: "👤 Autor:", value: stats.author },
+                    { title: "📅 Data:", value: stats.dateString }
+                ]
+             }
           ]
-        }
+        },
+
+        // --- SEÇÃO DE FALHAS (Se houver) ---
+        ...(failedItems.length > 0 ? [
+            {
+                type: "Container",
+                spacing: "Large",
+                separator: true,
+                items: [
+                    {
+                        type: "TextBlock",
+                        text: `❌ Testes com Falha (${failedItems.length})`,
+                        weight: "Bolder",
+                        size: "Medium",
+                        color: "Attention"
+                    },
+                    ...failedItems.slice(0, 50) // Limite de segurança
+                ]
+            }
+        ] : []),
+
+        // --- SEÇÃO DE IGNORADOS (Se houver) ---
+        ...(skippedItems.length > 0 ? [
+            {
+                type: "Container",
+                spacing: "Large",
+                separator: true, // Linha separadora
+                items: [
+                    {
+                        type: "TextBlock",
+                        text: `⏭️ Testes Ignorados (${skippedItems.length})`,
+                        weight: "Bolder",
+                        size: "Medium",
+                        color: "Accent" // Cor diferente para destacar
+                    },
+                    ...skippedItems.slice(0, 50)
+                ]
+            }
+        ] : [])
       ],
       actions: [
         {
           type: "Action.OpenUrl",
-          title: "🔍 Ver Relatório Detalhado",
-          url: data.socialPanelUrl || "https://seu-dashboard-ci.com", // Fallback URL
+          title: "📊 Dashboard Completo",
+          url: data.socialPanelUrl || "https://seu-dashboard.com",
           style: "positive"
         }
       ]
     };
 
-    // --- INSERÇÃO DINÂMICA DA LISTA DE ERROS (COM LIMITE DE SEGURANÇA) ---
-    const MAX_ITEMS = 50; // Limite alto para evitar erro 413 (Payload Too Large)
-
-    if (failedItems.length > 0) {
-      adaptiveCard.body.push({
-        type: "Container",
-        spacing: "Large",
-        separator: true,
-        items: [
-          {
-            type: "TextBlock",
-            text: `📋 Detalhes dos Erros (${stats.failed})`,
-            weight: "Bolder",
-            size: "Medium",
-            spacing: "Medium"
-          },
-          ...failedItems.slice(0, MAX_ITEMS) // Exibe até 50 erros
-        ]
-      });
-
-      // Aviso se ultrapassar o limite de segurança
-      if (failedItems.length > MAX_ITEMS) {
-        adaptiveCard.body.push({
-          type: "TextBlock",
-          text: `⚠️ Exibindo apenas os primeiros ${MAX_ITEMS} erros para não exceder o limite do Teams.`,
-          isSubtle: true,
-          color: "Warning",
-          size: "Small",
-          horizontalAlignment: "Center",
-          spacing: "Medium"
-        });
-      }
-    }
-
-    // 6. PREPARAÇÃO DO PAYLOAD (Formato Workflows)
+    // 5. ENVIO
     const payload = {
       type: "message",
-      attachments: [
-        {
-          contentType: "application/vnd.microsoft.card.adaptive",
-          content: adaptiveCard
-        }
-      ]
+      attachments: [{ contentType: "application/vnd.microsoft.card.adaptive", content: adaptiveCard }]
     };
 
-    // 7. ENVIO
-    console.log('[teams] Enviando Adaptive Card...');
-    const response = await axios.post(WEBHOOK_URL, payload, {
-      headers: { 'Content-Type': 'application/json' },
-      timeout: 15000
-    });
-
-    console.log('[teams] ✅ Sucesso! Status:', response.status);
-
+    console.log('[teams] Enviando...');
+    await axios.post(WEBHOOK_URL, payload);
+    
     return {
       statusCode: 200,
       headers,
-      body: JSON.stringify({ 
-        success: true, 
-        message: 'Relatório enviado com sucesso',
-        stats: { passed: stats.passed, failed: stats.failed }
-      })
+      body: JSON.stringify({ success: true })
     };
 
   } catch (error) {
-    console.error('[teams] ❌ Erro:', error.message);
-    if (error.response) {
-      console.error('[teams] Resposta do Teams:', JSON.stringify(error.response.data));
-    }
-    
-    return {
-      statusCode: 500,
-      headers,
-      body: JSON.stringify({ 
-        success: false, 
-        error: error.message,
-        details: error.response ? error.response.data : null
-      })
-    };
+    console.error('[teams] Erro:', error.message);
+    return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
   }
 };
