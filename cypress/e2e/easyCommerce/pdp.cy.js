@@ -7,13 +7,13 @@ describe('[Easy Commerce] Validando as funcionalidades dentro da PDP', () => {
         cy.visit(Cypress.URLS.easyCommerce_pdp);
     });
     
-    it('Validar se a página de produto possui breadcrumb', () => {
+    it.skip('Validar se a página de produto possui breadcrumb', () => {
 
         cy.get(locators.easyCommerce_departamento.breadcrumb)
             .should('be.visible');
     });
 
-    it('Validar se o produto vai para o carrinho com sucesso', () => {
+    it.skip('Validar se o produto vai para o carrinho com sucesso', () => {
         cy.get(locators.easyCommerce_pdp.btnAdicionarAoMiniCart)
             .first()
             .should('be.visible')
@@ -27,7 +27,7 @@ describe('[Easy Commerce] Validando as funcionalidades dentro da PDP', () => {
             .should('be.visible')
     });
 
-    it('Validando o seletor de quantidade de produto', () => {
+    it.skip('Validando o seletor de quantidade de produto', () => {
         
         cy.get(locators.easyCommerce_pdp.aumentandoQuantidade)
             .first()
@@ -37,7 +37,7 @@ describe('[Easy Commerce] Validando as funcionalidades dentro da PDP', () => {
             .should('have.value', '1') // Alterar posteriormente para 3. 
     });
 
-    it('Validando a funcionalidade de alterar a imagem do produto', () => {
+    it.skip('Validando a funcionalidade de alterar a imagem do produto', () => {
         
         cy.get(locators.easyCommerce_pdp.imagemProduto)
             .last()

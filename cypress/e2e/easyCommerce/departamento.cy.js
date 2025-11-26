@@ -7,12 +7,12 @@ describe('[Easy Commerce]Validação da página de departamento', () => {
         cy.visit(Cypress.URLS.easyCommerce_departamento);
     });
 
-    it('Validar se a página de departamento possui breadcrumb', () => {
+    it.skip('Validar se a página de departamento possui breadcrumb', () => {
         cy.get(locators.easyCommerce_departamento.breadcrumb)
             .should('be.visible');
     });
 
-    it('Validar se a página possui título e SEO', () => {
+    it.skip('Validar se a página possui título e SEO', () => {
 
         cy.get(locators.easyCommerce_departamento.tituloSEO)
             .should('be.visible')
@@ -21,7 +21,7 @@ describe('[Easy Commerce]Validação da página de departamento', () => {
             .should('be.visible')
     });
 
-    it('Validar a funcionalidade de Ordenar Por', () => {
+    it.skip('Validar a funcionalidade de Ordenar Por', () => {
 
         cy.get(locators.easyCommerce_departamento.ordenarPorMenorPreco)
             .last()

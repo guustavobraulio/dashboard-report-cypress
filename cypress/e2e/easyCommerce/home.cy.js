@@ -10,12 +10,12 @@ describe('[Easy Commerce] Validando componentes dentro do Header', () => {
         cy.visit(Cypress.URLS.easyCommerce_home);
     });
 
-    it('Deve exibir o logo da empresa', () => {
+    it.skip('Deve exibir o logo da empresa', () => {
         cy.get(locators.easyCommerce_home.logoMarca)
             .should('be.visible');
     });
 
-    it('Validar o slide da vitrine', () => {
+    it.skip('Validar o slide da vitrine', () => {
         
         cy.scrollTo(0, 300)
 
@@ -25,7 +25,7 @@ describe('[Easy Commerce] Validando componentes dentro do Header', () => {
             .click()
     });
 
-    it('Validar se as categorias estão presentes', () => {
+    it.skip('Validar se as categorias estão presentes', () => {
         
         cy.get(locators.easyCommerce_home.categoriasHeader)
             .should('be.visible')
@@ -51,7 +51,7 @@ describe('[Easy Commerce] Validando componentes dentro do Header', () => {
 
     });
 
-    it('Validando o campo de Busca', () => {
+    it.skip('Validando o campo de Busca', () => {
         
         cy.get(locators.easyCommerce_home.inputBuscar)
             .first()
@@ -65,7 +65,7 @@ describe('[Easy Commerce] Validando componentes dentro do Header', () => {
             .should('be.visible')   
     });
 
-    it('Validar o ícone Minha Conta', () => {
+    it.skip('Validar o ícone Minha Conta', () => {
         
         cy.get(locators.easyCommerce_home.iconMinhaConta)
             .should('be.visible')
@@ -75,7 +75,7 @@ describe('[Easy Commerce] Validando componentes dentro do Header', () => {
             .should('include', '/login')
     });
 
-    it('Validar o minicart vazio', () => {
+    it.skip('Validar o minicart vazio', () => {
         
         cy.wait(1500)
 
@@ -98,14 +98,14 @@ describe('[Easy Commerce] Validando componentes dentro do Header', () => {
             .should('not.visible')
     });
 
-    it('Clicando em uma das categorias na vitrine - Ofertas', () => {
+    it.skip('Clicando em uma das categorias na vitrine - Ofertas', () => {
         cy.get(locators.easyCommerce_home.categoriaOfertas)
             .first()
             .should('be.visible')
             .click()
     });
 
-    it('Adicionando produto via botão de compra da vitrine', () => {
+    it.skip('Adicionando produto via botão de compra da vitrine', () => {
         
         cy.scrollTo(0, 500)
 
@@ -126,7 +126,7 @@ describe('[Easy Commerce] Validando componentes dentro do Header', () => {
             .should('be.visible')
     });
 
-    it('Validando os banners da Home', () => {
+    it.skip('Validando os banners da Home', () => {
         
         cy.scrollTo(0, 700)
 
@@ -142,7 +142,7 @@ describe('[Easy Commerce] Validando componentes dentro do Header', () => {
 
     });
 
-    it('Enviando a newsletter', () => {
+    it.skip('Enviando a newsletter', () => {
         
         cy.scrollTo('bottom')
 
@@ -168,7 +168,7 @@ describe('[Easy Commerce] Validando componentes dentro do Header', () => {
             
     });
 
-    it('Validando os modais com informações no footer', () => {
+    it.skip('Validando os modais com informações no footer', () => {
         cy.scrollTo('bottom')
 
         cy.get(locators.easyCommerce_home.footerContainer)

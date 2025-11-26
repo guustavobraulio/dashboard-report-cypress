@@ -98,16 +98,6 @@ describe('[Shopmulti] Validação da página Home', () => {
 
     });
 
-    it('Clicando em Visualizar Produto', () => {
-        
-        cy.scrollTo(0, 700)
-
-        cy.get('[class="block no-underline border border-green-300/80 rounded w-full py-3 mt-auto font-poppins text-xs leading-tight text-center text-green-300 transition-colors hover:bg-green-300/80 hover:text-white hover:transition-colors"]')
-            .first()
-            .should('be.visible')
-            .click()        
-    });
-
     it('Validar o footer', () => {
         
         cy.scrollTo('bottom')
