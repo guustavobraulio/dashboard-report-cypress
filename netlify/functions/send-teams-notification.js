@@ -1,6 +1,8 @@
 const axios = require('axios');
 
 exports.handler = async (event, context) => {
+  console.log('[teams] Iniciando execução...');
+
   const headers = {
     'Access-Control-Allow-Origin': '*',
     'Content-Type': 'application/json'
@@ -11,40 +13,56 @@ exports.handler = async (event, context) => {
 
   try {
     const data = JSON.parse(event.body);
+    console.log('[teams] Payload recebido. Total testes:', data.totalTests);
+
     const WEBHOOK_URL = process.env.TEAMS_WEBHOOK_URL || process.env.N8N_WEBHOOK_URL;
-
-    if (!WEBHOOK_URL) throw new Error('URL do Webhook não configurada.');
-
-    // 1. TRATAMENTO DE DURAÇÃO
-    const durationTotalSeconds = data.duration || 0;
-    const minutes = Math.floor(durationTotalSeconds / 60);
-    const seconds = Math.floor(durationTotalSeconds % 60);
-    
-    let durationFormatted = `${seconds}s`;
-    if (minutes > 0) {
-        const hours = Math.floor(minutes / 60);
-        if (hours > 0) {
-            const remainingMinutes = minutes % 60;
-            durationFormatted = `${hours}h ${remainingMinutes}m ${seconds}s`;
-        } else {
-            durationFormatted = `${minutes}m ${seconds}s`;
-        }
+    if (!WEBHOOK_URL) {
+      console.error('[teams] URL do Webhook não configurada!');
+      throw new Error('URL do Webhook não configurada.');
     }
 
-    // 2. TRATAMENTO DE DATA (Correção do +3h)
-    // Se data.formattedDate vier, tentamos usar. Se parecer errado ou não vier, calculamos aqui.
-    // Melhor abordagem: Calcular agora usando Intl para forçar America/Sao_Paulo
-    const getBrasiliaTime = () => {
-        return new Intl.DateTimeFormat('pt-BR', {
-            timeZone: 'America/Sao_Paulo',
-            year: 'numeric', month: '2-digit', day: '2-digit',
-            hour: '2-digit', minute: '2-digit', second: '2-digit',
-            hour12: false
-        }).format(new Date());
-    };
-    const displayDate = getBrasiliaTime();
+    // 1. TRATAMENTO DE DURAÇÃO
+    let durationFormatted = "0s";
+    try {
+        const durationTotalSeconds = data.duration || 0;
+        const minutes = Math.floor(durationTotalSeconds / 60);
+        const seconds = Math.floor(durationTotalSeconds % 60);
+        durationFormatted = `${seconds}s`;
+        if (minutes > 0) {
+            const hours = Math.floor(minutes / 60);
+            if (hours > 0) {
+                durationFormatted = `${hours}h ${minutes % 60}m ${seconds}s`;
+            } else {
+                durationFormatted = `${minutes}m ${seconds}s`;
+            }
+        }
+    } catch (e) { console.error('[teams] Erro ao formatar duração:', e); }
 
-    // 3. DADOS GERAIS
+    // 2. TRATAMENTO DE DATA (Versão sem Intl para máxima compatibilidade)
+    let displayDate = "";
+    try {
+        if (data.formattedDate) {
+            displayDate = data.formattedDate;
+        } else {
+            // Fallback seguro: gera data atual e subtrai 3h se for UTC
+            const now = new Date();
+            // Ajuste simples: converte para String com Timezone
+            displayDate = now.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+        }
+    } catch (e) {
+        console.error('[teams] Erro data:', e);
+        displayDate = new Date().toISOString();
+    }
+
+    // 3. LISTA DE LOJAS
+    let storesString = "Geral";
+    try {
+        const storesList = (data.stores && data.stores.length > 0) ? data.stores : [data.client || 'Projeto'];
+        storesString = storesList.join(' • ');
+    } catch (e) { console.error('[teams] Erro lojas:', e); }
+
+
+    // DADOS GERAIS
     const stats = {
       total: data.totalTests || 0,
       passed: data.passedTests || 0,
@@ -57,11 +75,7 @@ exports.handler = async (event, context) => {
       date: displayDate 
     };
 
-    // 4. LISTA DE LOJAS
-    const storesList = (data.stores && data.stores.length > 0) ? data.stores : [stats.client];
-    const storesString = storesList.join(' • '); 
-
-    // 5. CORES DO CABEÇALHO
+    // CORES
     let headerStyle = "Good";
     let headerIcon = "✅";
     let headerText = "SUCESSO";
@@ -76,42 +90,37 @@ exports.handler = async (event, context) => {
       headerText = "ATENÇÃO";
     }
 
-    // 6. HELPER PARA LISTAS (Proteção contra limite)
+    // HELPER LISTAS
     const MAX_ERRORS_TO_SHOW = 40;
-    const createErrorList = (list) => {
-      const safeList = (list || []).slice(0, MAX_ERRORS_TO_SHOW);
-      
-      return safeList.map(test => {
-        const fullTitle = test.title || test;
-        const parts = typeof fullTitle === 'string' ? fullTitle.split(' > ') : [fullTitle];
-        const testName = parts.length > 1 ? parts[parts.length - 1] : fullTitle;
-        const suiteName = parts.length > 1 ? parts.slice(0, -1).join(' > ') : 'Teste Geral';
+    const failedItems = [];
+    try {
+        const rawList = (data.failedList || []).slice(0, MAX_ERRORS_TO_SHOW);
+        rawList.forEach(test => {
+            const fullTitle = test.title || test;
+            const parts = typeof fullTitle === 'string' ? fullTitle.split(' > ') : [String(fullTitle)];
+            const testName = parts.length > 1 ? parts[parts.length - 1] : fullTitle;
+            const suiteName = parts.length > 1 ? parts.slice(0, -1).join(' > ') : 'Teste Geral';
 
-        return {
-          type: "Container",
-          spacing: "Small",
-          items: [
-              { type: "TextBlock", text: `🔴 ${testName}`, wrap: true, weight: "Bolder", size: "Small", color: "Attention" },
-              { type: "TextBlock", text: `[${stats.client}] ${suiteName}`, wrap: true, isSubtle: true, size: "Small", spacing: "None" }
-          ]
-        };
-      });
-    };
-
-    const failedItems = createErrorList(data.failedList);
-
-    if ((data.failedList || []).length > MAX_ERRORS_TO_SHOW) {
-        failedItems.push({
-             type: "TextBlock",
-             text: `... e mais ${(data.failedList.length - MAX_ERRORS_TO_SHOW)} erros não listados.`,
-             isSubtle: true,
-             italic: true,
-             size: "Small",
-             horizontalAlignment: "Center"
+            failedItems.push({
+              type: "Container",
+              spacing: "Small",
+              items: [
+                  { type: "TextBlock", text: `🔴 ${testName}`, wrap: true, weight: "Bolder", size: "Small", color: "Attention" },
+                  { type: "TextBlock", text: `[${stats.client}] ${suiteName}`, wrap: true, isSubtle: true, size: "Small", spacing: "None" }
+              ]
+            });
         });
-    }
 
-    // 7. ADAPTIVE CARD
+        if ((data.failedList || []).length > MAX_ERRORS_TO_SHOW) {
+            failedItems.push({
+                 type: "TextBlock",
+                 text: `... e mais ${(data.failedList.length - MAX_ERRORS_TO_SHOW)} erros não listados.`,
+                 isSubtle: true, italic: true, size: "Small", horizontalAlignment: "Center"
+            });
+        }
+    } catch (e) { console.error('[teams] Erro lista falhas:', e); }
+
+    // CARD
     const adaptiveCard = {
       type: "AdaptiveCard",
       $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
@@ -139,8 +148,7 @@ exports.handler = async (event, context) => {
           ],
           bleed: true
         },
-        
-        // Dashboard Métricas
+        // Dashboard
         {
           type: "Container",
           spacing: "Medium",
@@ -157,8 +165,7 @@ exports.handler = async (event, context) => {
             }
           ]
         },
-
-        // 🔥 SEÇÃO DAS LOJAS TESTADAS
+        // Lojas
         {
             type: "Container",
             spacing: "Small",
@@ -166,19 +173,13 @@ exports.handler = async (event, context) => {
                 {
                     type: "TextBlock",
                     text: `🏪 Lojas: ${storesString}`, 
-                    wrap: true,
-                    size: "Small",
-                    color: "Accent",
-                    weight: "Bolder",
-                    horizontalAlignment: "Center"
+                    wrap: true, size: "Small", color: "Accent", weight: "Bolder", horizontalAlignment: "Center"
                 }
             ]
         },
-        
         // Separador
         { type: "Container", items: [], style: "default", bleed: true, height: "1px", separator: true },
-
-        // Lista de Erros
+        // Erros
         ...(failedItems.length > 0 ? [
             {
                 type: "Container",
@@ -201,12 +202,20 @@ exports.handler = async (event, context) => {
     };
 
     console.log(`[teams] Enviando payload (${JSON.stringify(payload).length} bytes)...`);
-    await axios.post(WEBHOOK_URL, payload, { headers: { 'Content-Type': 'application/json' }, timeout: 15000 });
+    
+    const response = await axios.post(WEBHOOK_URL, payload, { 
+        headers: { 'Content-Type': 'application/json' }, 
+        timeout: 20000 
+    });
 
+    console.log('[teams] Sucesso! Status:', response.status);
     return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
 
   } catch (error) {
-    console.error('[teams] Erro:', error.message);
+    console.error('[teams] ERRO FATAL:', error.message);
+    if (error.response) {
+         console.error('[teams] Detalhes:', JSON.stringify(error.response.data));
+    }
     return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
   }
 };
