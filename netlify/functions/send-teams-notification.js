@@ -13,42 +13,46 @@ exports.handler = async (event, context) => {
     const data = JSON.parse(event.body);
     const WEBHOOK_URL = process.env.TEAMS_WEBHOOK_URL || process.env.N8N_WEBHOOK_URL;
 
-    if (!WEBHOOK_URL) throw new Error('URL do Webhook não configurada.');
+    if (!WEBHOOK_URL) {
+      console.error('[teams] URL não configurada.');
+      return { statusCode: 500, body: JSON.stringify({ error: 'Webhook URL missing' }) };
+    }
 
-    // 1. DADOS E FORMATAÇÃO
-    // Data atual formatada (ex: 26/11/2025 11:00)
+    // Dados
     const now = new Date().toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
-    
     const stats = {
       total: data.totalTests || 0,
       passed: data.passedTests || 0,
       failed: data.failedTests || 0,
       skipped: data.skippedTests || 0,
-      duration: ((data.duration || 0) / 1000).toFixed(1) + "s", 
+      duration: ((data.duration || 0) / 1000).toFixed(1) + "s",
       environment: data.environment || 'Produção',
       author: data.author || 'Sistema',
       client: data.client || 'Projeto',
       date: now
     };
 
-    // 2. CORES E ÍCONES DO CABEÇALHO
-    let headerStyle = "Good"; // Verde
+    // Cores
+    let headerStyle = "Good";
     let headerIcon = "✅";
     let headerText = "SUCESSO";
 
     if (stats.failed > 0) {
-      headerStyle = "Attention"; // Vermelho
+      headerStyle = "Attention";
       headerIcon = "❌";
       headerText = "FALHA";
     } else if (stats.skipped > 0 && stats.passed === 0) {
-      headerStyle = "Warning"; // Amarelo
+      headerStyle = "Warning";
       headerIcon = "⚠️";
       headerText = "ATENÇÃO";
     }
 
-    // 3. HELPER PARA LISTA DE ERROS (Estilo Bolinha Vermelha)
-    const createErrorList = (list) => {
-      return (list || []).map(test => {
+    // Lista de Erros (Com limite de segurança para não quebrar o envio)
+    const MAX_ERRORS = 40; // Limite seguro para payload < 28KB
+    const allFailedItems = data.failedList || [];
+    const displayFailedItems = allFailedItems.slice(0, MAX_ERRORS); // Pega apenas os primeiros 40
+
+    const failedItemsComponents = displayFailedItems.map(test => {
         const fullTitle = test.title || test;
         const parts = typeof fullTitle === 'string' ? fullTitle.split(' > ') : [fullTitle];
         const testName = parts.length > 1 ? parts[parts.length - 1] : fullTitle;
@@ -58,37 +62,31 @@ exports.handler = async (event, context) => {
           type: "Container",
           spacing: "Small",
           items: [
-              {
-                  type: "TextBlock",
-                  text: `🔴 ${testName}`,
-                  wrap: true,
-                  weight: "Bolder",
-                  size: "Small",
-                  color: "Attention"
-              },
-              {
-                  type: "TextBlock",
-                  text: `[${stats.client}] ${suiteName}`,
-                  wrap: true,
-                  isSubtle: true,
-                  size: "Small",
-                  spacing: "None"
-              }
+              { type: "TextBlock", text: `🔴 ${testName}`, wrap: true, weight: "Bolder", size: "Small", color: "Attention" },
+              { type: "TextBlock", text: `[${stats.client}] ${suiteName}`, wrap: true, isSubtle: true, size: "Small", spacing: "None" }
           ]
         };
-      });
-    };
+    });
 
-    const failedItems = createErrorList(data.failedList);
+    // Se houver mais erros do que o limite, adiciona aviso
+    if (allFailedItems.length > MAX_ERRORS) {
+        failedItemsComponents.push({
+            type: "TextBlock",
+            text: `... e mais ${allFailedItems.length - MAX_ERRORS} erros não listados para evitar limite de tamanho.`,
+            isSubtle: true,
+            italic: true,
+            size: "Small",
+            horizontalAlignment: "Center",
+            spacing: "Medium"
+        });
+    }
 
-    // 4. ADAPTIVE CARD COMPLETO
     const adaptiveCard = {
       type: "AdaptiveCard",
       $schema: "http://adaptivecards.io/schemas/adaptive-card.json",
       version: "1.4",
       msteams: { width: "Full" },
       body: [
-        // --- CABEÇALHO ---
         {
           type: "Container",
           style: headerStyle,
@@ -96,34 +94,12 @@ exports.handler = async (event, context) => {
             {
               type: "ColumnSet",
               columns: [
+                { type: "Column", width: "auto", items: [{ type: "TextBlock", text: headerIcon, size: "Large" }] },
                 {
-                  type: "Column",
-                  width: "auto",
-                  items: [{ type: "TextBlock", text: headerIcon, size: "Large" }]
-                },
-                {
-                  type: "Column",
-                  width: "stretch",
-                  verticalAxisAlignment: "Center",
+                  type: "Column", width: "stretch", verticalAxisAlignment: "Center",
                   items: [
-                    {
-                      type: "TextBlock",
-                      text: `${stats.client} - ${headerText}`,
-                      weight: "Bolder",
-                      size: "Medium",
-                      color: "Light",
-                      wrap: true
-                    },
-                    {
-                      type: "TextBlock",
-                      // Data adicionada aqui no final
-                      text: `Ambiente: ${stats.environment} | Autor: ${stats.author} | 📅 ${stats.date}`,
-                      size: "Small",
-                      color: "Light",
-                      isSubtle: true,
-                      wrap: true,
-                      spacing: "None"
-                    }
+                    { type: "TextBlock", text: `${stats.client} - ${headerText}`, weight: "Bolder", size: "Medium", color: "Light", wrap: true },
+                    { type: "TextBlock", text: `Ambiente: ${stats.environment} | Autor: ${stats.author} | 📅 ${stats.date}`, size: "Small", color: "Light", isSubtle: true, wrap: true, spacing: "None" }
                   ]
                 }
               ]
@@ -131,8 +107,6 @@ exports.handler = async (event, context) => {
           ],
           bleed: true
         },
-
-        // --- DASHBOARD (5 COLUNAS AGORA) ---
         {
           type: "Container",
           spacing: "Medium",
@@ -140,109 +114,53 @@ exports.handler = async (event, context) => {
             {
               type: "ColumnSet",
               columns: [
-                // 1. Duração
-                {
-                  type: "Column",
-                  width: "stretch",
-                  items: [
-                    { type: "TextBlock", text: "⏱️ Tempo", isSubtle: true, size: "Small", horizontalAlignment: "Center" },
-                    { type: "TextBlock", text: stats.duration, weight: "Bolder", size: "Large", horizontalAlignment: "Center" }
-                  ]
-                },
-                // 2. Total
-                {
-                  type: "Column",
-                  width: "stretch",
-                  items: [
-                    { type: "TextBlock", text: "Total", isSubtle: true, size: "Small", horizontalAlignment: "Center" },
-                    { type: "TextBlock", text: stats.total.toString(), weight: "Bolder", size: "Large", horizontalAlignment: "Center" }
-                  ]
-                },
-                // 3. Passou
-                {
-                  type: "Column",
-                  width: "stretch",
-                  items: [
-                    { type: "TextBlock", text: "Passou", color: "Good", size: "Small", horizontalAlignment: "Center" },
-                    { type: "TextBlock", text: stats.passed.toString(), color: "Good", weight: "Bolder", size: "Large", horizontalAlignment: "Center" }
-                  ]
-                },
-                // 4. Falhou
-                {
-                  type: "Column",
-                  width: "stretch",
-                  items: [
-                    { type: "TextBlock", text: "Falhou", color: "Attention", size: "Small", horizontalAlignment: "Center" },
-                    { type: "TextBlock", text: stats.failed.toString(), color: "Attention", weight: "Bolder", size: "Large", horizontalAlignment: "Center" }
-                  ]
-                },
-                // 5. Ignorados (Novo!)
-                {
-                  type: "Column",
-                  width: "stretch",
-                  items: [
-                    { type: "TextBlock", text: "Ignorados", color: "Warning", size: "Small", horizontalAlignment: "Center" },
-                    { type: "TextBlock", text: stats.skipped.toString(), color: "Warning", weight: "Bolder", size: "Large", horizontalAlignment: "Center" }
-                  ]
-                }
+                { type: "Column", width: "stretch", items: [{ type: "TextBlock", text: "⏱️ Tempo", isSubtle: true, size: "Small", horizontalAlignment: "Center" }, { type: "TextBlock", text: stats.duration, weight: "Bolder", size: "Large", horizontalAlignment: "Center" }] },
+                { type: "Column", width: "stretch", items: [{ type: "TextBlock", text: "Total", isSubtle: true, size: "Small", horizontalAlignment: "Center" }, { type: "TextBlock", text: stats.total.toString(), weight: "Bolder", size: "Large", horizontalAlignment: "Center" }] },
+                { type: "Column", width: "stretch", items: [{ type: "TextBlock", text: "Passou", color: "Good", size: "Small", horizontalAlignment: "Center" }, { type: "TextBlock", text: stats.passed.toString(), color: "Good", weight: "Bolder", size: "Large", horizontalAlignment: "Center" }] },
+                { type: "Column", width: "stretch", items: [{ type: "TextBlock", text: "Falhou", color: "Attention", size: "Small", horizontalAlignment: "Center" }, { type: "TextBlock", text: stats.failed.toString(), color: "Attention", weight: "Bolder", size: "Large", horizontalAlignment: "Center" }] },
+                { type: "Column", width: "stretch", items: [{ type: "TextBlock", text: "Ignorados", color: "Warning", size: "Small", horizontalAlignment: "Center" }, { type: "TextBlock", text: stats.skipped.toString(), color: "Warning", weight: "Bolder", size: "Large", horizontalAlignment: "Center" }] }
               ]
             },
-            {
-                type: "Container",
-                items: [],
-                style: "default",
-                bleed: true,
-                height: "1px",
-                separator: true
-            }
+            { type: "Container", items: [], style: "default", bleed: true, height: "1px", separator: true }
           ]
         },
-
-        // --- LISTA DE ERROS ---
-        ...(failedItems.length > 0 ? [
+        ...(failedItemsComponents.length > 0 ? [
             {
                 type: "Container",
                 spacing: "Medium",
                 items: [
-                    {
-                        type: "TextBlock",
-                        text: `📋 Detalhes dos Erros (${stats.failed})`,
-                        weight: "Bolder",
-                        size: "Medium",
-                        spacing: "Medium"
-                    },
-                    ...failedItems
+                    { type: "TextBlock", text: `📋 Detalhes dos Erros (${stats.failed})`, weight: "Bolder", size: "Medium", spacing: "Medium" },
+                    ...failedItemsComponents
                 ]
             }
         ] : [])
       ],
       actions: [
-        {
-            type: "Action.OpenUrl",
-            title: "🔍 Ver Relatório Detalhado",
-            url: data.socialPanelUrl || "https://seusite.com",
-            style: "positive"
-        }
+        { type: "Action.OpenUrl", title: "🔍 Ver Relatório Detalhado", url: data.socialPanelUrl || "https://google.com", style: "positive" }
       ]
     };
 
-    // 5. ENVIO
     const payload = {
       type: "message",
       attachments: [{ contentType: "application/vnd.microsoft.card.adaptive", content: adaptiveCard }]
     };
 
-    console.log('[teams] Enviando...');
-    await axios.post(WEBHOOK_URL, payload);
+    console.log(`[teams] Enviando payload de ${JSON.stringify(payload).length} bytes...`);
+    
+    const response = await axios.post(WEBHOOK_URL, payload, {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 20000 // Aumentado para 20s
+    });
 
-    return {
-      statusCode: 200,
-      headers,
-      body: JSON.stringify({ success: true })
-    };
+    console.log('[teams] Sucesso:', response.status);
+    return { statusCode: 200, headers, body: JSON.stringify({ success: true }) };
 
   } catch (error) {
-    console.error('[teams] Erro:', error.message);
-    return { statusCode: 500, headers, body: JSON.stringify({ error: error.message }) };
+    console.error('[teams] ❌ ERRO:', error.message);
+    if (error.response) {
+        console.error('[teams] Status:', error.response.status);
+        console.error('[teams] Data:', JSON.stringify(error.response.data));
+    }
+    return { statusCode: 500, headers, body: JSON.stringify({ error: error.message, details: error.response?.data }) };
   }
 };
