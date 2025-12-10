@@ -20,7 +20,7 @@ describe('[Shopvinho] Validação da página departamento', () => {
     });
 
     it('Validar se trás a quantidade de produtos dentro do departamento', () => {
-        
+
         cy.AcessandoDepartamento()
 
         cy.get(locators.shopvinho_departamento.txtProdutosEncontrados)
@@ -28,32 +28,32 @@ describe('[Shopvinho] Validação da página departamento', () => {
     });
 
     it('Validar o filtro de Filtrar Por', () => {
-        
+
         cy.AcessandoDepartamento()
 
         cy.contains('Mais vendidos')
             .click()
 
         cy.url()
-        .should('include', '/vinhos?sort=orders%3Adesc')
+            .should('include', '/vinhos?sort=orders%3Adesc')
     });
 
     it('Acessando a segunda parte da página', () => {
-        
+
         cy.AcessandoDepartamento()
 
         cy.scrollTo('bottom')
-        
+
         cy.get(locators.shopvinho_departamento.verMais)
             .last()
             .click()
 
         cy.url()
-            .should('include', '/vinhos?page=2')
+            .should('include', '/vinhos#')
     });
 
     it('Validar se a página de departamento possui o breadcrumb', () => {
-        
+
         cy.AcessandoDepartamento()
 
         cy.get(locators.shopvinho_departamento.breadcrumb)

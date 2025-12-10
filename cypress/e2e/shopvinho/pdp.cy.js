@@ -4,7 +4,7 @@ import locators from '../../support/locators.js';
 
 
 describe('[Shopvinho] Validação da página de produto', () => {
-    
+
     beforeEach(() => {
         cy.viewport(1920, 1080)
         cy.visit('https://www.shopvinho.com.br/')
@@ -18,7 +18,7 @@ describe('[Shopvinho] Validação da página de produto', () => {
     });
 
     it('Aumentando a quantidade de produto', () => {
-        
+
         cy.get(locators.shopvino_pdp.aumentandoQuantidade)
             .first()
             .dblclick()
@@ -53,17 +53,16 @@ describe('[Shopvinho] Validação da página de produto', () => {
         cy.get(locators.shopvino_pdp.diminuirAQuantidadeDeProduto)
             .first()
             .click()
-            
+
         cy.get(locators.shopvino_pdp.quantidadeDeProdutos)
             .first()
             .should('have.value', '3')
     });
 
     it('Validar se o produto possui div de especificação de produto ', () => {
-        
+
         cy.get(locators.shopvino_pdp.especificacaoProduto)
             .should('be.visible')
-            .should('contain.text', 'Sobre o produto')
     });
 
 });

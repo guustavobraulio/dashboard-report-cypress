@@ -84,7 +84,7 @@ const locators = {
             modalNewsletter: '[class="container flex flex-col gap-4 sm:gap-6 w-full py-5 sm:py-10 bg-white-500 mt-8 pt-0 max-w-none sm:!py-0 sm:mt-12 sm:mx-0 sm:max-w-none md-tablet:flex-row sm-laptop:items-center sm-laptop:justify-center "]',
             inputNome: '[class="cy-nw-input input input-bordered flex-grow rounded w-full h-[38px] text-center text-black"]',
             inputEmail: '[class="cy-nw-input input input-bordered flex-grow rounded w-full h-[38px] text-center text-black"]',
-            checkPoliticaPrivacidade: '#newsletter', 
+            checkPoliticaPrivacidade: '#newsletter',
             btnEnviar: '[class="btn btn-primary w-44 h-9 min-h-9 bg-green-200  hover:bg-green-200  mx-auto rounded xl:w-full newsletter-button-submit"]',
             msgSucesso: '[class="text-xl text-black text-center sm-laptop:text-[22px]/7"]',
         },
@@ -97,7 +97,7 @@ const locators = {
         btnAdicionaroCarrinhoPDP: '[class="max-w-full flex-row w-full flex-1 flex p-0 items-center justify-center rounded bg-green-300 gap-2.5 hover:bg-green-300 btn btn-primary no-animation"]'
 
 
-    
+
     },
 
     jasmine_pdp: {
@@ -112,7 +112,7 @@ const locators = {
         slideVitrine: '[class="disabled:hidden"]',
         aumentarQuantidadeDeProduto: '[class="cy-minicart-item-counter-plus btn btn-square btn-ghost no-animation min-h-7 h-7 w-8"]',
         quantidadeValueProduto: '[class="cy-minicart-item-counter outline-none text-2xl leading-6 w-6 text-center"]',
-        
+
 
 
 
@@ -128,7 +128,7 @@ const locators = {
         txtProdutosEncontrados: '[class="p-5 text-gray-20"]',
         verMais: '[class="join-item"]',
         breadcrumb: '[class="flex flex-row items-center lg:p-0"]'
-    }, 
+    },
 
     shopvinho_home: {
         modalIdade: '[class="modal-box w-[300px] h-fit border border-[#de1d49]"]',
@@ -138,27 +138,28 @@ const locators = {
         abaCategorias: '[class="flex flex-col w-full items-center"]',
         tiposCategorias: '[class="carousel carousel-center w-full gap-9/2 max-sm:px-4 max-lg:px-6 lg:ml-0 justify-center"]',
         modalCarrinho: '[class="fixed top-0 w-full right-0 h-full md:w-[475px] flex flex-col bg-white rounded-10 overflow-y-auto"]',
-        modalProdutoNoCarrinho:'[class="flex gap-[10px] py-5 px-0 w-full md:w-[390px] relative border-b-[1px] border-[#D4D4D4]"]',
+        modalProdutoNoCarrinho: '[class="flex gap-[10px] py-5 px-0 w-full md:w-[390px] relative border-b-[1px] border-[#D4D4D4]"]',
         newsletter: {
             inputEmail: '[name="email"]',
             checkPrivacidade: '#input',
             btnEnviar: '[class="rounded-[20px] bg-[#2d2d2c] h-9 w-[100px] ln-normal disabled:opacity-75 disabled:cursor-not-allowed"]',
             txtSucesso: 'Inscrito com sucesso!',
         },
-        logosFooter:'[class="partners-item"]',
+        logosFooter: '[class="partners-item"]',
         imgProduto: '[class="bg-base-100 col-span-full row-span-full rounded w-full duration-100 transition-scale scale-100 lg:group-hover:scale-125"]',
-        breadcrumbPDP: '[class="breadcrumbs p-0 mb-5 my-12 lg:mb-12"]',   
+        breadcrumbPDP: '[class="breadcrumbs p-0 mb-5 my-12 lg:mb-12"]',
     },
 
     shopvino_pdp: {
         modalImagensProduto: '[class="flex justify-center sm:justify-start gap-x-3.5 items-center sm:mt-5 lg:mt-0 lg:mr-5 lg:order-1 lg:flex-col"]',
         aumentandoQuantidade: '.quantity > :nth-child(3)',
+        btnAumentarQuantidadeMiniCart: '[class="btn no-animation h-10 p-0 min-h-0 bg-transparent w-5 border-0 hover:bg-transparent hover:border-0 text-[#333] font-semibold disabled:bg-transparent"]',
         quantidadeDeProdutos: '[value="1"]',
         btnAdicionarProduto: '[class="text-lg sm:text-base font-medium py-2.5 sm:py-0 sm:h-12 flex justify-center items-center rounded-5 sm:rounded-l-none sm:rounded-r-10 border-[#21BC72] bg-[#21BC72] w-full leading-none text-white"]',
         quantidadeProdutoCarrinho: '[class="text-center bg-transparent text-xl font-medium max-w-[30px]"]',
         diminuirAQuantidadeDeProduto: '[class="text-3xl font-light px-4 h-9 sm:h-12"]',
         especificacaoProduto: '[class="text-xl text-[#8e8e93] flex items-center justify-between mb-4"]',
-        
+
 
 
     }
