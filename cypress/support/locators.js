@@ -161,9 +161,13 @@ const locators = {
         quantidadeProdutoCarrinho: '[class="text-center bg-transparent text-xl font-medium max-w-[30px]"]',
         diminuirAQuantidadeDeProduto: '[class="text-3xl font-light px-4 h-9 sm:h-12"]',
         especificacaoProduto: '[class="text-xl text-[#8e8e93] flex items-center justify-between mb-4"]',
+    },
 
-
-
+    /////////////////
+    // VICTOR HUGO //
+    /////////////////
+    victorHugo_home: {
+        vitrineProdutos: '[class="absolute flex h-full items-center justify-between right-1 left-1 sm:-right-12 sm:-left-12 sm:px-3"]'
     }
 
 

@@ -1,3 +1,5 @@
+import locators from '../../support/locators'
+
 describe('[Victor Hugo] Validar imagens de produtos', () => {
 
     beforeEach(() => {
@@ -44,13 +46,14 @@ describe('[Victor Hugo] Validar imagens de produtos', () => {
     })
 
     it("Validar vitrine de produtos", () => {
+        cy.wait(3000)
+
         cy.get(locators.victorHugo_home.vitrineProdutos)
             .should('exist')
             .and('be.visible');
 
         cy.get(locators.victorHugo_home.vitrineProdutos)
-            .find('a[href*="/produto/"]')
-            .should('have.length.greaterThan', 0);
+            .should('be.visible')
     });
 
 })

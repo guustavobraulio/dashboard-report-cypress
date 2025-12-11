@@ -19,7 +19,7 @@ Cypress.Commands.add("FechandoModalIdade", () => {
     cy.scrollTo(0, 500);
 
     cy.get('[class="bg-base-100 col-span-full row-span-full rounded w-full duration-100 transition-scale scale-100 lg:group-hover:scale-125"]')
-      .eq(3)
+      .eq(1)
       .should("be.visible")
       .click();
 

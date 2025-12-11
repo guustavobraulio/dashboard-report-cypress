@@ -49,7 +49,7 @@ describe('[Shopvinho] Validação da página departamento', () => {
             .click()
 
         cy.url()
-            .should('include', '/vinhos#')
+            .should('include', '/vinhos?page=2')
     });
 
     it('Validar se a página de departamento possui o breadcrumb', () => {
