@@ -94,7 +94,8 @@ const locators = {
         logoSocial: '[class="cy-footer-managed-by-icon"]',
         produto: '[class="object-cover rounded mx-auto col-span-full row-span-full transition-opacity opacity-0 lg:group-hover:opacity-100"]',
         breadcrumbPDP: '[class="cy-breadcrumb breadcrumbs py-1.5 px-2.5 text-sm/4 font-normal after:content-none sm-tablet:pl-0"]',
-        btnAdicionaroCarrinhoPDP: '[class="max-w-full flex-row w-full flex-1 flex p-0 items-center justify-center rounded bg-green-300 gap-2.5 hover:bg-green-300 btn btn-primary no-animation"]'
+        btnAdicionaroCarrinhoPDP: '[class="max-w-full flex-row w-full flex-1 flex p-0 items-center justify-center rounded bg-green-300 gap-2.5 hover:bg-green-300 btn btn-primary no-animation"]',
+        vitrineProdutos: '[data-manifest-key="site/sections/Product/ProductShelf.tsx"]'
 
 
 
@@ -148,6 +149,7 @@ const locators = {
         logosFooter: '[class="partners-item"]',
         imgProduto: '[class="bg-base-100 col-span-full row-span-full rounded w-full duration-100 transition-scale scale-100 lg:group-hover:scale-125"]',
         breadcrumbPDP: '[class="breadcrumbs p-0 mb-5 my-12 lg:mb-12"]',
+        vitrineProdutos: '[data-manifest-key="site/sections/Product/ProductShelf.tsx"]'
     },
 
     shopvino_pdp: {

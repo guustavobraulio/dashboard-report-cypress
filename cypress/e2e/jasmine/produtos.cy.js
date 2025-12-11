@@ -47,4 +47,14 @@ describe('[Jasmine] Validação das imagens via API', () => {
                 }
             });
     });
+    it.only('Validar que a vitrine de produtos está visível', () => {
+        cy.get(locators.jasmine_home.vitrineProdutos)
+            .should('exist')
+            .and('be.visible');
+
+        // Opcional: Validar que existem produtos dentro da vitrine
+        cy.get(locators.jasmine_home.vitrineProdutos)
+            .find('a[href*="/produto/"]') // Geralmente produtos são links
+            .should('have.length.greaterThan', 0);
+    });
 });

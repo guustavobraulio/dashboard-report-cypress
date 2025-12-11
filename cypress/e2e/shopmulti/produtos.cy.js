@@ -1,9 +1,11 @@
 describe('Validar imagens de produtos', () => {
 
     beforeEach(() => {
+
         cy.viewport(1920, 1080)
-        cy.visit('https://www.victorhugo.com.br/')
-    })
+        cy.visit('https://www.shopmulti.com.br/')
+
+    });
 
     it('Deve validar imagens de produtos', () => {
         cy.wait(3000)
@@ -41,6 +43,16 @@ describe('Validar imagens de produtos', () => {
                     });
                 }
             });
-    })
 
-})
+    });
+
+    it("Validar a vitrine de produtos", () => {
+        cy.get(locators.shopmulti_home.vitrineProdutos)
+            .should('exist')
+            .and('be.visible');
+
+        cy.get(locators.shopmulti_home.vitrineProdutos)
+            .find('a[href*="/produto/"]')
+            .should('have.length.greaterThan', 0);
+    });
+});

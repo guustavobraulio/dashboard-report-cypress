@@ -1,12 +1,8 @@
-import FechandoModalIdade from '../../support/commands.js'
-import locators from '../../support/locators.js';
-
 describe('Validar imagens de produtos', () => {
 
     beforeEach(() => {
         cy.viewport(1920, 1080)
-        cy.visit('https://www.shopvinho.com.br/')
-        cy.FechandoModalIdade()
+        cy.visit('https://www.victorhugo.com.br/')
     })
 
     it('Deve validar imagens de produtos', () => {
@@ -45,5 +41,16 @@ describe('Validar imagens de produtos', () => {
                     });
                 }
             });
+    })
+
+    it("Validar vitrine de produtos", () => {
+        cy.get(locators.victorHugo_home.vitrineProdutos)
+            .should('exist')
+            .and('be.visible');
+
+        cy.get(locators.victorHugo_home.vitrineProdutos)
+            .find('a[href*="/produto/"]')
+            .should('have.length.greaterThan', 0);
     });
+
 })

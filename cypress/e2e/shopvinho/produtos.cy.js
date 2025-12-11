@@ -1,11 +1,13 @@
+import FechandoModalIdade from '../../support/commands.js'
+import locators from '../../support/locators.js';
+
 describe('Validar imagens de produtos', () => {
 
     beforeEach(() => {
-
         cy.viewport(1920, 1080)
-        cy.visit('https://www.shopmulti.com.br/')
-
-    });
+        cy.visit('https://www.shopvinho.com.br/')
+        cy.FechandoModalIdade()
+    })
 
     it('Deve validar imagens de produtos', () => {
         cy.wait(3000)
@@ -43,6 +45,19 @@ describe('Validar imagens de produtos', () => {
                     });
                 }
             });
-
     });
-});
+
+    it("Validar vitrine de produtos", () => {
+
+        cy.wait(2500)
+
+        cy.get(locators.shopvinho_home.vitrineProdutos)
+            .should('exist')
+            .and('be.visible');
+
+        cy.get(locators.shopvinho_home.vitrineProdutos)
+            .find('a') // Produtos são links
+            .should('have.length.greaterThan', 0)
+            .and('have.attr', 'href');
+    });
+})
