@@ -1,7 +1,7 @@
 import FechandoModalIdade from '../../support/commands.js'
 import locators from '../../support/locators.js';
 
-describe('Validar imagens de produtos', () => {
+describe('[Shopvinho] Validar imagens de produtos', () => {
 
     beforeEach(() => {
         cy.viewport(1920, 1080)

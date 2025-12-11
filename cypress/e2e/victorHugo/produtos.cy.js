@@ -1,4 +1,4 @@
-describe('Validar imagens de produtos', () => {
+describe('[Victor Hugo] Validar imagens de produtos', () => {
 
     beforeEach(() => {
         cy.viewport(1920, 1080)

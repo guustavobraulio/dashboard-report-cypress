@@ -1,4 +1,4 @@
-describe('Validar imagens de produtos', () => {
+describe('[Shopmulti] Validar imagens de produtos', () => {
 
     beforeEach(() => {
 
