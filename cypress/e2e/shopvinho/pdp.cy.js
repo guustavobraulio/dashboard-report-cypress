@@ -34,7 +34,7 @@ describe('[Shopvinho] Validação da página de produto', () => {
             .should('be.visible')
 
         cy.get(locators.shopvino_pdp.quantidadeProdutoCarrinho)
-            .should('have.value', '1')
+            .should('have.value', '2')
 
     });
 
