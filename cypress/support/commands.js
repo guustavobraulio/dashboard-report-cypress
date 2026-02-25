@@ -125,3 +125,18 @@ Cypress.Commands.add("AcessandoPaginaProduto_Jasmine", () => {
   })
 
 
+
+
+/////////////////////
+// LOJA VIC BEAUTÉ//
+///////////////////
+
+Cypress.Commands.add("AcessandoDepartamento_VicBeaute", () => {
+
+  cy.contains('Para presentear')
+    .click()
+
+  cy.url()
+    .should('include', '/kits')
+})
+
